@@ -132,13 +132,18 @@ public class ChatServiceImp implements ChatService {
 
     @Override
     @NonNull
+    public List<ChatMessageResponse> getChatHistory(@NonNull String chatSessionId) {
+        return getMessagesBySessionId(chatSessionId);
+    }
+
+    @Override
+    @NonNull
     public ChatSession getSessionById(@NonNull String sessionId) {
         return chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
     }
 
     @Override
-    @NonNull
     public ChatSession unlockReply(@NonNull String sessionId) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
@@ -170,7 +175,6 @@ public class ChatServiceImp implements ChatService {
     }
 
     @Override
-    @NonNull
     public ChatSession endSessionByProfessional(@NonNull String sessionId) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
@@ -180,6 +184,30 @@ public class ChatServiceImp implements ChatService {
         session.setLastUpdateAt(LocalDateTime.now());
         log.info("[CHAT] Session {} ENDED by Professional", sessionId);
         return chatSessionRepository.save(session);
+    }
+
+    @Override
+    public void endChatByUser(@NonNull String sessionId) {
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
+        session.setStatus(ChatStatus.CLOSED);
+        session.setLastUpdateAt(LocalDateTime.now());
+        chatSessionRepository.save(session);
+    }
+
+    @Override
+    public void endChatByProfessional(@NonNull String sessionId) {
+        endSessionByProfessional(sessionId);
+    }
+
+    @Override
+    public List<ChatSession> getUserSessions(@NonNull Long userId) {
+        return chatSessionRepository.findByUserId(userId);
+    }
+
+    @Override
+    public List<ChatSession> getProfessionalSessions(@NonNull Long professionalId) {
+        return chatSessionRepository.findByProfessionalId(professionalId);
     }
 
     private ChatMessageResponse mapToResponse(ChatMessage msg, ChatStatus sessionStatus) {

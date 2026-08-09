@@ -21,9 +21,29 @@ public class AuditLogService {
         this.auditLogRepository = auditLogRepository;
     }
 
-    /**
-     * Store a security-related alert in the database.
-     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logAudit(String eventType, String summary, String details, String userId, String userRole) {
+        try {
+            AuditLog logEntry = new AuditLog();
+            logEntry.setTimestamp(LocalDateTime.now());
+            logEntry.setEventType(eventType != null ? eventType : "AUDIT_EVENT");
+            logEntry.setSummary(summary != null ? summary : "Audit Event");
+            logEntry.setDetails(details != null ? details : "");
+            logEntry.setUserId(userId);
+            logEntry.setUserRole(userRole != null ? userRole : "USER");
+
+            auditLogRepository.save(logEntry);
+            log.info("[AUDIT LOG] {}: {}", eventType, summary);
+        } catch (Exception e) {
+            log.error("Failed to save audit log: {}", e.getMessage());
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logCriticalError(String summary, String details) {
+        logAudit("CRITICAL_ERROR", summary, details, "SYSTEM", "SYSTEM");
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logSecurityAlert(String summary, String details, String ipAddress, String userId, String userRole) {
         try {
