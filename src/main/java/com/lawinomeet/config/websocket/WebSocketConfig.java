@@ -15,7 +15,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private ChatChannelInterceptor chatChannelInterceptor;
 
-    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}")
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:*}")
     private String[] allowedOrigins;
 
     @Override
