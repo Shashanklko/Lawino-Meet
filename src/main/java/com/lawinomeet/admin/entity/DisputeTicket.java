@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.admin.entity;
+package com.lawinomeet.admin.entity;
 
-import com.lawinomeetMeetmeet.admin.enums.DisputeStatus;
+import com.lawinomeet.admin.enums.DisputeStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

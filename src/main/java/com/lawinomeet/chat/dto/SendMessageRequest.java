@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.chat.dto;
+package com.lawinomeet.chat.dto;
 
-import com.lawinomeetMeetmeet.chat.enums.MessageType;
+import com.lawinomeet.chat.enums.MessageType;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.auth.controller;
+package com.lawinomeet.auth.controller;
 
 import javax.management.BadBinaryOpValueExpException;
 
@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.lawinomeetMeetmeet.auth.dto.AuthRequest;
-import com.lawinomeetMeetmeet.auth.dto.AuthResponse;
-import com.lawinomeetMeetmeet.auth.service.CustomUserDetailsService;
-import com.lawinomeetMeetmeet.auth.util.JwtUtil;
+import com.lawinomeet.auth.dto.AuthRequest;
+import com.lawinomeet.auth.dto.AuthResponse;
+import com.lawinomeet.auth.service.CustomUserDetailsService;
+import com.lawinomeet.auth.util.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,13 +32,13 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private com.lawinomeetMeetmeet.user.service.UserService userService;
+    private com.lawinomeet.user.service.UserService userService;
 
     @Autowired
-    private com.lawinomeetMeetmeet.common.service.AuditLogService auditLogService;
+    private com.lawinomeet.common.service.AuditLogService auditLogService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody com.lawinomeetMeetmeet.user.dto.UserRequest userRequest) {
+    public ResponseEntity<?> register(@RequestBody com.lawinomeet.user.dto.UserRequest userRequest) {
         log.info("New registration attempt for email: {}", userRequest.getEmail());
         return ResponseEntity.ok(userService.createUser(userRequest));
     }

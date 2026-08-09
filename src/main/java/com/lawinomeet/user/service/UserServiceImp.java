@@ -1,17 +1,17 @@
-package com.lawinomeetMeetmeet.user.service;
+package com.lawinomeet.user.service;
 
-import com.lawinomeetMeetmeet.user.dto.UserRequest;
-import com.lawinomeetMeetmeet.user.dto.UserResponse;
-import com.lawinomeetMeetmeet.user.entity.User;
-import com.lawinomeetMeetmeet.common.exception.ResourceNotFoundException;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
-import com.lawinomeetMeetmeet.user.enums.Role;
+import com.lawinomeet.user.dto.UserRequest;
+import com.lawinomeet.user.dto.UserResponse;
+import com.lawinomeet.user.entity.User;
+import com.lawinomeet.common.exception.ResourceNotFoundException;
+import com.lawinomeet.user.repository.UserRepository;
+import com.lawinomeet.user.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.lawinomeetMeetmeet.user.repository.ProfessionalProfileRepository;
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.user.repository.ProfessionalProfileRepository;
+import com.lawinomeet.user.entity.ProfessionalProfile;
 import java.util.List;
 import java.util.stream.Collectors;
 

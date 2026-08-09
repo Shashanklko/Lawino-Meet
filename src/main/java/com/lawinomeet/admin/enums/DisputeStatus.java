@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.admin.enums;
+package com.lawinomeet.admin.enums;
 
 public enum DisputeStatus {
     OPEN,

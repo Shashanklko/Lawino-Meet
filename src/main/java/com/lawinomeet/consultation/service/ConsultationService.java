@@ -1,8 +1,8 @@
-package com.lawinomeetMeetmeet.consultation.service;
+package com.lawinomeet.consultation.service;
 
-import com.lawinomeetMeetmeet.consultation.dto.ConsultationRequest;
-import com.lawinomeetMeetmeet.consultation.dto.ConsultationResponse;
-import com.lawinomeetMeetmeet.consultation.entity.Consultation;
+import com.lawinomeet.consultation.dto.ConsultationRequest;
+import com.lawinomeet.consultation.dto.ConsultationResponse;
+import com.lawinomeet.consultation.entity.Consultation;
 
 import java.util.List;
 

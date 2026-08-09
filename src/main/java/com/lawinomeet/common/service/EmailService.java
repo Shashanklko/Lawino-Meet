@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.common.service;
+package com.lawinomeet.common.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +21,9 @@ public class EmailService {
                                                  String mode, String timeSlot, String videoUrl, String officeAddress) {
         log.info("[EMAIL DISPATCH] Preparing confirmation email for: {} | Meeting Code: {}", toEmail, meetingCode);
         
-        String subject = "lawinomeetMeet Appointment Confirmation Pass: " + meetingCode;
+        String subject = "lawinomeet Appointment Confirmation Pass: " + meetingCode;
         StringBuilder content = new StringBuilder();
-        content.append("<h2>🏛️ lawinomeetMeet Consultation Confirmation</h2>");
+        content.append("<h2>🏛️ lawinomeet Consultation Confirmation</h2>");
         content.append("<p>Dear <b>").append(clientName).append("</b>,</p>");
         content.append("<p>Your consultation booking has been successfully confirmed and paid.</p>");
         content.append("<ul>");
@@ -37,7 +37,7 @@ public class EmailService {
             content.append("<li><b>Lawyer Office Address:</b> ").append(officeAddress).append("</li>");
         }
         content.append("</ul>");
-        content.append("<p>Thank you for choosing lawinomeetMeet Legal Platform!</p>");
+        content.append("<p>Thank you for choosing lawinomeet Legal Platform!</p>");
 
         if (mailSender != null) {
             try {

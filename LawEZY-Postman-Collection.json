@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "3d9f18a4-8fcd-4acc-817c-aa28fa09429b",
-		"name": "lawinomeetMeet Elite SaaS ERP",
-		"description": "Standardized Postman collection for testing the lawinomeetMeet distributed backend system.",
+		"name": "lawinomeet Elite SaaS ERP",
+		"description": "Standardized Postman collection for testing the lawinomeet distributed backend system.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [

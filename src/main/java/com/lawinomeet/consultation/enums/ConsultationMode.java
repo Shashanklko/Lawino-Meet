@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.consultation.enums;
+package com.lawinomeet.consultation.enums;
 
 public enum ConsultationMode {
     ONLINE_CHAT,

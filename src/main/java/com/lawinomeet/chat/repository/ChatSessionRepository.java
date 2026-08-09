@@ -1,11 +1,11 @@
-package com.lawinomeetMeetmeet.chat.repository;
+package com.lawinomeet.chat.repository;
 
 import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.lawinomeetMeetmeet.chat.enums.ChatStatus;
-import com.lawinomeetMeetmeet.chat.model.ChatSession;
+import com.lawinomeet.chat.enums.ChatStatus;
+import com.lawinomeet.chat.model.ChatSession;
 
 
 public interface ChatSessionRepository extends MongoRepository<ChatSession, String>{

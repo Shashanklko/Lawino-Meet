@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.user.repository;
+package com.lawinomeet.user.repository;
 
-import com.lawinomeetMeetmeet.user.entity.User;
+import com.lawinomeet.user.entity.User;
 
 import java.util.Optional;
 

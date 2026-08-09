@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.auth.dto;
+package com.lawinomeet.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

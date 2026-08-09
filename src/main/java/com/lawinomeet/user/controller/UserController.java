@@ -1,8 +1,8 @@
-package com.lawinomeetMeetmeet.user.controller;
+package com.lawinomeet.user.controller;
 
-import com.lawinomeetMeetmeet.user.dto.UserRequest;
-import com.lawinomeetMeetmeet.user.dto.UserResponse;
-import com.lawinomeetMeetmeet.user.service.UserService;
+import com.lawinomeet.user.dto.UserRequest;
+import com.lawinomeet.user.dto.UserResponse;
+import com.lawinomeet.user.service.UserService;
 
 import jakarta.validation.Valid; // NEW: Needed for @Valid
 

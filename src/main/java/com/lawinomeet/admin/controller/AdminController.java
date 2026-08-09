@@ -1,10 +1,10 @@
-package com.lawinomeetMeetmeet.admin.controller;
+package com.lawinomeet.admin.controller;
 
-import com.lawinomeetMeetmeet.admin.entity.DisputeTicket;
-import com.lawinomeetMeetmeet.admin.service.AdminService;
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
-import com.lawinomeetMeetmeet.payment.entity.PayoutRequest;
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.admin.entity.DisputeTicket;
+import com.lawinomeet.admin.service.AdminService;
+import com.lawinomeet.common.response.ApiResponse;
+import com.lawinomeet.payment.entity.PayoutRequest;
+import com.lawinomeet.user.entity.ProfessionalProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

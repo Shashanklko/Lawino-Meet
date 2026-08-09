@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.payment.repository;
+package com.lawinomeet.payment.repository;
 
-import com.lawinomeetMeetmeet.payment.entity.PayoutRequest;
-import com.lawinomeetMeetmeet.payment.enums.PayoutStatus;
+import com.lawinomeet.payment.entity.PayoutRequest;
+import com.lawinomeet.payment.enums.PayoutStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

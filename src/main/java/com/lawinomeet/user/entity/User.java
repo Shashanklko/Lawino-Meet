@@ -1,10 +1,10 @@
-package com.lawinomeetMeetmeet.user.entity;
+package com.lawinomeet.user.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.lawinomeetMeetmeet.user.enums.Role;
+import com.lawinomeet.user.enums.Role;
 
 @Entity
 @Table(name="users")

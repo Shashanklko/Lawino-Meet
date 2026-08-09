@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.config.websocket;
+package com.lawinomeet.config.websocket;
 
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;

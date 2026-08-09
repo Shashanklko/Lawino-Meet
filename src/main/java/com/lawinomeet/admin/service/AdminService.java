@@ -1,8 +1,8 @@
-package com.lawinomeetMeetmeet.admin.service;
+package com.lawinomeet.admin.service;
 
-import com.lawinomeetMeetmeet.admin.entity.DisputeTicket;
-import com.lawinomeetMeetmeet.payment.entity.PayoutRequest;
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.admin.entity.DisputeTicket;
+import com.lawinomeet.payment.entity.PayoutRequest;
+import com.lawinomeet.user.entity.ProfessionalProfile;
 
 import java.util.List;
 

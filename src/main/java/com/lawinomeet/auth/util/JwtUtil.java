@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.auth.util;
+package com.lawinomeet.auth.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

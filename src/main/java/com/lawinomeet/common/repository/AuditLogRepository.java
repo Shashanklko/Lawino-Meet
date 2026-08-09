@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.common.repository;
+package com.lawinomeet.common.repository;
 
-import com.lawinomeetMeetmeet.common.entity.AuditLog;
+import com.lawinomeet.common.entity.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

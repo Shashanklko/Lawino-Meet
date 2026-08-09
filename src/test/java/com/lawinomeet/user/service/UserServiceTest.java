@@ -1,12 +1,12 @@
-package com.lawinomeetMeetmeet.user.service;
+package com.lawinomeet.user.service;
 
-import com.lawinomeetMeetmeet.user.dto.UserRequest;
-import com.lawinomeetMeetmeet.user.dto.UserResponse;
-import com.lawinomeetMeetmeet.user.entity.User;
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
-import com.lawinomeetMeetmeet.user.enums.Role;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
-import com.lawinomeetMeetmeet.user.repository.ProfessionalProfileRepository;
+import com.lawinomeet.user.dto.UserRequest;
+import com.lawinomeet.user.dto.UserResponse;
+import com.lawinomeet.user.entity.User;
+import com.lawinomeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.user.enums.Role;
+import com.lawinomeet.user.repository.UserRepository;
+import com.lawinomeet.user.repository.ProfessionalProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

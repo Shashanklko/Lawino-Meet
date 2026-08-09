@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.chat.enums;
+package com.lawinomeet.chat.enums;
 
 public enum ChatStatus {
     AWAITING_REPLY,

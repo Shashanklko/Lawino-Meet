@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.chat.service;
+package com.lawinomeet.chat.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,18 +8,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import com.lawinomeetMeetmeet.chat.dto.ChatMessageResponse;
-import com.lawinomeetMeetmeet.chat.dto.SendMessageRequest;
-import com.lawinomeetMeetmeet.chat.dto.StartChatRequest;
-import com.lawinomeetMeetmeet.chat.enums.ChatStatus;
-import com.lawinomeetMeetmeet.chat.model.ChatMessage;
-import com.lawinomeetMeetmeet.chat.model.ChatSession;
-import com.lawinomeetMeetmeet.chat.repository.ChatMessageRepository;
-import com.lawinomeetMeetmeet.chat.repository.ChatSessionRepository;
-import com.lawinomeetMeetmeet.user.repository.ProfessionalProfileRepository;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
+import com.lawinomeet.chat.dto.ChatMessageResponse;
+import com.lawinomeet.chat.dto.SendMessageRequest;
+import com.lawinomeet.chat.dto.StartChatRequest;
+import com.lawinomeet.chat.enums.ChatStatus;
+import com.lawinomeet.chat.model.ChatMessage;
+import com.lawinomeet.chat.model.ChatSession;
+import com.lawinomeet.chat.repository.ChatMessageRepository;
+import com.lawinomeet.chat.repository.ChatSessionRepository;
+import com.lawinomeet.user.repository.ProfessionalProfileRepository;
+import com.lawinomeet.user.repository.UserRepository;
 
-import com.lawinomeetMeetmeet.common.exception.ResourceNotFoundException;
+import com.lawinomeet.common.exception.ResourceNotFoundException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,10 +57,10 @@ public class ChatServiceImp implements ChatService {
     }
 
     @Autowired
-    private com.lawinomeetMeetmeet.common.service.AuditLogService auditLogService;
+    private com.lawinomeet.common.service.AuditLogService auditLogService;
 
     @Autowired
-    private com.lawinomeetMeetmeet.ai.service.AiService aiService;
+    private com.lawinomeet.ai.service.AiService aiService;
 
     @Override
     @NonNull
@@ -102,7 +102,7 @@ public class ChatServiceImp implements ChatService {
         // Token logic for User messages
         Long senderUserId = request.getSenderId();
         if (senderUserId != null && senderUserId.equals(session.getUserId())) {
-            com.lawinomeetMeetmeet.user.entity.User user = userRepository.findById(senderUserId)
+            com.lawinomeet.user.entity.User user = userRepository.findById(senderUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             
             Integer balance = user.getGlobalTokenBalance();

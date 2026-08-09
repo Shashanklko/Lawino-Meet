@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.consultation.dto;
+package com.lawinomeet.consultation.dto;
 
-import com.lawinomeetMeetmeet.consultation.enums.ConsultationMode;
-import com.lawinomeetMeetmeet.consultation.enums.ConsultationStatus;
+import com.lawinomeet.consultation.enums.ConsultationMode;
+import com.lawinomeet.consultation.enums.ConsultationStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,4 +33,17 @@ public class ConsultationResponse {
     private ConsultationStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime paidAt;
+
+    // Explicit Getters/Setters for Boolean and Contact fields
+    public Boolean getIsContactInfoDisclosed() { return isContactInfoDisclosed; }
+    public void setIsContactInfoDisclosed(Boolean isContactInfoDisclosed) { this.isContactInfoDisclosed = isContactInfoDisclosed; }
+
+    public String getClientPhoneNumber() { return clientPhoneNumber; }
+    public void setClientPhoneNumber(String clientPhoneNumber) { this.clientPhoneNumber = clientPhoneNumber; }
+
+    public String getClientEmail() { return clientEmail; }
+    public void setClientEmail(String clientEmail) { this.clientEmail = clientEmail; }
+
+    public Boolean getIsRoomActive() { return isRoomActive; }
+    public void setIsRoomActive(Boolean isRoomActive) { this.isRoomActive = isRoomActive; }
 }

@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.user.entity;
+package com.lawinomeet.user.entity;
 
-import com.lawinomeetMeetmeet.user.enums.Role;
+import com.lawinomeet.user.enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

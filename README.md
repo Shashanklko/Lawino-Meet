@@ -1,12 +1,12 @@
-# 🏛️ lawinomeetMeet: Legal Consultation Platform Backend
+# 🏛️ lawinomeet: Legal Consultation Platform Backend
 
-lawinomeetMeet is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
+lawinomeet is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
 
 ---
 
-## 📌 What Is lawinomeetMeet?
+## 📌 What Is lawinomeet?
 
-lawinomeetMeet provides an end-to-end legal consultation ecosystem featuring:
+lawinomeet provides an end-to-end legal consultation ecosystem featuring:
 
 1. **Client & Lawyer Portals**: Seamless registration, login, and profile management for Clients, Lawyers, and Admins.
 2. **Privacy-First Consultations**: Client contact details (Phone & Email) remain strictly **masked** from lawyers until a consultation is approved and paid for.

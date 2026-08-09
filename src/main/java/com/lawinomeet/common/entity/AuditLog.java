@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.common.entity;
+package com.lawinomeet.common.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

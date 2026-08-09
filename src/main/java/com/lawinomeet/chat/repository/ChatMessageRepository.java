@@ -1,10 +1,10 @@
-package com.lawinomeetMeetmeet.chat.repository;
+package com.lawinomeet.chat.repository;
 
 import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.lawinomeetMeetmeet.chat.model.ChatMessage;
+import com.lawinomeet.chat.model.ChatMessage;
 
 public interface ChatMessageRepository extends MongoRepository<ChatMessage , String> {
 

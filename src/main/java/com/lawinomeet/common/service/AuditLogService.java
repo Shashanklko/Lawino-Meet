@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.common.service;
+package com.lawinomeet.common.service;
 
-import com.lawinomeetMeetmeet.common.entity.AuditLog;
-import com.lawinomeetMeetmeet.common.repository.AuditLogRepository;
+import com.lawinomeet.common.entity.AuditLog;
+import com.lawinomeet.common.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.config.security;
+package com.lawinomeet.config.security;
 
-import com.lawinomeetMeetmeet.auth.service.CustomUserDetailsService;
+import com.lawinomeet.auth.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

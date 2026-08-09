@@ -1,13 +1,13 @@
-package com.lawinomeetMeetmeet.chat.service;
+package com.lawinomeet.chat.service;
 
-import com.lawinomeetMeetmeet.chat.enums.ChatStatus;
-import com.lawinomeetMeetmeet.chat.model.ChatSession;
-import com.lawinomeetMeetmeet.chat.repository.ChatMessageRepository;
-import com.lawinomeetMeetmeet.chat.repository.ChatSessionRepository;
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
-import com.lawinomeetMeetmeet.user.entity.User;
-import com.lawinomeetMeetmeet.user.repository.ProfessionalProfileRepository;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
+import com.lawinomeet.chat.enums.ChatStatus;
+import com.lawinomeet.chat.model.ChatSession;
+import com.lawinomeet.chat.repository.ChatMessageRepository;
+import com.lawinomeet.chat.repository.ChatSessionRepository;
+import com.lawinomeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.user.entity.User;
+import com.lawinomeet.user.repository.ProfessionalProfileRepository;
+import com.lawinomeet.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -83,7 +83,7 @@ class ChatServiceTest {
         user.setId(userId);
         user.setGlobalTokenBalance(10);
         
-        com.lawinomeetMeetmeet.chat.dto.SendMessageRequest request = new com.lawinomeetMeetmeet.chat.dto.SendMessageRequest();
+        com.lawinomeet.chat.dto.SendMessageRequest request = new com.lawinomeet.chat.dto.SendMessageRequest();
         request.setChatSessionId(sessionId);
         request.setSenderId(userId);
         request.setContent("Hello Lawyer");
@@ -108,7 +108,7 @@ class ChatServiceTest {
         session.setProfessionalId(professionalId);
         session.setStatus(ChatStatus.AWAITING_REPLY);
         
-        com.lawinomeetMeetmeet.chat.dto.SendMessageRequest request = new com.lawinomeetMeetmeet.chat.dto.SendMessageRequest();
+        com.lawinomeet.chat.dto.SendMessageRequest request = new com.lawinomeet.chat.dto.SendMessageRequest();
         request.setChatSessionId(sessionId);
         request.setSenderId(professionalId);
         request.setContent("I can help you");
@@ -116,7 +116,7 @@ class ChatServiceTest {
         when(chatSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(chatMessageRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         
-        com.lawinomeetMeetmeet.chat.dto.ChatMessageResponse response = chatService.sendMessage(request);
+        com.lawinomeet.chat.dto.ChatMessageResponse response = chatService.sendMessage(request);
         
         assertTrue(response.getIsLocked());
         assertEquals(ChatStatus.LOCKED_REPLY, session.getStatus());
@@ -124,7 +124,7 @@ class ChatServiceTest {
 
     @Test
     void sendMessage_WithBlockedContent_ShouldThrowException() {
-        com.lawinomeetMeetmeet.chat.dto.SendMessageRequest request = new com.lawinomeetMeetmeet.chat.dto.SendMessageRequest();
+        com.lawinomeet.chat.dto.SendMessageRequest request = new com.lawinomeet.chat.dto.SendMessageRequest();
         request.setChatSessionId("session123");
         request.setContent("Call me at 9876543210");
         

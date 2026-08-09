@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.payment.entity;
+package com.lawinomeet.payment.entity;
 
-import com.lawinomeetMeetmeet.payment.enums.PayoutStatus;
+import com.lawinomeet.payment.enums.PayoutStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

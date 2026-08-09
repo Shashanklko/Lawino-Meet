@@ -1,15 +1,15 @@
-package com.lawinomeetMeetmeet.chat.controller;
+package com.lawinomeet.chat.controller;
 
-import com.lawinomeetMeetmeet.chat.dto.ChatMessageResponse;
-import com.lawinomeetMeetmeet.chat.dto.SendMessageRequest;
-import com.lawinomeetMeetmeet.chat.dto.StartChatRequest;
-import com.lawinomeetMeetmeet.chat.model.ChatSession;
-import com.lawinomeetMeetmeet.chat.service.ChatService;
+import com.lawinomeet.chat.dto.ChatMessageResponse;
+import com.lawinomeet.chat.dto.SendMessageRequest;
+import com.lawinomeet.chat.dto.StartChatRequest;
+import com.lawinomeet.chat.model.ChatSession;
+import com.lawinomeet.chat.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
+import com.lawinomeet.common.response.ApiResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 

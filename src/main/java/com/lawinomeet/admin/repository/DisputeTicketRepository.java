@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.admin.repository;
+package com.lawinomeet.admin.repository;
 
-import com.lawinomeetMeetmeet.admin.entity.DisputeTicket;
-import com.lawinomeetMeetmeet.admin.enums.DisputeStatus;
+import com.lawinomeet.admin.entity.DisputeTicket;
+import com.lawinomeet.admin.enums.DisputeStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

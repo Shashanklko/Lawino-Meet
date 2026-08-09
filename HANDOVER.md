@@ -1,6 +1,6 @@
-# lawinomeetMeet Backend - Developer Handover & API Guide (Frontend) 🏛️
+# lawinomeet Backend - Developer Handover & API Guide (Frontend) 🏛️
 
-Welcome to the lawinomeetMeet Backend API! This document provides frontend developers with quick-start instructions, endpoint standards, response structures, and integration rules.
+Welcome to the lawinomeet Backend API! This document provides frontend developers with quick-start instructions, endpoint standards, response structures, and integration rules.
 
 ---
 

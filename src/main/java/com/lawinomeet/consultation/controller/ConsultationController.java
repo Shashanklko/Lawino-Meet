@@ -1,9 +1,9 @@
-package com.lawinomeetMeetmeet.consultation.controller;
+package com.lawinomeet.consultation.controller;
 
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
-import com.lawinomeetMeetmeet.consultation.dto.ConsultationRequest;
-import com.lawinomeetMeetmeet.consultation.dto.ConsultationResponse;
-import com.lawinomeetMeetmeet.consultation.service.ConsultationService;
+import com.lawinomeet.common.response.ApiResponse;
+import com.lawinomeet.consultation.dto.ConsultationRequest;
+import com.lawinomeet.consultation.dto.ConsultationResponse;
+import com.lawinomeet.consultation.service.ConsultationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

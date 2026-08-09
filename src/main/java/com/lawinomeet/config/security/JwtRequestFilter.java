@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.config.security;
+package com.lawinomeet.config.security;
 
-import com.lawinomeetMeetmeet.auth.service.CustomUserDetailsService;
-import com.lawinomeetMeetmeet.auth.util.JwtUtil;
+import com.lawinomeet.auth.service.CustomUserDetailsService;
+import com.lawinomeet.auth.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +27,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private com.lawinomeetMeetmeet.common.service.AuditLogService auditLogService;
+    private com.lawinomeet.common.service.AuditLogService auditLogService;
 
     // This method fires BEFORE every single HTTP request hits a Controller
     @Override

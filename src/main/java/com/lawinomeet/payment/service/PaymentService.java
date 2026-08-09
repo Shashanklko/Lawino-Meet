@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.payment.service;
+package com.lawinomeet.payment.service;
 
-import com.lawinomeetMeetmeet.payment.entity.PaymentTransaction;
-import com.lawinomeetMeetmeet.payment.entity.PayoutRequest;
+import com.lawinomeet.payment.entity.PaymentTransaction;
+import com.lawinomeet.payment.entity.PayoutRequest;
 
 import java.util.List;
 import java.util.Map;

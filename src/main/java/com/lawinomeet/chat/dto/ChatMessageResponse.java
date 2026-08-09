@@ -1,9 +1,9 @@
-package com.lawinomeetMeetmeet.chat.dto;
+package com.lawinomeet.chat.dto;
 
 import org.springframework.data.annotation.Id;
 
-import com.lawinomeetMeetmeet.chat.enums.ChatStatus;
-import com.lawinomeetMeetmeet.chat.enums.MessageType;
+import com.lawinomeet.chat.enums.ChatStatus;
+import com.lawinomeet.chat.enums.MessageType;
 
 import lombok.Data;
 

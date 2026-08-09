@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.payment.repository;
+package com.lawinomeet.payment.repository;
 
-import com.lawinomeetMeetmeet.payment.entity.PaymentTransaction;
+import com.lawinomeet.payment.entity.PaymentTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

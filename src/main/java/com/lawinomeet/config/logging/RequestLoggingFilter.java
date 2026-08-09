@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.config.logging;
+package com.lawinomeet.config.logging;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

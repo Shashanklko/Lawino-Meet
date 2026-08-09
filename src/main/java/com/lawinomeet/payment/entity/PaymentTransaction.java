@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.payment.entity;
+package com.lawinomeet.payment.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

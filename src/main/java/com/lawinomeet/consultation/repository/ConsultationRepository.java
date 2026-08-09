@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.consultation.repository;
+package com.lawinomeet.consultation.repository;
 
-import com.lawinomeetMeetmeet.consultation.entity.Consultation;
+import com.lawinomeet.consultation.entity.Consultation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

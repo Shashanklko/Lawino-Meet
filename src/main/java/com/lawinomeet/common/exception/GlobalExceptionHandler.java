@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.common.exception;
+package com.lawinomeet.common.exception;
 
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
+import com.lawinomeet.common.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -11,7 +11,7 @@ import org.springframework.web.context.request.WebRequest;
 public class GlobalExceptionHandler {
 
     @org.springframework.beans.factory.annotation.Autowired
-    private com.lawinomeetMeetmeet.common.service.AuditLogService auditLogService;
+    private com.lawinomeet.common.service.AuditLogService auditLogService;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {

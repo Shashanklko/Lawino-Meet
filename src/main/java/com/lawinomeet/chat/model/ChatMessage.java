@@ -1,9 +1,9 @@
-package com.lawinomeetMeetmeet.chat.model;
+package com.lawinomeet.chat.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.lawinomeetMeetmeet.chat.enums.MessageType;
+import com.lawinomeet.chat.enums.MessageType;
 
 import lombok.Data;
 

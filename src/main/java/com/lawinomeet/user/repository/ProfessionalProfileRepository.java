@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.user.repository;
+package com.lawinomeet.user.repository;
 
-import com.lawinomeetMeetmeet.user.entity.ProfessionalProfile;
+import com.lawinomeet.user.entity.ProfessionalProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;

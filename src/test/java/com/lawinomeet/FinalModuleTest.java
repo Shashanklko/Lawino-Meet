@@ -1,9 +1,9 @@
-package com.lawinomeetMeetmeet;
+package com.lawinomeet;
 
-import com.lawinomeetMeetmeet.consultation.dto.ConsultationRequest;
-import com.lawinomeetMeetmeet.consultation.enums.ConsultationMode;
-import com.lawinomeetMeetmeet.user.entity.User;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
+import com.lawinomeet.consultation.dto.ConsultationRequest;
+import com.lawinomeet.consultation.enums.ConsultationMode;
+import com.lawinomeet.user.entity.User;
+import com.lawinomeet.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

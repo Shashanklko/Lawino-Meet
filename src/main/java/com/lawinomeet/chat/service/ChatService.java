@@ -1,11 +1,11 @@
-package com.lawinomeetMeetmeet.chat.service;
+package com.lawinomeet.chat.service;
 
 import java.util.List;
 
-import com.lawinomeetMeetmeet.chat.dto.ChatMessageResponse;
-import com.lawinomeetMeetmeet.chat.dto.SendMessageRequest;
-import com.lawinomeetMeetmeet.chat.dto.StartChatRequest;
-import com.lawinomeetMeetmeet.chat.model.ChatSession;
+import com.lawinomeet.chat.dto.ChatMessageResponse;
+import com.lawinomeet.chat.dto.SendMessageRequest;
+import com.lawinomeet.chat.dto.StartChatRequest;
+import com.lawinomeet.chat.model.ChatSession;
 
 import org.springframework.lang.NonNull;
 

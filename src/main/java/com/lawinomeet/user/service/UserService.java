@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.user.service;
+package com.lawinomeet.user.service;
 
-import com.lawinomeetMeetmeet.user.dto.UserRequest;
-import com.lawinomeetMeetmeet.user.dto.UserResponse;
+import com.lawinomeet.user.dto.UserRequest;
+import com.lawinomeet.user.dto.UserResponse;
 import java.util.List;
 
 public interface UserService {

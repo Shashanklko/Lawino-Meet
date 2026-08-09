@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.chat.dto;
+package com.lawinomeet.chat.dto;
 
 import lombok.Data;
 

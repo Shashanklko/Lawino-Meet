@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.user.dto;
+package com.lawinomeet.user.dto;
 
 import lombok.Data;
-import com.lawinomeetMeetmeet.user.enums.Role;
+import com.lawinomeet.user.enums.Role;
 
 @Data
 public class UserResponse{

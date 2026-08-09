@@ -1,6 +1,6 @@
-package com.lawinomeetMeetmeet.consultation.dto;
+package com.lawinomeet.consultation.dto;
 
-import com.lawinomeetMeetmeet.consultation.enums.ConsultationMode;
+import com.lawinomeet.consultation.enums.ConsultationMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.user.enums;
+package com.lawinomeet.user.enums;
 
 public enum Role {
     ADMIN,

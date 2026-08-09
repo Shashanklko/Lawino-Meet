@@ -1,11 +1,11 @@
-package com.lawinomeetMeetmeet.chat.model;
+package com.lawinomeet.chat.model;
 
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.lawinomeetMeetmeet.chat.enums.ChatStatus;
+import com.lawinomeet.chat.enums.ChatStatus;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.common.response;
+package com.lawinomeet.common.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

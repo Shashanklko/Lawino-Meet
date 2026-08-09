@@ -1,7 +1,7 @@
-package com.lawinomeetMeetmeet.auth.service;
+package com.lawinomeet.auth.service;
 
-import com.lawinomeetMeetmeet.user.entity.User;
-import com.lawinomeetMeetmeet.user.repository.UserRepository;
+import com.lawinomeet.user.entity.User;
+import com.lawinomeet.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // 2. If found, translate our "lawinomeetMeet User" into a "Spring Security User"
+        // 2. If found, translate our "lawinomeet User" into a "Spring Security User"
         // It requires an email, password, and a list of Authorities/Roles (we'll leave the list empty for now).
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

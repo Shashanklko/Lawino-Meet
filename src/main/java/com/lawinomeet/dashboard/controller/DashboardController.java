@@ -1,11 +1,11 @@
-package com.lawinomeetMeetmeet.dashboard.controller;
+package com.lawinomeet.dashboard.controller;
 
-import com.lawinomeetMeetmeet.admin.repository.DisputeTicketRepository;
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
-import com.lawinomeetMeetmeet.consultation.service.ConsultationService;
-import com.lawinomeetMeetmeet.payment.repository.PaymentTransactionRepository;
-import com.lawinomeetMeetmeet.payment.repository.PayoutRequestRepository;
-import com.lawinomeetMeetmeet.payment.service.PaymentService;
+import com.lawinomeet.admin.repository.DisputeTicketRepository;
+import com.lawinomeet.common.response.ApiResponse;
+import com.lawinomeet.consultation.service.ConsultationService;
+import com.lawinomeet.payment.repository.PaymentTransactionRepository;
+import com.lawinomeet.payment.repository.PayoutRequestRepository;
+import com.lawinomeet.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +45,7 @@ public class DashboardController {
         Map<String, Object> map = new HashMap<>();
         map.put("totalDisputesCount", disputeTicketRepository.count());
         map.put("totalTransactionsCount", paymentTransactionRepository.count());
-        map.put("pendingPayoutsCount", payoutRequestRepository.findByStatus(com.lawinomeetMeetmeet.payment.enums.PayoutStatus.PENDING).size());
+        map.put("pendingPayoutsCount", payoutRequestRepository.findByStatus(com.lawinomeet.payment.enums.PayoutStatus.PENDING).size());
         
         // Sum total platform service fees (20% Online / 10% Offline)
         double totalPlatformServiceFee = paymentTransactionRepository.findAll().stream()

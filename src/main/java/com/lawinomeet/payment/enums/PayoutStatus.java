@@ -1,4 +1,4 @@
-package com.lawinomeetMeetmeet.payment.enums;
+package com.lawinomeet.payment.enums;
 
 public enum PayoutStatus {
     PENDING,

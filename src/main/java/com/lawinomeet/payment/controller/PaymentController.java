@@ -1,8 +1,8 @@
-package com.lawinomeetMeetmeet.payment.controller;
+package com.lawinomeet.payment.controller;
 
-import com.lawinomeetMeetmeet.common.response.ApiResponse;
-import com.lawinomeetMeetmeet.payment.entity.PaymentTransaction;
-import com.lawinomeetMeetmeet.payment.service.PaymentService;
+import com.lawinomeet.common.response.ApiResponse;
+import com.lawinomeet.payment.entity.PaymentTransaction;
+import com.lawinomeet.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
