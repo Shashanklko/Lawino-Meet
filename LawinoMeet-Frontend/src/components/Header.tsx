@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       await fetch(`${getBaseUrl()}/api/auth/login`, {
-        method: 'OPTIONS',
+        method: 'GET',
         signal: controller.signal,
         mode: 'no-cors'
       });
