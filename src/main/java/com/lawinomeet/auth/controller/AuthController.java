@@ -41,7 +41,7 @@ public class AuthController {
     private com.lawinomeet.common.service.AuditLogService auditLogService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody com.lawinomeet.user.dto.UserRequest userRequest) {
+    public ResponseEntity<?> register(@jakarta.validation.Valid @RequestBody com.lawinomeet.user.dto.UserRequest userRequest) {
         log.info("New registration attempt for email: {}", userRequest.getEmail());
         return ResponseEntity.ok(userService.createUser(userRequest));
     }

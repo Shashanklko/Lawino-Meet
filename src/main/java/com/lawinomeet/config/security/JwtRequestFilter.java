@@ -67,6 +67,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     
                     // Extract their Role directly from the VIP Pass!
                     String role = jwtUtil.extractClaim(jwt, "role", String.class);
+                    if (role == null || role.trim().isEmpty()) {
+                        role = "ROLE_CLIENT";
+                    } else if (!role.startsWith("ROLE_")) {
+                        role = "ROLE_" + role;
+                    }
     
                     // Grant them their official Spring Security Badge based on the token
                     java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = 
@@ -80,8 +85,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (Exception e) {
-                // If the token is tampered with or expired, the Math fails and throws an exception.
-                // We do nothing, and the request is bounced!
+                // Log JWT parsing failure for diagnostic context
+                logger.warn("JWT token processing failed: " + e.getMessage());
             }
         }
 

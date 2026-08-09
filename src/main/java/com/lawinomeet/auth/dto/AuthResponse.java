@@ -20,6 +20,11 @@ public class AuthResponse {
         this.jwt = jwt;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("token")
+    public String getToken() {
+        return jwt;
+    }
+
     public String getMessage() {
         return message;
     }
