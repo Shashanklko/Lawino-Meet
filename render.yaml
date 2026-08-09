@@ -1,0 +1,20 @@
+services:
+  # 1. Spring Boot Backend Web Service
+  - type: web
+    name: lawinomeet-backend
+    env: java
+    plan: free
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/LawinoMeet-backend-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: PORT
+        value: 8080
+
+  # 2. React TypeScript Frontend Static Site
+  - type: web
+    name: lawinomeet-frontend
+    env: static
+    plan: free
+    rootDir: LawinoMeet-Frontend
+    buildCommand: npm run build
+    staticPublishPath: ./dist
