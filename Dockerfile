@@ -1,20 +1,14 @@
-# --- STAGE 1: Build Stage ---
-FROM maven:3.8.4-openjdk-17-slim AS build
+# Step 1: Build Java Spring Boot Application
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-# Build the application, skipping tests to speed up the process (Tests should be run during CI)
 RUN mvn clean package -DskipTests
 
-# --- STAGE 2: Run Stage ---
-FROM openjdk:17-jdk-slim
+# Step 2: Runtime Container
+FROM eclipse-temurin:17-jre
 WORKDIR /app
-# Copy the built JAR from the previous stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Standard Spring Boot port
+COPY --from=build /app/target/LawinoMeet-backend-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
-# Run the project
-# Using -Djava.security.egd=file:/dev/./urandom to speed up Tomcat startup
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENV PORT=8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
