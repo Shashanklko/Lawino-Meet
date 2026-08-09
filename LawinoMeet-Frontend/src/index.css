@@ -1469,3 +1469,300 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ======================================================
+   SEED REPORT & TEST REPORT — Results Overlay
+   ====================================================== */
+
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+
+.report-panel {
+  width: 100%;
+  max-width: 860px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  animation: slideDown 0.25s ease;
+}
+
+/* Header row */
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.report-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.report-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.report-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+/* Summary badges in header */
+.report-summary-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.summary-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.summary-badge.passed  { background: rgba(52, 211, 153, 0.15); color: var(--emerald-color); border: 1px solid rgba(52, 211, 153, 0.3); }
+.summary-badge.failed  { background: rgba(248, 113, 113, 0.15); color: var(--ruby-color);    border: 1px solid rgba(248, 113, 113, 0.3); }
+.summary-badge.neutral { background: rgba(255, 255, 255, 0.06); color: var(--text-muted);    border: 1px solid var(--border-color); }
+
+/* Stats bar (test report only) */
+.report-stats-bar {
+  display: flex;
+  gap: 24px;
+  padding: 10px 22px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.stat-item strong { color: var(--text-main); }
+
+/* Pass progress bar */
+.report-progress-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.report-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--emerald-color), var(--cyan-color));
+  transition: width 0.8s ease;
+}
+
+/* Scrollable list */
+.report-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Individual report row */
+.report-row {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 0;
+  background: rgba(15, 23, 42, 0.4);
+  transition: border-color 0.2s;
+}
+
+.report-row.row-pass { border-left: 3px solid rgba(52, 211, 153, 0.5); }
+.report-row.row-fail { border-left: 3px solid rgba(248, 113, 113, 0.5); background: rgba(248, 113, 113, 0.03); }
+
+.report-row-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.report-step-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.report-case-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+.report-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.report-step-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.report-row-url {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+}
+
+.report-row-url code {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.report-method {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.report-method.method-get    { background: rgba(52, 211, 153, 0.2); color: var(--emerald-color); }
+.report-method.method-post   { background: rgba(56, 189, 248, 0.2); color: var(--cyan-color); }
+.report-method.method-put    { background: rgba(251, 191, 36, 0.2); color: var(--amber-color); }
+.report-method.method-delete { background: rgba(248, 113, 113, 0.2); color: var(--ruby-color); }
+
+.report-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.report-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.report-status-badge.ok  { background: rgba(52, 211, 153, 0.15); color: var(--emerald-color); }
+.report-status-badge.err { background: rgba(248, 113, 113, 0.15); color: var(--ruby-color); }
+
+.report-duration {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* Spans full width in 2-col grid */
+.report-row-details {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-error-msg {
+  font-size: 0.75rem;
+  color: var(--ruby-color);
+  background: rgba(248, 113, 113, 0.08);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 2px 0 0;
+}
+
+/* Expandable JSON blocks */
+.report-json-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.report-json-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.report-json-toggle:hover { color: var(--cyan-color); }
+
+.report-json-pre {
+  background: rgba(2, 6, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #94a3b8;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 2px 0;
+  animation: fadeIn 0.15s ease;
+}
+
+/* Pending consultation callout */
+.report-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 22px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.pending-callout {
+  background: rgba(251, 191, 36, 0.05);
+  border-top-color: rgba(251, 191, 36, 0.2);
+}
+
+.pending-callout strong { color: var(--amber-color); }
+.pending-callout em     { color: var(--cyan-color); font-style: normal; }
