@@ -31,9 +31,17 @@ public class ProfessionalProfile {
     private Role category; // LAWYER, CA, or OTHER
 
     private String customGreeting;
+    private String officeAddress;
     private Double chatUnlockFee = 99.0;
     private Double consultationFee = 499.0;
+    
+    // Categorized Earnings & Digital Wallet Balance
+    private Double onlineEarnings = 0.0;
+    private Double offlineEarnings = 0.0;
     private Double walletBalance = 0.0;
+    private Double totalWithdrawn = 0.0;
+    
+    private Boolean isVerified = false;
     private String specialization;
     private String bio;
 }
