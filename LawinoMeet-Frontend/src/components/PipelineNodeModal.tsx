@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import type { PipelineTelemetry } from '../types/api';
 import { X, Shield, Server, Database, Laptop, Key, Code, AlertTriangle } from 'lucide-react';
 
@@ -34,7 +35,7 @@ export const PipelineNodeModal: React.FC<PipelineNodeModalProps> = ({
 
   const info = getNodeInfo();
 
-  return (
+  const modalContent = (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -130,4 +131,6 @@ export const PipelineNodeModal: React.FC<PipelineNodeModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

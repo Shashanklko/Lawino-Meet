@@ -95,7 +95,7 @@ export const App: React.FC = () => {
     {
       label: 'Payout Request ($100)',
       method: 'POST', url: '/api/payouts/request',
-      params: { lawyerId: 2, amount: 100.00, bankDetails: 'IBAN: US99123456' }
+      params: { lawyerId: 2, amount: 100.00 }
     },
     {
       label: 'Consultation 2 — PENDING Request',

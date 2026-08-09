@@ -21,7 +21,6 @@ public class PayoutRequest {
 
     private Long lawyerId;
     private Double requestedAmount;
-    private String bankAccountDetails;
 
     @Enumerated(EnumType.STRING)
     private PayoutStatus status = PayoutStatus.PENDING;
@@ -37,9 +36,6 @@ public class PayoutRequest {
 
     public Double getRequestedAmount() { return requestedAmount; }
     public void setRequestedAmount(Double requestedAmount) { this.requestedAmount = requestedAmount; }
-
-    public String getBankAccountDetails() { return bankAccountDetails; }
-    public void setBankAccountDetails(String bankAccountDetails) { this.bankAccountDetails = bankAccountDetails; }
 
     public PayoutStatus getStatus() { return status; }
     public void setStatus(PayoutStatus status) { this.status = status; }

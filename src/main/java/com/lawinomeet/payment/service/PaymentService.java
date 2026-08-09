@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface PaymentService {
     PaymentTransaction processCheckout(Long consultationId);
-    PayoutRequest requestPayout(Long lawyerId, Double amount, String bankDetails);
+    PayoutRequest requestPayout(Long lawyerId, Double amount);
     Map<String, Object> getLawyerWalletDetails(Long lawyerId);
     List<PayoutRequest> getLawyerPayoutRequests(Long lawyerId);
 }

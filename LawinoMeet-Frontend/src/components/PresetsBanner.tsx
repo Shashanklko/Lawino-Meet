@@ -30,7 +30,7 @@ const WORKFLOW_STEPS = [
   { id: 'payment-checkout',     icon: <CreditCard size={13} />,label: '5. Checkout',         cls: 'btn-glow-emerald',
     params: { consultationId: 1 } },
   { id: 'payout-request',       icon: <DollarSign size={13} />,label: '6. Payout',          cls: 'btn-glow-cyan',
-    params: { lawyerId: 2, amount: 100.00, bankDetails: 'IBAN: US9912345' } },
+    params: { lawyerId: 2, amount: 100.00 } },
   { id: 'dashboard-admin',      icon: <ShieldAlert size={13} />, label: '7. Admin Dash',    cls: 'btn-glow-ruby' },
 ];
 

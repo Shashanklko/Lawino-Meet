@@ -24,9 +24,8 @@ public class PayoutController {
 
     @PostMapping("/request")
     public ResponseEntity<ApiResponse<PayoutRequest>> requestPayout(@RequestParam Long lawyerId, 
-                                                                     @RequestParam Double amount, 
-                                                                     @RequestParam String bankDetails) {
-        PayoutRequest request = paymentService.requestPayout(lawyerId, amount, bankDetails);
+                                                                     @RequestParam Double amount) {
+        PayoutRequest request = paymentService.requestPayout(lawyerId, amount);
         return ResponseEntity.ok(ApiResponse.success(request, "Payout request submitted for Admin review."));
     }
 

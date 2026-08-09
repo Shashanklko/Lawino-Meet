@@ -118,7 +118,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PayoutRequest requestPayout(Long lawyerId, Double amount, String bankDetails) {
+    public PayoutRequest requestPayout(Long lawyerId, Double amount) {
         ProfessionalProfile profile = professionalProfileRepository.findByUserId(lawyerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lawyer profile not found for ID: " + lawyerId));
 
@@ -130,7 +130,6 @@ public class PaymentServiceImpl implements PaymentService {
         PayoutRequest request = new PayoutRequest();
         request.setLawyerId(lawyerId);
         request.setRequestedAmount(amount);
-        request.setBankAccountDetails(bankDetails);
         request.setStatus(PayoutStatus.PENDING);
 
         PayoutRequest saved = payoutRequestRepository.save(request);

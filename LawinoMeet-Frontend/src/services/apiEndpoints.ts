@@ -257,8 +257,7 @@ export const ENDPOINTS: EndpointDefinition[] = [
     requiresAuth: true,
     params: [
       { name: 'lawyerId', type: 'number', required: true, in: 'query', defaultValue: 2, description: 'Lawyer User ID' },
-      { name: 'amount', type: 'number', required: true, in: 'query', defaultValue: 100.00, description: 'Payout Amount ($)' },
-      { name: 'bankDetails', type: 'string', required: true, in: 'query', defaultValue: 'IBAN: US991234567890', description: 'Bank Account / Wire Details' }
+      { name: 'amount', type: 'number', required: true, in: 'query', defaultValue: 100.00, description: 'Payout Amount ($)' }
     ]
   },
   {
