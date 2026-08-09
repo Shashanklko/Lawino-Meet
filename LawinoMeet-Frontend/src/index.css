@@ -1066,6 +1066,26 @@ body {
   animation: pulse-offline 2s ease-in-out infinite;
 }
 
+/* Deployed server sleeping (amber, not red) */
+.server-health-badge.sleeping {
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.07);
+  cursor: pointer;
+  animation: pulse-sleeping 2.5s ease-in-out infinite;
+}
+
+/* Waking state (cyan pulse) */
+.server-health-badge.waking {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.07);
+  cursor: default;
+}
+
+@keyframes pulse-sleeping {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); }
+}
+
 .server-health-badge.checking {
   border-color: rgba(251, 191, 36, 0.3);
   background: rgba(251, 191, 36, 0.05);
@@ -1087,9 +1107,11 @@ body {
   font-weight: 600;
 }
 
-.server-health-label.online  { color: var(--emerald-color); }
-.server-health-label.offline { color: var(--ruby-color); }
-.server-health-label.checking { color: var(--amber-color); }
+.server-health-label.online    { color: var(--emerald-color); }
+.server-health-label.offline   { color: var(--ruby-color); }
+.server-health-label.sleeping  { color: var(--amber-color); }
+.server-health-label.waking    { color: var(--cyan-color); }
+.server-health-label.checking  { color: var(--amber-color); }
 
 .server-health-url {
   font-size: 0.68rem;
@@ -1109,6 +1131,60 @@ body {
   padding: 2px 7px;
   font-weight: 500;
   animation: fadeIn 0.3s ease;
+}
+
+/* Deployed "Wake ⚡" hint inline in badge */
+.wake-server-hint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--amber-color);
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: fadeIn 0.3s ease;
+  transition: background 0.15s;
+}
+
+.wake-server-hint:hover {
+  background: rgba(251, 191, 36, 0.2);
+}
+
+/* Waking time hint */
+.waking-hint {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Wake progress bar (in panel) */
+.waking-panel {
+  border-left-color: var(--cyan-color);
+}
+
+.waking-progress {
+  height: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.waking-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan-color), var(--indigo-color));
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.waking-elapsed {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .recheck-btn {

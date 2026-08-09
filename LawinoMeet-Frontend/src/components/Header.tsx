@@ -6,17 +6,22 @@ import {
 import {
   ShieldCheck, Key, RefreshCw, Server, LogOut,
   ToggleLeft, ToggleRight, Edit3, Check,
-  Wifi, WifiOff, Play, Terminal, Copy, X, ChevronDown
+  Wifi, WifiOff, Play, Terminal, Copy, X, ChevronDown, CloudOff, Zap
 } from 'lucide-react';
 
 interface HeaderProps {
   onResetPipeline: () => void;
 }
 
-type ServerStatus = 'checking' | 'online' | 'offline';
+type ServerStatus = 'checking' | 'online' | 'offline' | 'waking';
 
 const START_CMD = 'set JAVA_HOME=C:\\Program Files\\Microsoft\\jdk-21.0.10.7-hotspot && mvn spring-boot:run';
 const START_CMD_SHORT = 'mvn spring-boot:run';
+
+/** Returns true if the URL is a local development server */
+const isLocalUrl = (url: string): boolean => {
+  return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0');
+};
 
 export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
   const [baseUrl, setBaseUrlState] = useState<string>(getBaseUrl());
@@ -33,14 +38,19 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
   const [showStartPanel, setShowStartPanel] = useState<boolean>(false);
   const [cmdCopied, setCmdCopied] = useState<boolean>(false);
   const [isRechecking, setIsRechecking] = useState<boolean>(false);
+  const [wakeSeconds, setWakeSeconds] = useState<number>(0);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wakeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wakePollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Ping backend health
-  const checkServerHealth = useCallback(async (silent = false) => {
+  const isLocal = isLocalUrl(baseUrl);
+
+  // ─── Core health ping ───────────────────────────────────────────────────────
+  const checkServerHealth = useCallback(async (silent = false): Promise<boolean> => {
     if (!silent) setIsRechecking(true);
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
+      const timeout = setTimeout(() => controller.abort(), 5000);
       await fetch(`${getBaseUrl()}/api/auth/login`, {
         method: 'OPTIONS',
         signal: controller.signal,
@@ -49,23 +59,58 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
       clearTimeout(timeout);
       setServerStatus('online');
       setShowStartPanel(false);
-    } catch {
-      setServerStatus('offline');
-    } finally {
       setLastChecked(new Date().toLocaleTimeString());
       if (!silent) setIsRechecking(false);
+      return true;
+    } catch {
+      if (silent) {
+        // Only mark offline during silent pings if not already waking
+        setServerStatus((prev) => (prev === 'waking' ? 'waking' : 'offline'));
+      } else {
+        setServerStatus('offline');
+      }
+      setLastChecked(new Date().toLocaleTimeString());
+      if (!silent) setIsRechecking(false);
+      return false;
     }
   }, []);
 
-  // Auto-ping every 15 seconds
+  // ─── Wake deployed server (Render cold-start) ────────────────────────────────
+  const handleWakeServer = useCallback(async () => {
+    setServerStatus('waking');
+    setWakeSeconds(0);
+    setShowStartPanel(false);
+
+    // Start elapsed-seconds counter
+    if (wakeTimerRef.current) clearInterval(wakeTimerRef.current);
+    wakeTimerRef.current = setInterval(() => setWakeSeconds((s) => s + 1), 1000);
+
+    // Poll every 4 seconds until server responds (up to 90s)
+    let attempts = 0;
+    if (wakePollerRef.current) clearInterval(wakePollerRef.current);
+    wakePollerRef.current = setInterval(async () => {
+      attempts++;
+      const alive = await checkServerHealth(true);
+      if (alive || attempts >= 22) {
+        clearInterval(wakePollerRef.current!);
+        clearInterval(wakeTimerRef.current!);
+        if (!alive) setServerStatus('offline'); // gave up
+      }
+    }, 4000);
+  }, [checkServerHealth]);
+
+  // ─── Auto-ping every 15s ──────────────────────────────────────────────────
   useEffect(() => {
     checkServerHealth(true);
     pingIntervalRef.current = setInterval(() => checkServerHealth(true), 15000);
     return () => {
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      if (wakeTimerRef.current)    clearInterval(wakeTimerRef.current);
+      if (wakePollerRef.current)   clearInterval(wakePollerRef.current);
     };
   }, [checkServerHealth]);
 
+  // ─── Token & mode listeners ───────────────────────────────────────────────
   useEffect(() => {
     const handleTokenChange = (e: CustomEvent) => setTokenState(e.detail);
     const handleTokenModeChange = (e: CustomEvent) => setTokenModeState(e.detail);
@@ -83,7 +128,6 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
     setBaseUrl(url);
     setBaseUrlState(url);
     setIsEditingUrl(false);
-    // Re-check health against new URL
     setTimeout(() => checkServerHealth(true), 300);
   };
 
@@ -107,6 +151,40 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
     setTimeout(() => setCmdCopied(false), 2000);
   };
 
+  const handleBadgeClick = () => {
+    if (serverStatus === 'offline') {
+      if (isLocal) {
+        setShowStartPanel((v) => !v);
+      } else {
+        handleWakeServer();
+      }
+    }
+  };
+
+  // ─── Derived badge label & icon ──────────────────────────────────────────
+  const badgeLabel = () => {
+    if (serverStatus === 'online')   return 'Backend Online';
+    if (serverStatus === 'waking')   return `Waking up… ${wakeSeconds}s`;
+    if (serverStatus === 'offline')  return isLocal ? 'Backend Offline' : 'Server Sleeping';
+    return 'Checking…';
+  };
+
+  const badgeIcon = () => {
+    if (serverStatus === 'online')  return <Wifi size={14} className="text-emerald" />;
+    if (serverStatus === 'waking')  return <RefreshCw size={14} className="animate-spin text-cyan" />;
+    if (serverStatus === 'offline') return isLocal
+      ? <WifiOff size={14} className="text-ruby" />
+      : <CloudOff size={14} className="text-amber" />;
+    return <RefreshCw size={14} className="animate-spin text-amber" />;
+  };
+
+  const badgeClass = () => {
+    if (serverStatus === 'online')  return 'online';
+    if (serverStatus === 'waking')  return 'waking';
+    if (serverStatus === 'offline') return isLocal ? 'offline' : 'sleeping';
+    return 'checking';
+  };
+
   return (
     <>
       <header className="header-bar glass-panel">
@@ -122,34 +200,47 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
 
         <div className="header-right">
 
-          {/* 🟢 Server Health Status */}
+          {/* 🟢/🔴 Server Health Badge */}
           <div
-            className={`server-health-badge ${serverStatus}`}
-            title={`Last checked: ${lastChecked || 'pending...'}`}
-            onClick={() => serverStatus === 'offline' && setShowStartPanel((v) => !v)}
+            className={`server-health-badge ${badgeClass()}`}
+            title={`Last checked: ${lastChecked || 'pending…'}`}
+            onClick={handleBadgeClick}
           >
-            {serverStatus === 'online' && <Wifi size={14} className="text-emerald" />}
-            {serverStatus === 'offline' && <WifiOff size={14} className="text-ruby" />}
-            {serverStatus === 'checking' && <RefreshCw size={14} className="animate-spin text-amber" />}
+            {badgeIcon()}
 
             <div className="server-health-text">
-              <span className={`server-health-label ${serverStatus}`}>
-                {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'offline' ? 'Backend Offline' : 'Checking...'}
+              <span className={`server-health-label ${badgeClass()}`}>
+                {badgeLabel()}
               </span>
-              <span className="server-health-url">{baseUrl.replace('http://', '')}</span>
+              <span className="server-health-url">
+                {baseUrl.replace(/^https?:\/\//, '')}
+              </span>
             </div>
 
-            {serverStatus === 'offline' && (
+            {/* Local offline → "Start ▾" hint */}
+            {serverStatus === 'offline' && isLocal && (
               <span className="start-server-hint">
                 <Play size={11} /> Start <ChevronDown size={11} />
               </span>
+            )}
+
+            {/* Deployed offline → "Wake ⚡" button */}
+            {serverStatus === 'offline' && !isLocal && (
+              <span className="wake-server-hint" onClick={(e) => { e.stopPropagation(); handleWakeServer(); }}>
+                <Zap size={11} /> Wake
+              </span>
+            )}
+
+            {/* Waking: progress label */}
+            {serverStatus === 'waking' && (
+              <span className="waking-hint">~30–60s</span>
             )}
 
             <button
               className="recheck-btn"
               onClick={(e) => { e.stopPropagation(); checkServerHealth(false); }}
               title="Re-check server connection"
-              disabled={isRechecking}
+              disabled={isRechecking || serverStatus === 'waking'}
             >
               <RefreshCw size={12} className={isRechecking ? 'animate-spin' : ''} />
             </button>
@@ -174,8 +265,8 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
             ) : (
               <div className="url-display" onClick={() => setIsEditingUrl(true)} title="Click to change Backend Base URL">
                 <span className="url-text">{baseUrl}</span>
-                <span className={`badge small-badge ${serverStatus === 'online' ? 'badge-success' : 'badge-danger'}`}>
-                  {serverStatus === 'online' ? 'Live' : serverStatus === 'offline' ? 'Down' : '...'}
+                <span className={`badge small-badge ${serverStatus === 'online' ? 'badge-success' : serverStatus === 'waking' ? 'badge-idle' : 'badge-danger'}`}>
+                  {serverStatus === 'online' ? 'Live' : serverStatus === 'waking' ? 'Waking' : 'Down'}
                 </span>
               </div>
             )}
@@ -253,13 +344,13 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
         </div>
       </header>
 
-      {/* 🚀 Start Server Panel — appears when backend is offline */}
-      {showStartPanel && serverStatus === 'offline' && (
+      {/* 🚀 Start Server Panel — LOCAL ONLY, shown when backend is offline */}
+      {showStartPanel && serverStatus === 'offline' && isLocal && (
         <div className="start-server-panel glass-panel">
           <div className="start-panel-header">
             <div className="start-panel-title">
               <Terminal size={18} className="text-amber" />
-              <span>Backend Server is Offline</span>
+              <span>Backend Server is Offline (Local)</span>
             </div>
             <button className="btn-icon-muted" onClick={() => setShowStartPanel(false)}>
               <X size={16} />
@@ -267,7 +358,7 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
           </div>
 
           <p className="start-panel-desc">
-            The backend at <code>{baseUrl}</code> is not responding. Run the command below in a terminal inside the <strong>LawEZY-Backend</strong> directory to start the Spring Boot server.
+            The local server at <code>{baseUrl}</code> is not responding. Run the command below in a terminal inside the <strong>LawEZY-Backend</strong> directory.
           </p>
 
           <div className="start-cmd-block">
@@ -294,9 +385,28 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
               {isRechecking ? 'Checking...' : 'Re-check Connection'}
             </button>
             <span className="start-panel-tip">
-              ⚡ The indicator auto-checks every 15 seconds
+              ⚡ Auto-checks every 15 seconds
             </span>
           </div>
+        </div>
+      )}
+
+      {/* ☁️ Waking Panel — DEPLOYED server, shown while waking */}
+      {serverStatus === 'waking' && !isLocal && (
+        <div className="start-server-panel glass-panel waking-panel">
+          <div className="start-panel-header">
+            <div className="start-panel-title">
+              <RefreshCw size={18} className="text-cyan animate-spin" />
+              <span>Waking deployed server…</span>
+            </div>
+          </div>
+          <p className="start-panel-desc">
+            Sent a wake-up ping to <code>{baseUrl}</code>. Render free-tier servers spin down after inactivity and take <strong>30–60 seconds</strong> to restart. Polling automatically every 4 seconds…
+          </p>
+          <div className="waking-progress">
+            <div className="waking-bar" style={{ width: `${Math.min((wakeSeconds / 60) * 100, 100)}%` }} />
+          </div>
+          <p className="waking-elapsed">{wakeSeconds}s elapsed — the badge will turn green automatically when the server responds.</p>
         </div>
       )}
     </>
