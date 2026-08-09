@@ -1,6 +1,6 @@
-# JurisOne Backend - Developer Handover & API Guide (Frontend) 🏛️
+# lawinomeetMeet Backend - Developer Handover & API Guide (Frontend) 🏛️
 
-Welcome to the JurisOne Backend API! This document provides frontend developers with quick-start instructions, endpoint standards, response structures, and integration rules.
+Welcome to the lawinomeetMeet Backend API! This document provides frontend developers with quick-start instructions, endpoint standards, response structures, and integration rules.
 
 ---
 

@@ -10,11 +10,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.jurisone</groupId>
-    <artifactId>JurisOne-backend</artifactId>
+    <groupId>com.lawinomeet</groupId>
+    <artifactId>LawinoMeet-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>JurisOne-Backend</name>
-    <description>JurisOne backend services including auth, chat, consultations, payments, and admin governance</description>
+    <name>LawinoMeet-Backend</name>
+    <description>Lawino Meet backend services including auth, chat, consultations, payments, and admin governance</description>
 
     <properties>
         <java.version>17</java.version>
@@ -131,7 +131,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.jurisone.JurisOneBackendApplication</mainClass>
+                    <mainClass>com.lawinomeet.LawinoMeetBackendApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

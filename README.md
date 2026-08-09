@@ -1,12 +1,12 @@
-# 🏛️ JurisOne: Legal Consultation Platform Backend
+# 🏛️ lawinomeetMeet: Legal Consultation Platform Backend
 
-JurisOne is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
+lawinomeetMeet is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
 
 ---
 
-## 📌 What Is JurisOne?
+## 📌 What Is lawinomeetMeet?
 
-JurisOne provides an end-to-end legal consultation ecosystem featuring:
+lawinomeetMeet provides an end-to-end legal consultation ecosystem featuring:
 
 1. **Client & Lawyer Portals**: Seamless registration, login, and profile management for Clients, Lawyers, and Admins.
 2. **Privacy-First Consultations**: Client contact details (Phone & Email) remain strictly **masked** from lawyers until a consultation is approved and paid for.

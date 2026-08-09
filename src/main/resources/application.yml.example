@@ -3,13 +3,13 @@ server:
 
 spring:
   application:
-    name: JurisOne-Backend
+    name: LawinoMeet-Backend
 
   # Smart Fallback Database Configuration
   # If DB_URL environment variable is provided, connects to Cloud MySQL.
   # If DB_URL is omitted, automatically falls back to instant In-Memory H2 MySQL Mode (Zero Setup).
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:jurisonedb;DB_CLOSE_DELAY=-1;MODE=MySQL}
+    url: ${DB_URL:jdbc:h2:mem:lawinomeetdb;DB_CLOSE_DELAY=-1;MODE=MySQL}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
     driver-class-name: ${DB_DRIVER:org.h2.Driver}
@@ -26,11 +26,11 @@ spring:
   # MongoDB Configuration
   data:
     mongodb:
-      uri: ${MONGO_URI:mongodb://localhost:27017/jurisone}
+      uri: ${MONGO_URI:mongodb://localhost:27017/lawinomeet}
 
 # Custom JWT Application Properties
 jwt:
-  secret: ${JWT_SECRET:jurisone_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456}
+  secret: ${JWT_SECRET:lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456}
   expirationMs: 86400000 # 24 hours
 
 # Frontend Origin Configuration
