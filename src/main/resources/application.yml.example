@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: LawEZY-Backend
+    name: JurisOne-Backend
 
   # MySQL Configuration
   datasource:

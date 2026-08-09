@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "3d9f18a4-8fcd-4acc-817c-aa28fa09429b",
-		"name": "LawEZY Elite SaaS ERP",
-		"description": "Standardized Postman collection for testing the LawEZY distributed backend system.",
+		"name": "JurisOne Elite SaaS ERP",
+		"description": "Standardized Postman collection for testing the JurisOne distributed backend system.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [

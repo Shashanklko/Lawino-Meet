@@ -1,12 +1,12 @@
-# 🏛️ LawEZY: Legal Consultation Platform Backend
+# 🏛️ JurisOne: Legal Consultation Platform Backend
 
-LawEZY is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
+JurisOne is a high-performance backend platform for legal consultations. It connects **Clients** seeking legal assistance with verified **Lawyers** for both **Online (Chat & Video)** and **Offline (In-Person Office Visit)** consultations.
 
 ---
 
-## 📌 What Is LawEZY?
+## 📌 What Is JurisOne?
 
-LawEZY provides an end-to-end legal consultation ecosystem featuring:
+JurisOne provides an end-to-end legal consultation ecosystem featuring:
 
 1. **Client & Lawyer Portals**: Seamless registration, login, and profile management for Clients, Lawyers, and Admins.
 2. **Privacy-First Consultations**: Client contact details (Phone & Email) remain strictly **masked** from lawyers until a consultation is approved and paid for.

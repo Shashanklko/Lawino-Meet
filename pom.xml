@@ -10,11 +10,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.yourapp</groupId>
-    <artifactId>lawezy-backend</artifactId>
+    <groupId>com.jurisone</groupId>
+    <artifactId>JurisOne-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>LawEZY-Backend</name>
-    <description>LawEZY backend services including auth, chat, consultations, payments, and admin governance</description>
+    <name>JurisOne-Backend</name>
+    <description>JurisOne backend services including auth, chat, consultations, payments, and admin governance</description>
 
     <properties>
         <java.version>17</java.version>
@@ -131,7 +131,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.LawEZY.Application</mainClass>
+                    <mainClass>com.jurisone.JurisOneBackendApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
