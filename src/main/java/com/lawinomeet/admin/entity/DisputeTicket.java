@@ -35,4 +35,34 @@ public class DisputeTicket {
 
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime resolvedAt;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getConsultationId() { return consultationId; }
+    public void setConsultationId(Long consultationId) { this.consultationId = consultationId; }
+
+    public String getMeetingCode() { return meetingCode; }
+    public void setMeetingCode(String meetingCode) { this.meetingCode = meetingCode; }
+
+    public Long getRaisedByUserId() { return raisedByUserId; }
+    public void setRaisedByUserId(Long raisedByUserId) { this.raisedByUserId = raisedByUserId; }
+
+    public String getIssueCategory() { return issueCategory; }
+    public void setIssueCategory(String issueCategory) { this.issueCategory = issueCategory; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public DisputeStatus getStatus() { return status; }
+    public void setStatus(DisputeStatus status) { this.status = status; }
+
+    public String getAdminResolutionNotes() { return adminResolutionNotes; }
+    public void setAdminResolutionNotes(String adminResolutionNotes) { this.adminResolutionNotes = adminResolutionNotes; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 }

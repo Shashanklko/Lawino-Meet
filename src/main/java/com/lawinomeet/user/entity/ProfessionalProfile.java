@@ -44,4 +44,47 @@ public class ProfessionalProfile {
     private Boolean isVerified = false;
     private String specialization;
     private String bio;
+
+    // Explicit Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+
+    public Role getCategory() { return category; }
+    public void setCategory(Role category) { this.category = category; }
+
+    public String getCustomGreeting() { return customGreeting; }
+    public void setCustomGreeting(String customGreeting) { this.customGreeting = customGreeting; }
+
+    public String getOfficeAddress() { return officeAddress; }
+    public void setOfficeAddress(String officeAddress) { this.officeAddress = officeAddress; }
+
+    public Double getChatUnlockFee() { return chatUnlockFee; }
+    public void setChatUnlockFee(Double chatUnlockFee) { this.chatUnlockFee = chatUnlockFee; }
+
+    public Double getConsultationFee() { return consultationFee; }
+    public void setConsultationFee(Double consultationFee) { this.consultationFee = consultationFee; }
+
+    public Double getOnlineEarnings() { return onlineEarnings; }
+    public void setOnlineEarnings(Double onlineEarnings) { this.onlineEarnings = onlineEarnings; }
+
+    public Double getOfflineEarnings() { return offlineEarnings; }
+    public void setOfflineEarnings(Double offlineEarnings) { this.offlineEarnings = offlineEarnings; }
+
+    public Double getWalletBalance() { return walletBalance; }
+    public void setWalletBalance(Double walletBalance) { this.walletBalance = walletBalance; }
+
+    public Double getTotalWithdrawn() { return totalWithdrawn; }
+    public void setTotalWithdrawn(Double totalWithdrawn) { this.totalWithdrawn = totalWithdrawn; }
+
+    public Boolean getIsVerified() { return isVerified; }
+    public void setIsVerified(Boolean isVerified) { this.isVerified = isVerified; }
+
+    public String getSpecialization() { return specialization; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
 }

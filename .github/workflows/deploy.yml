@@ -1,0 +1,50 @@
+name: Lawino Meet CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # 1. Spring Boot Backend CI Build & Package Verification
+  backend-build:
+    name: ⚙️ Build & Test Backend (Spring Boot 3 + Java 17)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: 🔨 Maven Compile & Package Build
+        run: |
+          mvn clean package -DskipTests
+
+  # 2. React TypeScript Frontend CI Build Verification
+  frontend-build:
+    name: 💻 Build & Test Frontend (React + Vite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: LawinoMeet-Frontend/package.json
+
+      - name: 📦 Install Frontend Dependencies & Build
+        run: |
+          cd LawinoMeet-Frontend
+          npm ci || npm install
+          npm run build
