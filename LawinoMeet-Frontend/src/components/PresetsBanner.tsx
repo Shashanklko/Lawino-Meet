@@ -1,104 +1,133 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { EndpointDefinition } from '../types/api';
-import { Zap, Sparkles, UserPlus, LogIn, Calendar, CreditCard, DollarSign, ShieldAlert, PlayCircle, RefreshCw } from 'lucide-react';
+import {
+  Zap, Sparkles, UserPlus, LogIn, Calendar, CreditCard,
+  DollarSign, ShieldAlert, RefreshCw, Database,
+  FlaskConical, ChevronDown, ChevronUp, Check, Clock
+} from 'lucide-react';
 
 interface PresetsBannerProps {
   endpoints: EndpointDefinition[];
   onSelectPreset: (endpointId: string, customParams?: Record<string, any>, customBody?: any) => void;
-  onRunAutoSeeding?: () => void;
+  onRunSeedDatabase?: () => void;
+  onRunTestSuite?: () => void;
   isSeeding?: boolean;
+  isTesting?: boolean;
+  seedSteps?: SeedStep[];
 }
+
+export interface SeedStep {
+  label: string;
+  status: 'idle' | 'running' | 'done' | 'error';
+}
+
+const WORKFLOW_STEPS = [
+  { id: 'auth-register-client', icon: <UserPlus size={13} />, label: '1. Register Client', cls: 'btn-glow-cyan' },
+  { id: 'auth-login',           icon: <LogIn size={13} />,     label: '2. Login & JWT',     cls: 'btn-glow-amber' },
+  { id: 'consultation-request', icon: <Calendar size={13} />,  label: '3. Request Consult', cls: 'btn-glow-indigo' },
+  { id: 'consultation-approve', icon: <Zap size={13} />,       label: '4. Approve ($150)',  cls: 'btn-glow-purple',
+    params: { id: 1, customFee: 150.00 } },
+  { id: 'payment-checkout',     icon: <CreditCard size={13} />,label: '5. Checkout',         cls: 'btn-glow-emerald',
+    params: { consultationId: 1 } },
+  { id: 'payout-request',       icon: <DollarSign size={13} />,label: '6. Payout',          cls: 'btn-glow-cyan',
+    params: { lawyerId: 2, amount: 100.00, bankDetails: 'IBAN: US9912345' } },
+  { id: 'dashboard-admin',      icon: <ShieldAlert size={13} />, label: '7. Admin Dash',    cls: 'btn-glow-ruby' },
+];
+
+const STATUS_ICON = {
+  idle:    <span className="step-dot idle" />,
+  running: <RefreshCw size={11} className="animate-spin text-cyan" />,
+  done:    <Check size={11} className="text-emerald" />,
+  error:   <span className="step-dot error" />,
+};
 
 export const PresetsBanner: React.FC<PresetsBannerProps> = ({
   onSelectPreset,
-  onRunAutoSeeding,
-  isSeeding = false
+  onRunSeedDatabase,
+  onRunTestSuite,
+  isSeeding = false,
+  isTesting = false,
+  seedSteps = [],
 }) => {
+  const [showSeedSteps, setShowSeedSteps] = useState(false);
+
   return (
     <div className="presets-banner glass-panel">
-      <div className="presets-header">
-        <Sparkles size={16} className="text-amber" />
-        <span className="presets-title">Quick Test Scenarios & Workflows</span>
+      {/* ── Top row: title + two action buttons ───────────────────── */}
+      <div className="presets-top-row">
+        <div className="presets-header">
+          <Sparkles size={15} className="text-amber" />
+          <span className="presets-title">Quick Test Scenarios &amp; Workflows</span>
+        </div>
+
+        <div className="presets-action-group">
+          {/* 🌱 Seed Database */}
+          <button
+            className={`preset-action-btn seed-btn ${isSeeding ? 'is-running' : ''}`}
+            onClick={onRunSeedDatabase}
+            disabled={isSeeding || isTesting}
+            title="Seed the database with realistic sample data including a PENDING consultation"
+          >
+            {isSeeding
+              ? <><RefreshCw size={14} className="animate-spin" /> Seeding…</>
+              : <><Database size={14} /> 🌱 Seed Database</>
+            }
+            <button
+              className="expand-steps-btn"
+              onClick={(e) => { e.stopPropagation(); setShowSeedSteps((v) => !v); }}
+              title="Show/hide seed steps"
+              disabled={false}
+            >
+              {showSeedSteps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+          </button>
+
+          {/* 🧪 Test All Suite */}
+          <button
+            className={`preset-action-btn test-btn ${isTesting ? 'is-running' : ''}`}
+            onClick={onRunTestSuite}
+            disabled={isSeeding || isTesting}
+            title="Run the full automated API test workflow"
+          >
+            {isTesting
+              ? <><RefreshCw size={14} className="animate-spin" /> Testing…</>
+              : <><FlaskConical size={14} /> 🧪 Test All Suite</>
+            }
+          </button>
+        </div>
       </div>
 
+      {/* ── Seed step progress (collapsible) ──────────────────────── */}
+      {showSeedSteps && (
+        <div className="seed-steps-row">
+          {seedSteps.length > 0
+            ? seedSteps.map((s, i) => (
+                <span key={i} className={`seed-step-pill status-${s.status}`}>
+                  {STATUS_ICON[s.status]}
+                  {s.label}
+                </span>
+              ))
+            : (
+                <span className="seed-steps-hint">
+                  <Clock size={12} /> Steps will appear here when seeding runs
+                </span>
+              )
+          }
+        </div>
+      )}
+
+      {/* ── Workflow shortcut pills ────────────────────────────────── */}
       <div className="presets-pills">
-        {/* 1-Click Automated Data Seeding Runner */}
-        {onRunAutoSeeding && (
+        {WORKFLOW_STEPS.map((step) => (
           <button
-            className="preset-pill btn-primary-auto-seed"
-            onClick={onRunAutoSeeding}
-            disabled={isSeeding}
-            title="Auto-create users, consultations, payments, payouts & seed database in 1-click!"
+            key={step.id}
+            className={`preset-pill ${step.cls}`}
+            onClick={() => onSelectPreset(step.id, step.params)}
+            title={`Jump to ${step.label} endpoint`}
           >
-            {isSeeding ? (
-              <>
-                <RefreshCw size={14} className="animate-spin" />
-                <span>Seeding Database & Pipeline...</span>
-              </>
-            ) : (
-              <>
-                <PlayCircle size={14} />
-                <span>🚀 Seed Database & Run Full Test Suite</span>
-              </>
-            )}
+            {step.icon} {step.label}
           </button>
-        )}
-
-        <button
-          className="preset-pill btn-glow-cyan"
-          onClick={() => onSelectPreset('auth-register-client')}
-          title="Pre-fill Register Request"
-        >
-          <UserPlus size={14} /> 1. Register Client
-        </button>
-
-        <button
-          className="preset-pill btn-glow-amber"
-          onClick={() => onSelectPreset('auth-login')}
-          title="Pre-fill Login Request to obtain JWT Token"
-        >
-          <LogIn size={14} /> 2. Login & Save JWT Token
-        </button>
-
-        <button
-          className="preset-pill btn-glow-indigo"
-          onClick={() => onSelectPreset('consultation-request')}
-          title="Submit consultation request"
-        >
-          <Calendar size={14} /> 3. Request Consultation
-        </button>
-
-        <button
-          className="preset-pill btn-glow-purple"
-          onClick={() => onSelectPreset('consultation-approve', { id: 1, customFee: 150.00 })}
-          title="Lawyer approves consultation with custom fee"
-        >
-          <Zap size={14} /> 4. Approve Consultation ($150)
-        </button>
-
-        <button
-          className="preset-pill btn-glow-emerald"
-          onClick={() => onSelectPreset('payment-checkout', { consultationId: 1 })}
-          title="Process consultation payment"
-        >
-          <CreditCard size={14} /> 5. Process Payment Checkout
-        </button>
-
-        <button
-          className="preset-pill btn-glow-cyan"
-          onClick={() => onSelectPreset('payout-request', { lawyerId: 2, amount: 100.00, bankDetails: 'IBAN: US9912345' })}
-          title="Lawyer requests earnings payout"
-        >
-          <DollarSign size={14} /> 6. Request Lawyer Payout
-        </button>
-
-        <button
-          className="preset-pill btn-glow-ruby"
-          onClick={() => onSelectPreset('dashboard-admin')}
-          title="View Admin metrics"
-        >
-          <ShieldAlert size={14} /> 7. Admin Dashboard Metrics
-        </button>
+        ))}
       </div>
     </div>
   );
