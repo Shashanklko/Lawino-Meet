@@ -1,15 +1,19 @@
+# Render Blueprint Specification
 services:
   # 1. Spring Boot Backend Web Service (Docker Container)
   - type: web
     name: lawinomeet-backend
-    env: docker
+    runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: "8080"
 
   # 2. React TypeScript Frontend Static Site
   - type: web
     name: lawinomeet-frontend
-    env: static
+    runtime: static
     plan: free
     rootDir: LawinoMeet-Frontend
     buildCommand: npm run build
