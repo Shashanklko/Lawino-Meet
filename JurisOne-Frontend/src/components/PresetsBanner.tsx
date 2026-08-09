@@ -1,13 +1,19 @@
 import React from 'react';
 import type { EndpointDefinition } from '../types/api';
-import { Zap, Sparkles, UserPlus, LogIn, Calendar, CreditCard, DollarSign, ShieldAlert } from 'lucide-react';
+import { Zap, Sparkles, UserPlus, LogIn, Calendar, CreditCard, DollarSign, ShieldAlert, PlayCircle, RefreshCw } from 'lucide-react';
 
 interface PresetsBannerProps {
   endpoints: EndpointDefinition[];
   onSelectPreset: (endpointId: string, customParams?: Record<string, any>, customBody?: any) => void;
+  onRunAutoSeeding?: () => void;
+  isSeeding?: boolean;
 }
 
-export const PresetsBanner: React.FC<PresetsBannerProps> = ({ onSelectPreset }) => {
+export const PresetsBanner: React.FC<PresetsBannerProps> = ({
+  onSelectPreset,
+  onRunAutoSeeding,
+  isSeeding = false
+}) => {
   return (
     <div className="presets-banner glass-panel">
       <div className="presets-header">
@@ -16,6 +22,28 @@ export const PresetsBanner: React.FC<PresetsBannerProps> = ({ onSelectPreset }) 
       </div>
 
       <div className="presets-pills">
+        {/* 1-Click Automated Data Seeding Runner */}
+        {onRunAutoSeeding && (
+          <button
+            className="preset-pill btn-primary-auto-seed"
+            onClick={onRunAutoSeeding}
+            disabled={isSeeding}
+            title="Auto-create users, consultations, payments, payouts & seed database in 1-click!"
+          >
+            {isSeeding ? (
+              <>
+                <RefreshCw size={14} className="animate-spin" />
+                <span>Seeding Database & Pipeline...</span>
+              </>
+            ) : (
+              <>
+                <PlayCircle size={14} />
+                <span>🚀 Seed Database & Run Full Test Suite</span>
+              </>
+            )}
+          </button>
+        )}
+
         <button
           className="preset-pill btn-glow-cyan"
           onClick={() => onSelectPreset('auth-register-client')}

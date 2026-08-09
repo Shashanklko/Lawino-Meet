@@ -395,6 +395,19 @@ body {
   transition: all 0.2s ease;
 }
 
+.btn-primary-auto-seed {
+  background: linear-gradient(135deg, var(--emerald-color), var(--cyan-color)) !important;
+  color: #040711 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.4) !important;
+}
+
+.btn-primary-auto-seed:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.7) !important;
+}
+
 .preset-pill:hover {
   transform: translateY(-1px);
   border-color: var(--cyan-color);
