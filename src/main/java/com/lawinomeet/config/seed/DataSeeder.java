@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  * Configured via app.seed-data.enabled (defaults to true).
  */
 @Component
-@ConditionalOnProperty(name = "app.seed-data.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.seed-data.enabled", havingValue = "true", matchIfMissing = false)
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
