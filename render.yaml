@@ -1,4 +1,4 @@
-# Render Blueprint Specification
+# yaml-language-server: $schema=https://json.schemastore.org/render.json
 services:
   # 1. Spring Boot Backend Web Service (Docker Container)
   - type: web
@@ -10,7 +10,7 @@ services:
       - key: PORT
         value: "8080"
 
-  # 2. React TypeScript Frontend Static Site (Free by default, no plan property)
+  # 2. React TypeScript Frontend Static Site (Free by default)
   - type: web
     name: lawinomeet-frontend
     runtime: static
