@@ -231,10 +231,12 @@ export const EndpointTester: React.FC<EndpointTesterProps> = ({ endpoint }) => {
               </div>
               <textarea
                 className={`textarea-field ${jsonError ? 'input-error' : ''}`}
-                rows={8}
+                rows={endpoint.sampleBody ? 8 : 2}
                 value={bodyText}
                 onChange={(e) => handleBodyChange(e.target.value)}
-                placeholder="Enter JSON payload request body..."
+                placeholder={endpoint.sampleBody ? "Enter JSON payload request body..." : "No JSON body required for this endpoint. (Optional)"}
+                disabled={!endpoint.sampleBody && !bodyText}
+                style={{ opacity: (!endpoint.sampleBody && !bodyText) ? 0.5 : 1, resize: (!endpoint.sampleBody && !bodyText) ? 'none' : 'vertical' }}
               />
               {jsonError && (
                 <span className="error-text">
