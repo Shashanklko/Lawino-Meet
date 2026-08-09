@@ -25,4 +25,20 @@ public class UserResponse {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    private ProfessionalProfileDto profile;
+    public ProfessionalProfileDto getProfile() { return profile; }
+    public void setProfile(ProfessionalProfileDto profile) { this.profile = profile; }
+
+    @Data
+    public static class ProfessionalProfileDto {
+        private String category;
+        private String customGreeting;
+        private String officeAddress;
+        private Double chatUnlockFee;
+        private Double consultationFee;
+        private Boolean isVerified;
+        private String specialization;
+        private String bio;
+    }
 }

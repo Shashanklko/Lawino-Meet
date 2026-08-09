@@ -36,8 +36,8 @@ public class UserController {
 
     // Now returns a List of UserResponse
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers(){
-        List<UserResponse> getAllUser = userService.getAllUsers();
+    public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) com.lawinomeet.user.enums.Role role){
+        List<UserResponse> getAllUser = userService.getAllUsers(role);
         return ResponseEntity.status(HttpStatus.OK).body(getAllUser);   
     }
 

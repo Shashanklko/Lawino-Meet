@@ -59,8 +59,11 @@ export const ENDPOINTS: EndpointDefinition[] = [
     module: 'USERS',
     method: 'GET',
     path: '/api/users',
-    description: 'Retrieve a list of all registered users in the database.',
-    requiresAuth: true
+    description: 'Retrieve a list of all registered users. Use the role parameter to filter by CLIENT, LAWYER, or CA.',
+    requiresAuth: true,
+    params: [
+      { name: 'role', type: 'string', required: false, in: 'query', description: 'Filter by Role (CLIENT, LAWYER, CA, OTHER)' }
+    ]
   },
   {
     id: 'user-get-by-id',

@@ -12,8 +12,8 @@ public interface UserRepository extends JpaRepository<User, Long>{
 
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
-
-    }
+    java.util.List<User> findByRole(com.lawinomeet.user.enums.Role role);
+}
 
 // in this layer it will acts as bridge who communiticate with database
 // @Repository annotation tell that this class( is bean) will handle database work

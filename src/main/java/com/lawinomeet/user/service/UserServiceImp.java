@@ -86,14 +86,14 @@ public class UserServiceImp implements UserService {
 
     // --- GET ALL USERS ---
     @Override
-    public List<UserResponse> getAllUsers() {
-        // 1. Get a list of ALL User entities directly from the database table.
-        List<User> users = userRepository.findAll();
+    public List<UserResponse> getAllUsers(Role role) {
+        List<User> users;
+        if (role != null) {
+            users = userRepository.findByRole(role);
+        } else {
+            users = userRepository.findAll();
+        }
         
-        // 2. We have a List of Entities, but we need to return a List of DTOs.
-        // .stream() opens the list so we can loop through it.
-        // .map(this::mapToResponse) translates EVERY single Entity in the list into a DTO.
-        // .collect(Collectors.toList()) packs them all back up into a brand new List.
         return users.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -168,6 +168,19 @@ public class UserServiceImp implements UserService {
         // NOTICE: We specifically DO NOT add the password to 'response'.
         // This guarantees the password never accidentally gets sent back to the internet!
         
+        if (user.getProfessionalProfile() != null) {
+            UserResponse.ProfessionalProfileDto profileDto = new UserResponse.ProfessionalProfileDto();
+            profileDto.setCategory(user.getProfessionalProfile().getCategory() != null ? user.getProfessionalProfile().getCategory().name() : null);
+            profileDto.setCustomGreeting(user.getProfessionalProfile().getCustomGreeting());
+            profileDto.setOfficeAddress(user.getProfessionalProfile().getOfficeAddress());
+            profileDto.setChatUnlockFee(user.getProfessionalProfile().getChatUnlockFee());
+            profileDto.setConsultationFee(user.getProfessionalProfile().getConsultationFee());
+            profileDto.setIsVerified(user.getProfessionalProfile().getIsVerified());
+            profileDto.setSpecialization(user.getProfessionalProfile().getSpecialization());
+            profileDto.setBio(user.getProfessionalProfile().getBio());
+            response.setProfile(profileDto);
+        }
+
         return response; // Return the safe, secure Response object
     }
 }
