@@ -16,7 +16,8 @@ import com.lawinomeet.payment.repository.PayoutRequestRepository;
 import com.lawinomeet.user.entity.ProfessionalProfile;
 import com.lawinomeet.user.repository.ProfessionalProfileRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +25,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class AdminServiceImpl implements AdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminServiceImpl.class);
 
     private final DisputeTicketRepository disputeTicketRepository;
     private final ConsultationRepository consultationRepository;

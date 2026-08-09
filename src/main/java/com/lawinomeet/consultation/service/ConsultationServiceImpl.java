@@ -12,7 +12,8 @@ import com.lawinomeet.user.entity.User;
 import com.lawinomeet.user.repository.ProfessionalProfileRepository;
 import com.lawinomeet.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +23,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ConsultationServiceImpl implements ConsultationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConsultationServiceImpl.class);
 
     private final ConsultationRepository consultationRepository;
     private final UserRepository userRepository;

@@ -19,13 +19,13 @@ import com.lawinomeet.chat.repository.ChatSessionRepository;
 import com.lawinomeet.user.repository.ProfessionalProfileRepository;
 import com.lawinomeet.user.repository.UserRepository;
 
-import com.lawinomeet.common.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @Service
 public class ChatServiceImp implements ChatService {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatServiceImp.class);
 
     @Autowired
     private ChatSessionRepository chatSessionRepository;

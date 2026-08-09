@@ -1,7 +1,7 @@
 package com.lawinomeet.common.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -10,9 +10,10 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     @Autowired(required = false)
     private JavaMailSender mailSender;

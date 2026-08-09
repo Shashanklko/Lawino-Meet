@@ -16,11 +16,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // @Service tells Spring: "This is a special class that holds business logic." 
 // Spring will automatically create an object of this class when the app starts.
 @Service
-@lombok.extern.slf4j.Slf4j
 public class UserServiceImp implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImp.class);
 
     // @Autowired tells Spring: "Look for a UserRepository bean and plug it in here automatically."
     // This connects our Service layer to the Database layer without needing 'new UserRepository()'.
