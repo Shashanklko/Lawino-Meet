@@ -5,12 +5,14 @@ spring:
   application:
     name: JurisOne-Backend
 
-  # MySQL Configuration
+  # Smart Fallback Database Configuration
+  # If DB_URL environment variable is provided, connects to Cloud MySQL.
+  # If DB_URL is omitted, automatically falls back to instant In-Memory H2 MySQL Mode (Zero Setup).
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:h2:mem:jurisonedb;DB_CLOSE_DELAY=-1;MODE=MySQL}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
 
   # JPA / Hibernate Configurations
   jpa:
@@ -20,26 +22,18 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
 
   # MongoDB Configuration
   data:
     mongodb:
-      uri: ${MONGO_URI}
-
-  # 🏛️ SPRING AI GEMINI CONFIG
-  ai:
-    google:
-      gemini:
-        api-key: ${GEMINI_API_KEY}
-        model: gemini-1.5-pro
+      uri: ${MONGO_URI:mongodb://localhost:27017/jurisone}
 
 # Custom JWT Application Properties
 jwt:
-  secret: ${JWT_SECRET} # Should be 256-bit secure secret
+  secret: ${JWT_SECRET:jurisone_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456}
   expirationMs: 86400000 # 24 hours
 
 # Frontend Origin Configuration
 app:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS}
+    allowed-origins: ${ALLOWED_ORIGINS:*}
