@@ -1,69 +1,79 @@
-# LawEZY Backend - Developer Handover Guide (Frontend)
+# LawEZY Backend - Developer Handover & API Guide (Frontend) 🏛️
 
-Welcome to the LawEZY Backend! This API is optimized for high-performance legal consultations, community features, and professional resource management.
-
----
-
-## 1. Quick Start
-1.  **Repo Setup**: Copy `src/main/resources/application.yml.example` to `application.yml`.
-2.  **Env Setup**: Provide the following environment variables (or fill them in your new `application.yml`):
-    - `TIDB_PASSWORD`: MySQL DB password.
-    - `MONGO_USER` & `MONGO_PASS`: MongoDB credentials for chat history.
-    - `SPRING_AI_GOOGLE_API_KEY`: Google Gemini Key.
-    - `JWT_SECRET_256BIT`: A 256-bit secure secret key.
-3.  **Run**: `mvn spring-boot:run`
+Welcome to the LawEZY Backend API! This document provides frontend developers with quick-start instructions, endpoint standards, response structures, and integration rules.
 
 ---
 
-## 2. API Excellence (Standardized Responses)
-All REST APIs follow a **Unified Response Format** for ease of frontend consumption:
+## 1. 🚀 Quick Start & Environment
+
+1. **Repo Configuration**: Ensure `src/main/resources/application.yml` has your database credentials:
+   - `SPRING_DATASOURCE_URL`: MySQL / TiDB connection string.
+   - `SPRING_DATA_MONGODB_URI`: MongoDB Atlas connection URI.
+   - `JWT_SECRET_256BIT`: A 256-bit secure secret key.
+2. **Launch Application**:
+   ```bash
+   mvn spring-boot:run
+   ```
+3. **Interactive Swagger Docs**:
+   👉 **`http://localhost:8080/swagger-ui.html`**
+
+---
+
+## 2. 📑 Unified API Response Format
+
+All REST API endpoints return a standardized `ApiResponse<T>` JSON envelope:
 
 ```json
 {
   "success": true,
-  "message": "Chat history retrieved.",
-  "data": { ... payload here ... },
-  "timestamp": "2026-04-04T12:00:00"
+  "message": "Consultation inquiry submitted successfully. Contact details masked for privacy.",
+  "data": {
+    "id": 1,
+    "meetingCode": "SAM-SHASHI-01072006",
+    "clientName": "Sam",
+    "location": "Delhi",
+    "query": "Property dispute legal advisory",
+    "clientPhoneNumber": "XXXXX-XXXXX (Hidden until payment)",
+    "clientEmail": "xxxxxx@masked.com (Hidden until payment)",
+    "isContactInfoDisclosed": false,
+    "mode": "ONLINE_VIDEO",
+    "customFee": 500.0,
+    "status": "LAWYER_APPROVED"
+  },
+  "timestamp": "2026-08-09T18:50:00"
 }
 ```
 
-- **Data**: The primary payload (Object, List, or Null).
-- **Success**: Boolean flag for easy branching in your frontend Fetch/Axios logic.
-- **Message**: Descriptive success or error message.
+---
+
+## 3. 🔑 Key Integration Workflows for Frontend
+
+### A. Preliminary Consultation Inquiry & Privacy Protection
+1. **Client Request (`POST /api/consultations/request`)**:
+   - Client fills out `Name`, `Location`, `RequestedTimeSlot`, `Query`, `Phone`, `Email`.
+   - Contact details are **masked** initially for privacy protection.
+2. **Lawyer Review & Approval (`POST /api/consultations/{id}/approve?customFee=500`)**:
+   - Lawyer inspects query details (Phone & Email hidden) and sets custom fee.
+3. **Payment Checkout (`POST /api/payments/checkout/{consultationId}`)**:
+   - Client completes payment checkout.
+   - **Post-Payment Actions**:
+     - Phone & Email unmasked.
+     - **80% (Online)** or **90% (Offline)** split credited to Lawyer Wallet.
+     - HTML Email Pass dispatched with meeting code (e.g. `SAM-SHASHI-01072006`), video URL, or verified Lawyer Office Address.
+
+### B. Room Controls & 24-Hour No-Show Appeals
+* **Room Activation**: Lawyer toggles online room `ACTIVE / INACTIVE` (`POST /api/consultations/{id}/toggle-room?isRoomActive=true`).
+* **24-Hr No-Show Appeal**: If lawyer fails to activate the room 24 hours past the scheduled slot, client calls `POST /api/consultations/{id}/no-show-appeal` to trigger an Admin Dispute Ticket for a **100% full refund**.
+
+### C. Real-Time WebSockets (`/ws`)
+* Connect via SockJS/STOMP to `ws://localhost:8080/ws`.
+* Subscribe to topic `/topic/chat/{meetingCode}` (e.g. `/topic/chat/SAM-SHASHI-01072006`).
 
 ---
 
-## 3. Interactive Documentation
-We have integrated **Swagger / OpenAPI**. 
-Once the server is running, visit:
-👉 **`http://localhost:8080/swagger-ui.html`**
-
-You can test all endpoints, view request/response schemas, and see available parameters there.
-
----
-
-## 4. Key Endpoints Summary
-- **Auth**: `/api/auth` (Sign up/Login).
-- **User**: `/api/users` (Profiles, Roles, Roles).
-- **Chat**: `/api/chat` (Session start, History, Unlocking logic).
-- **Community**: `/api/community` (Social posts, Author verification).
-- **Resources**: `/api/resources` (Legal templates, articles).
-
----
-
-## 6. Deployment (Docker)
-The project includes a **Dockerfile** for production-ready containerization.
-
-### Build and Run Locally:
-1. `docker build -t lawezy-backend .`
-2. `docker run -p 8080:8080 lawezy-backend`
-
-### Cloud Deployment:
-When deploying to **AWS App Runner**, **Railway**, or **Render**:
-1. Connect this GitHub repo.
-2. The platform will automatically detect the **Dockerfile**.
-3. **IMPORTANT**: You must set your `application.yml` secrets as **Environment Variables** in the cloud dashboard (refer to `.example` for keys).
-
----
+## 4. 🐳 Docker Deployment
+```bash
+docker-compose up --build
+```
 
 Happy Coding! 🚀
