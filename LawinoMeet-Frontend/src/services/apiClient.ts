@@ -3,6 +3,9 @@ import type { PipelineTelemetry } from '../types/api';
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';
 const TOKEN_MODE_KEY = 'lawinomeet_token_mode';
+const TOKEN_KEY = 'lawinomeet_jwt_token';
+
+let currentBaseUrl = localStorage.getItem('lawinomeet_base_url') || DEFAULT_BASE_URL;
 
 export const isTokenModeActive = (): boolean => {
   const val = localStorage.getItem(TOKEN_MODE_KEY);
