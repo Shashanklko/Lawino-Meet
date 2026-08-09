@@ -10,43 +10,48 @@ Lawino Meet uses a decoupled multi-layered architecture separating stateless RES
 
 ```mermaid
 graph TD
-    subgraph Client Layer
-        A[💻 TypeScript React Visual Studio / Web App]
+    subgraph Client_Layer["Client Layer"]
+        A["TypeScript React Visual Studio App"]
     end
 
-    subgraph Security & Ingestion Layer
-        B[🛡️ Spring Security Filter Chain]
-        C[🔑 JwtRequestFilter]
-        D[📡 RequestLoggingFilter / Audit Interceptor]
+    subgraph Security_Layer["Security and Ingestion Layer"]
+        B["Spring Security Filter Chain"]
+        C["JwtRequestFilter"]
+        D["RequestLoggingFilter Audit Interceptor"]
     end
 
-    subgraph Controller Layer
-        E1[🔐 AuthController]
-        E2[👥 UserController]
-        E3[📅 ConsultationController]
-        E4[💳 PaymentController & PayoutController]
-        E5[💬 ChatController & WebSocket STOMP Endpoint]
-        E6[⚖️ AdminController]
+    subgraph Controller_Layer["Controller Layer"]
+        E1["AuthController"]
+        E2["UserController"]
+        E3["ConsultationController"]
+        E4["PaymentController and PayoutController"]
+        E5["ChatController and WebSocket Endpoint"]
+        E6["AdminController"]
     end
 
-    subgraph Business Service Layer
-        F1[CustomUserDetailsService]
-        F2[UserServiceImpl]
-        F3[ConsultationServiceImpl]
-        F4[PaymentServiceImpl]
-        F5[ChatServiceImpl]
-        F6[AdminServiceImpl & EmailService]
+    subgraph Service_Layer["Business Service Layer"]
+        F1["CustomUserDetailsService"]
+        F2["UserServiceImpl"]
+        F3["ConsultationServiceImpl"]
+        F4["PaymentServiceImpl"]
+        F5["ChatServiceImpl"]
+        F6["AdminServiceImpl and EmailService"]
     end
 
-    subgraph Polyglot Persistence Layer
-        G1[(💾 MySQL / In-Memory H2 Database)]
-        G2[(🍃 MongoDB Document Store)]
+    subgraph Database_Layer["Polyglot Persistence Layer"]
+        G1[("MySQL / In-Memory H2 Database")]
+        G2[("MongoDB Document Store")]
     end
 
     A -->|HTTPS REST / WSS STOMP| B
     B --> C
     C --> D
-    D --> E1 & E2 & E3 & E4 & E5 & E6
+    D --> E1
+    D --> E2
+    D --> E3
+    D --> E4
+    D --> E5
+    D --> E6
 
     E1 --> F1
     E2 --> F2
@@ -55,7 +60,11 @@ graph TD
     E5 --> F5
     E6 --> F6
 
-    F1 & F2 & F3 & F4 & F6 -->|Spring Data JPA| G1
+    F1 -->|Spring Data JPA| G1
+    F2 -->|Spring Data JPA| G1
+    F3 -->|Spring Data JPA| G1
+    F4 -->|Spring Data JPA| G1
+    F6 -->|Spring Data JPA| G1
     F5 -->|Spring Data MongoDB| G2
 ```
 
@@ -67,7 +76,7 @@ graph TD
 1. **Request Interception**: Incoming requests to `/api/**` pass through `SecurityConfig` and `JwtRequestFilter`.
 2. **Token Extraction**: Reads `Authorization: Bearer <JWT_TOKEN>` header.
 3. **Validation**: Decodes claims using HS256 key (`JwtUtil`) and validates token expiration.
-4. **Context Injection**: populates `SecurityContextHolder` with `UsernamePasswordAuthenticationToken` containing authorities (`ROLE_CLIENT`, `ROLE_LAWYER`, `ROLE_ADMIN`).
+4. **Context Injection**: Populates `SecurityContextHolder` with `UsernamePasswordAuthenticationToken` containing authorities (`ROLE_CLIENT`, `ROLE_LAWYER`, `ROLE_ADMIN`).
 5. **Public Endpoints**: `/api/auth/**`, `/ws/**`, `/swagger-ui/**` are explicitly permitted without auth.
 
 ---
