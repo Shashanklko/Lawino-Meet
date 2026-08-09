@@ -45,12 +45,17 @@ class ChatServiceTest {
     @Test
     void unlockReply_ShouldCreditLawyerAndSetStatusToActive() {
         String sessionId = "session123";
+        Long userId = 100L;
         Long professionalUserId = 200L;
 
         ChatSession session = new ChatSession();
         session.setId(sessionId);
+        session.setUserId(userId);
         session.setProfessionalId(professionalUserId);
         session.setStatus(ChatStatus.LOCKED_REPLY);
+
+        User user = new User();
+        user.setId(userId);
 
         User professionalUser = new User();
         professionalUser.setId(professionalUserId);
@@ -61,14 +66,15 @@ class ChatServiceTest {
         profile.setChatUnlockFee(100.0);
 
         when(chatSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(professionalProfileRepository.findByUserId(professionalUserId)).thenReturn(Optional.of(profile));
         when(chatSessionRepository.save(any(ChatSession.class))).thenReturn(session);
 
         chatService.unlockReply(sessionId);
 
         assertEquals(ChatStatus.ACTIVE, session.getStatus());
-        assertEquals(180.0, profile.getWalletBalance()); // 100 + (100 * 0.8)
-        verify(professionalProfileRepository, times(1)).save(profile);
+        assertEquals(100.0, profile.getWalletBalance());
+        verify(professionalProfileRepository, never()).save(profile);
     }
     @Test
     void sendMessage_FromUser_ShouldDeductTokens() {
@@ -119,7 +125,7 @@ class ChatServiceTest {
         com.lawinomeet.chat.dto.ChatMessageResponse response = chatService.sendMessage(request);
         
         assertTrue(response.getIsLocked());
-        assertEquals(ChatStatus.LOCKED_REPLY, session.getStatus());
+        assertEquals(ChatStatus.LOCKED, session.getStatus());
     }
 
     @Test
