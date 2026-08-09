@@ -36,8 +36,17 @@ public class UserController {
 
     // Now returns a List of UserResponse
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) com.lawinomeet.user.enums.Role role){
-        List<UserResponse> getAllUser = userService.getAllUsers(role);
+    public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) String role){
+        com.lawinomeet.user.enums.Role enumRole = null;
+        if (role != null && !role.trim().isEmpty()) {
+            try {
+                enumRole = com.lawinomeet.user.enums.Role.valueOf(role.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // If they provide an invalid role like 'ClIENT', we can return a bad request or just ignore it
+                throw new RuntimeException("Invalid role provided. Allowed values: ADMIN, CLIENT, LAWYER, CA, OTHER");
+            }
+        }
+        List<UserResponse> getAllUser = userService.getAllUsers(enumRole);
         return ResponseEntity.status(HttpStatus.OK).body(getAllUser);   
     }
 
