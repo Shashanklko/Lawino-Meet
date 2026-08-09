@@ -5,16 +5,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * 🏛️ lawinomeet ELITE SERVER
- * The central nervous system of the lawinomeet SaaS legal platform.
- * Features: Multi-modulo scanning, Real-time WebSockets, and Automated Content.
+ * 🏛️ Lawino Meet Server Entry Point
+ * The central service of the Lawino Meet legal platform.
  */
 @SpringBootApplication
 @EnableScheduling
-public class lawinomeetBackendApplication {
+public class LawinoMeetBackendApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(lawinomeetBackendApplication.class, args);
-        System.out.println("🏛️ lawinomeet Server is Now Online & Elite.");
+        SpringApplication.run(LawinoMeetBackendApplication.class, args);
+        System.out.println("🏛️ Lawino Meet Backend Server is Online & Running.");
     }
 }

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -16,11 +18,10 @@ import com.lawinomeet.chat.model.ChatMessage;
 import com.lawinomeet.chat.model.ChatSession;
 import com.lawinomeet.chat.repository.ChatMessageRepository;
 import com.lawinomeet.chat.repository.ChatSessionRepository;
+import com.lawinomeet.common.exception.ResourceNotFoundException;
+import com.lawinomeet.common.service.AuditLogService;
 import com.lawinomeet.user.repository.ProfessionalProfileRepository;
 import com.lawinomeet.user.repository.UserRepository;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class ChatServiceImp implements ChatService {
@@ -35,7 +36,8 @@ public class ChatServiceImp implements ChatService {
     private UserRepository userRepository;
     @Autowired 
     private ProfessionalProfileRepository professionalProfileRepository;
-
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     @NonNull
@@ -56,12 +58,6 @@ public class ChatServiceImp implements ChatService {
         return savedSession;
     }
 
-    @Autowired
-    private com.lawinomeet.common.service.AuditLogService auditLogService;
-
-    @Autowired
-    private com.lawinomeet.ai.service.AiService aiService;
-
     @Override
     @NonNull
     public ChatMessageResponse sendMessage(@NonNull SendMessageRequest request) {
@@ -72,24 +68,6 @@ public class ChatServiceImp implements ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
 
         String content = request.getContent();
-        
-        // 🛡️ AI SECURITY GUARD (Python + Gemini Powered Delegate)
-        // Blocking is BYPASSED if an official appointment has been scheduled and paid.
-        boolean isPaid = session.getIsAppointmentPaid() != null && session.getIsAppointmentPaid();
-        if (!isPaid && content != null && !content.trim().isEmpty()) {
-            String aiSafetyResult = aiService.checkSafety(content);
-
-            if (aiSafetyResult != null && aiSafetyResult.contains("BLOCKED")) {
-                auditLogService.logAiBlock(
-                    "Contact details blocked",
-                    "Content: " + content,
-                    String.valueOf(request.getSenderId()),
-                    "USER" // Fallback role for individual chat participants
-                );
-                log.warn("AI Blocked a message containing contact details: {}", content);
-                throw new RuntimeException("Sharing contact details is strictly blocked. Please schedule an appointment to exchange verified contact info.");
-            }
-        }
 
         ChatMessage message = new ChatMessage();
         message.setChatSessionId(sId);
@@ -118,118 +96,108 @@ public class ChatServiceImp implements ChatService {
         }
 
         // Locked reply logic for Lawyer's initial response
-        if (senderUserId != null && senderUserId.equals(session.getProfessionalId()) && session.getStatus() == ChatStatus.AWAITING_REPLY) {
-            message.setIsLocked(true);
-            session.setStatus(ChatStatus.LOCKED_REPLY);
+        Long profId = session.getProfessionalId();
+        if (senderUserId != null && senderUserId.equals(profId)) {
+            Integer granted = session.getTokensGranted() != null ? session.getTokensGranted() : 0;
+            Integer consumed = session.getTokensConsumed() != null ? session.getTokensConsumed() : 0;
+            
+            if (granted <= consumed) {
+                message.setIsLocked(true);
+                session.setStatus(ChatStatus.LOCKED);
+                log.info("[CHAT] Lawyer reply is LOCKED because user balance/grant is zero.");
+            } else {
+                message.setIsLocked(false);
+                session.setStatus(ChatStatus.ACTIVE);
+            }
         }
 
         session.setLastUpdateAt(LocalDateTime.now());
         chatSessionRepository.save(session);
-        log.info("[CHAT] MESSAGE SENT in Session: {} | Sender: {} | Type: {}", sId, request.getSenderId(), request.getType());
-        
         ChatMessage savedMsg = chatMessageRepository.save(message);
+
         return mapToResponse(savedMsg, session.getStatus());
     }
 
     @Override
     @NonNull
-    public List<ChatMessageResponse> getChatHistory(@NonNull String chatSessionId) {
+    public List<ChatMessageResponse> getMessagesBySessionId(@NonNull String chatSessionId) {
         ChatSession session = chatSessionRepository.findById(chatSessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
         
-        return chatMessageRepository.findByChatSessionIdOrderByTimestampAsc(chatSessionId)
-                .stream()
+        List<ChatMessage> messages = chatMessageRepository.findByChatSessionIdOrderByTimestampAsc(chatSessionId);
+        return messages.stream()
                 .map(msg -> mapToResponse(msg, session.getStatus()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public void endChatByUser(@NonNull String sId) {
-        ChatSession session = chatSessionRepository.findById(sId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
-
-        session.setStatus(ChatStatus.RESOLVED);
-        
-        // ROLLOVER LOGIC
-        Integer granted = session.getTokensGranted();
-        Integer consumed = session.getTokensConsumed();
-        int leftover = (granted != null ? granted : 0) - (consumed != null ? consumed : 0);
-        
-        if (leftover > 0) {
-            Long userId = session.getUserId();
-            if (userId != null) {
-                userRepository.findById(userId).ifPresent(user -> {
-                    Integer balance = user.getGlobalTokenBalance();
-                    user.setGlobalTokenBalance(balance != null ? balance + leftover : leftover);
-                    userRepository.save(user);
-                });
-            }
-        }
-        
-        chatSessionRepository.save(session);
+    @NonNull
+    public ChatSession getSessionById(@NonNull String sessionId) {
+        return chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
     }
 
     @Override
-    public void endChatByProfessional(@NonNull String sessionId) {
+    @NonNull
+    public ChatSession unlockReply(@NonNull String sessionId) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
+        
+        com.lawinomeet.user.entity.User user = userRepository.findById(session.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        com.lawinomeet.user.entity.ProfessionalProfile prof = professionalProfileRepository.findByUserId(session.getProfessionalId())
+                .orElseThrow(() -> new ResourceNotFoundException("Professional Profile not found"));
+
+        Double fee = prof.getChatUnlockFee() != null ? prof.getChatUnlockFee() : 99.0;
+        
+        // Add 1 reply token to session
+        Integer granted = session.getTokensGranted() != null ? session.getTokensGranted() : 0;
+        session.setTokensGranted(granted + 1);
+        session.setStatus(ChatStatus.ACTIVE);
+        
+        // Unlock any locked messages in this session
+        List<ChatMessage> messages = chatMessageRepository.findByChatSessionIdOrderByTimestampAsc(sessionId);
+        for (ChatMessage msg : messages) {
+            if (Boolean.TRUE.equals(msg.getIsLocked())) {
+                msg.setIsLocked(false);
+                chatMessageRepository.save(msg);
+            }
+        }
+        
+        log.info("[CHAT UNLOCK] Session {} unlocked with fee {}. Granted Token Count: {}", sessionId, fee, session.getTokensGranted());
+        return chatSessionRepository.save(session);
+    }
+
+    @Override
+    @NonNull
+    public ChatSession endSessionByProfessional(@NonNull String sessionId) {
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
         
         session.setProfessionalEndedChat(true);
-        session.setStatus(ChatStatus.PENDING_RESOLUTION);
-        chatSessionRepository.save(session);
+        session.setStatus(ChatStatus.CLOSED);
+        session.setLastUpdateAt(LocalDateTime.now());
+        log.info("[CHAT] Session {} ENDED by Professional", sessionId);
+        return chatSessionRepository.save(session);
     }
 
-    @Override
-    public void unlockReply(@NonNull String sessionId) {
-        ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
-
-        if (session.getStatus() == ChatStatus.LOCKED_REPLY) {
-            session.setStatus(ChatStatus.ACTIVE);
-            Integer grantedCount = session.getTokensGranted();
-            session.setTokensGranted(grantedCount != null ? grantedCount + 10 : 10);
-            
-            Long professionalId = session.getProfessionalId();
-            if (professionalId != null) {
-                professionalProfileRepository.findByUserId(professionalId).ifPresent(prof -> {
-                    Double fee = prof.getChatUnlockFee();
-                    double earnings = (fee != null ? fee : 99.0) * 0.8;
-                    Double currentBalance = prof.getWalletBalance();
-                    prof.setWalletBalance(currentBalance != null ? currentBalance + earnings : earnings);
-                    professionalProfileRepository.save(prof);
-                    log.info("Professional ID: {} credited with earnings: {} for Session ID: {}", professionalId, earnings, sessionId);
-                });
-            }
-
-            chatSessionRepository.save(session);
-            log.info("[CHAT] Session ID: {} UNLOCKED and set to ACTIVE.", sessionId);
-        }
-    }
-
-    @Override
-    @NonNull
-    public List<ChatSession> getUserSessions(@NonNull Long userId) {
-        return chatSessionRepository.findByUserId(userId);
-    }
-
-    @Override
-    @NonNull
-    public List<ChatSession> getProfessionalSessions(@NonNull Long professionalId) {
-        return chatSessionRepository.findByProfessionalId(professionalId);
-    }
-
-    @NonNull
-    private ChatMessageResponse mapToResponse(@NonNull ChatMessage msg, ChatStatus status) {
+    private ChatMessageResponse mapToResponse(ChatMessage msg, ChatStatus sessionStatus) {
         ChatMessageResponse res = new ChatMessageResponse();
         res.setId(msg.getId());
         res.setChatSessionId(msg.getChatSessionId());
         res.setSenderId(msg.getSenderId());
         res.setReceiverId(msg.getReceiverId());
         res.setType(msg.getType());
-        res.setContent(msg.getContent());
         res.setIsLocked(msg.getIsLocked());
         res.setTimestamp(msg.getTimestamp());
-        res.setStatus(status);
+        res.setStatus(sessionStatus);
+
+        if (Boolean.TRUE.equals(msg.getIsLocked())) {
+            res.setContent("🔒 [Message Locked - Please unlock this reply to view professional response]");
+        } else {
+            res.setContent(msg.getContent());
+        }
         return res;
     }
 }

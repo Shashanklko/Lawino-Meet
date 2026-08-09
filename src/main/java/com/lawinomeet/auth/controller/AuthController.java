@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.lawinomeet.auth.dto.AuthRequest;
 import com.lawinomeet.auth.dto.AuthResponse;
 import com.lawinomeet.auth.service.CustomUserDetailsService;
+import com.lawinomeet.auth.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
