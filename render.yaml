@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PORT
         value: "8080"
+      - key: JWT_SECRET
+        value: "lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456"
 
   # 2. React TypeScript Frontend Static Site (Free by default)
   - type: web

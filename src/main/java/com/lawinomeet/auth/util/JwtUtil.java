@@ -16,10 +16,10 @@ import java.util.function.Function;
 @Component // Tells Spring to create one instance of this utility we can use anywhere
 public class JwtUtil {
 
-    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret:lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456}")
     private String secretKeyString;
     
-    @org.springframework.beans.factory.annotation.Value("${jwt.expirationMs}")
+    @org.springframework.beans.factory.annotation.Value("${jwt.expirationMs:86400000}")
     private long expirationTime;
 
     private SecretKey getSecretKey() {
