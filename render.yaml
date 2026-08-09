@@ -10,11 +10,10 @@ services:
       - key: PORT
         value: "8080"
 
-  # 2. React TypeScript Frontend Static Site
+  # 2. React TypeScript Frontend Static Site (Free by default, no plan property)
   - type: web
     name: lawinomeet-frontend
     runtime: static
-    plan: free
     rootDir: LawinoMeet-Frontend
     buildCommand: npm run build
     staticPublishPath: ./dist
