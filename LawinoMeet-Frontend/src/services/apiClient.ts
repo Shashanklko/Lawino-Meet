@@ -2,9 +2,17 @@ import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { PipelineTelemetry } from '../types/api';
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';
-const TOKEN_KEY = 'lawinomeet_jwt_token';
+const TOKEN_MODE_KEY = 'lawinomeet_token_mode';
 
-let currentBaseUrl = localStorage.getItem('lawinomeet_base_url') || DEFAULT_BASE_URL;
+export const isTokenModeActive = (): boolean => {
+  const val = localStorage.getItem(TOKEN_MODE_KEY);
+  return val === null ? true : val === 'true';
+};
+
+export const setTokenModeActive = (enabled: boolean): void => {
+  localStorage.setItem(TOKEN_MODE_KEY, String(enabled));
+  window.dispatchEvent(new CustomEvent('token-mode-updated', { detail: enabled }));
+};
 
 export const getBaseUrl = (): string => currentBaseUrl;
 export const setBaseUrl = (url: string): void => {
@@ -53,6 +61,7 @@ export interface RequestExecutionOptions {
 
 export const executeApiCall = async (options: RequestExecutionOptions) => {
   const token = getJwtToken();
+  const tokenMode = isTokenModeActive();
   const startTime = Date.now();
 
   let finalUrl = options.url;
@@ -69,7 +78,7 @@ export const executeApiCall = async (options: RequestExecutionOptions) => {
     ...(options.headers || {})
   };
 
-  if (token) {
+  if (token && tokenMode) {
     requestHeaders['Authorization'] = `Bearer ${token}`;
   }
 
@@ -77,8 +86,8 @@ export const executeApiCall = async (options: RequestExecutionOptions) => {
     clientTime: startTime,
     url: fullUrl,
     method: options.method,
-    jwtPresent: !!token,
-    tokenSnippet: token ? `${token.substring(0, 15)}...${token.slice(-10)}` : 'None (Anonymous Request)',
+    jwtPresent: !!(token && tokenMode),
+    tokenSnippet: (token && tokenMode) ? `${token.substring(0, 15)}...${token.slice(-10)}` : (tokenMode ? 'None (Anonymous Request)' : 'Disabled (Token Mode OFF)'),
     headers: requestHeaders,
     queryParams: options.queryParams,
     pathParams: options.pathParams,
@@ -137,11 +146,10 @@ export const executeApiCall = async (options: RequestExecutionOptions) => {
     const response: AxiosResponse = await axios(config);
     const duration = Date.now() - startTime;
 
-    // Check if login/register response returned a token
-    if (response.data && response.data.token) {
-      setJwtToken(response.data.token);
-    } else if (response.data && response.data.data && response.data.data.token) {
-      setJwtToken(response.data.data.token);
+    // Flexible extraction for jwt or token from login/register response
+    const extractedToken = response.data?.jwt || response.data?.token || response.data?.data?.jwt || response.data?.data?.token;
+    if (extractedToken) {
+      setJwtToken(extractedToken);
     }
 
     const updatedDetails: PipelineTelemetry['details'] = {

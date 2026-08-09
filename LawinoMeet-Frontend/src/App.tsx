@@ -53,11 +53,11 @@ export const App: React.FC = () => {
         method: 'POST',
         url: '/api/auth/register',
         body: {
-          name: 'John Doe (Client)',
+          firstname: 'John',
+          lastname: 'Doe',
           email: 'client.test@lawinomeet.com',
           password: 'Password123!',
-          role: 'CLIENT',
-          phone: '+1234567890'
+          role: 'CLIENT'
         }
       });
 
@@ -66,13 +66,11 @@ export const App: React.FC = () => {
         method: 'POST',
         url: '/api/auth/register',
         body: {
-          name: 'Jane Smith (Lawyer)',
+          firstname: 'Jane',
+          lastname: 'Smith',
           email: 'lawyer.jane@lawinomeet.com',
           password: 'Password123!',
-          role: 'LAWYER',
-          phone: '+9876543210',
-          specialization: 'Corporate Law',
-          fee: 150.00
+          role: 'LAWYER'
         }
       });
 
@@ -93,8 +91,13 @@ export const App: React.FC = () => {
         body: {
           clientId: 1,
           lawyerId: 2,
-          type: 'ONLINE',
-          notes: 'Contract review request seeded automatically.'
+          clientName: 'John Doe',
+          clientEmail: 'client.test@lawinomeet.com',
+          clientPhoneNumber: '+1234567890',
+          location: 'Mumbai, India',
+          query: 'Contract review request seeded automatically.',
+          mode: 'ONLINE_VIDEO',
+          requestedTimeSlot: '2026-09-15T10:00:00'
         }
       });
 

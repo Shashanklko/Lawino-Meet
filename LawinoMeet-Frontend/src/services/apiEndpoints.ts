@@ -13,13 +13,11 @@ export const ENDPOINTS: EndpointDefinition[] = [
     description: 'Register a new user in the Lawino Meet platform (Role: CLIENT, LAWYER, or ADMIN).',
     requiresAuth: false,
     sampleBody: {
-      name: 'John Doe',
+      firstname: 'John',
+      lastname: 'Doe',
       email: 'client.test@lawinomeet.com',
       password: 'Password123!',
-      role: 'CLIENT',
-      phone: '+1234567890',
-      specialization: 'Corporate Law',
-      fee: 150.00
+      role: 'CLIENT'
     }
   },
   {
@@ -48,13 +46,11 @@ export const ENDPOINTS: EndpointDefinition[] = [
     description: 'Create a new user account (Requires ADMIN or system privilege).',
     requiresAuth: true,
     sampleBody: {
-      name: 'Jane Smith',
+      firstname: 'Jane',
+      lastname: 'Smith',
       email: 'lawyer.jane@lawinomeet.com',
       password: 'SecurePassword123!',
-      role: 'LAWYER',
-      phone: '+9876543210',
-      specialization: 'Family Law',
-      fee: 200.00
+      role: 'LAWYER'
     }
   },
   {
@@ -90,13 +86,11 @@ export const ENDPOINTS: EndpointDefinition[] = [
       { name: 'id', type: 'number', required: true, in: 'path', defaultValue: 1, description: 'User ID' }
     ],
     sampleBody: {
-      name: 'Johnathan Doe Updated',
+      firstname: 'Johnathan',
+      lastname: 'Doe Updated',
       email: 'client.test@lawinomeet.com',
       password: 'Password123!',
-      role: 'CLIENT',
-      phone: '+1122334455',
-      specialization: 'General',
-      fee: 0.00
+      role: 'CLIENT'
     }
   },
   {
@@ -126,8 +120,13 @@ export const ENDPOINTS: EndpointDefinition[] = [
     sampleBody: {
       clientId: 1,
       lawyerId: 2,
-      type: 'ONLINE',
-      notes: 'Need urgent legal assistance regarding property contract clause 4.'
+      clientName: 'John Doe',
+      clientEmail: 'client.test@lawinomeet.com',
+      clientPhoneNumber: '+1234567890',
+      location: 'Mumbai, India',
+      query: 'Need urgent legal assistance regarding property contract clause 4.',
+      mode: 'ONLINE_VIDEO',
+      requestedTimeSlot: '2026-09-15T10:00:00'
     }
   },
   {

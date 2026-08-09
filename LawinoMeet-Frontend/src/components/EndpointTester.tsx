@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { EndpointDefinition } from '../types/api';
-import { executeApiCall } from '../services/apiClient';
+import { executeApiCall, isTokenModeActive, getJwtToken } from '../services/apiClient';
 import confetti from 'canvas-confetti';
-import { Send, Play, Copy, Check, RefreshCw, Code, Lock, AlertCircle, Clock, Database, Layers } from 'lucide-react';
+import { Send, Play, Copy, Check, RefreshCw, Code, Lock, AlertCircle, Clock, Database, Layers, ShieldCheck, ShieldOff } from 'lucide-react';
 
 interface EndpointTesterProps {
   endpoint: EndpointDefinition;
@@ -25,6 +25,19 @@ export const EndpointTester: React.FC<EndpointTesterProps> = ({ endpoint }) => {
 
   const [copied, setCopied] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'BODY' | 'HEADERS'>('BODY');
+  const [tokenMode, setTokenMode] = useState<boolean>(isTokenModeActive());
+  const [hasToken, setHasToken] = useState<boolean>(!!getJwtToken());
+
+  useEffect(() => {
+    const handleTokenModeChange = (e: CustomEvent) => setTokenMode(e.detail);
+    const handleTokenChange = (e: CustomEvent) => setHasToken(!!e.detail);
+    window.addEventListener('token-mode-updated', handleTokenModeChange as EventListener);
+    window.addEventListener('token-updated', handleTokenChange as EventListener);
+    return () => {
+      window.removeEventListener('token-mode-updated', handleTokenModeChange as EventListener);
+      window.removeEventListener('token-updated', handleTokenChange as EventListener);
+    };
+  }, []);
 
   // Initialize input fields when endpoint changes
   useEffect(() => {
@@ -231,8 +244,16 @@ export const EndpointTester: React.FC<EndpointTesterProps> = ({ endpoint }) => {
             </div>
           )}
 
-          {/* Execute Action Button */}
+          {/* Token Mode Indicator + Execute Action Button */}
           <div className="action-row">
+            <div className={`token-mode-indicator ${tokenMode && hasToken ? 'indicator-active' : tokenMode && !hasToken ? 'indicator-no-token' : 'indicator-off'}`}>
+              {tokenMode && hasToken
+                ? <><ShieldCheck size={13} className="text-emerald" /> JWT will be sent</>  
+                : tokenMode && !hasToken
+                ? <><ShieldOff size={13} className="text-amber" /> No token stored — request unauthenticated</>
+                : <><ShieldOff size={13} className="text-muted" /> Token Mode OFF — request sent without JWT</>
+              }
+            </div>
             <button
               className="btn btn-primary btn-lg flex-center gap-2 full-width"
               onClick={handleExecute}
@@ -246,7 +267,7 @@ export const EndpointTester: React.FC<EndpointTesterProps> = ({ endpoint }) => {
               ) : (
                 <>
                   <Send size={18} />
-                  <span>Send Request & Trigger Pipeline Flow</span>
+                  <span>Send Request &amp; Trigger Pipeline Flow</span>
                 </>
               )}
             </button>

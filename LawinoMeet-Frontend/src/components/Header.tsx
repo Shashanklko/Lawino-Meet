@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getBaseUrl, setBaseUrl, getJwtToken, clearJwtToken } from '../services/apiClient';
-import { ShieldCheck, Key, RefreshCw, Server, LogOut } from 'lucide-react';
+import {
+  getBaseUrl, setBaseUrl, getJwtToken, clearJwtToken, setJwtToken,
+  isTokenModeActive, setTokenModeActive
+} from '../services/apiClient';
+import { ShieldCheck, Key, RefreshCw, Server, LogOut, ToggleLeft, ToggleRight, Edit3, Check } from 'lucide-react';
 
 interface HeaderProps {
   onResetPipeline: () => void;
@@ -9,16 +12,24 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
   const [baseUrl, setBaseUrlState] = useState<string>(getBaseUrl());
   const [token, setTokenState] = useState<string | null>(getJwtToken());
+  const [tokenMode, setTokenModeState] = useState<boolean>(isTokenModeActive());
   const [isEditingUrl, setIsEditingUrl] = useState<boolean>(false);
   const [tempUrl, setTempUrl] = useState<string>(baseUrl);
+  const [isEditingToken, setIsEditingToken] = useState<boolean>(false);
+  const [tempToken, setTempToken] = useState<string>('');
 
   useEffect(() => {
     const handleTokenChange = (e: CustomEvent) => {
       setTokenState(e.detail);
     };
+    const handleTokenModeChange = (e: CustomEvent) => {
+      setTokenModeState(e.detail);
+    };
     window.addEventListener('token-updated', handleTokenChange as EventListener);
+    window.addEventListener('token-mode-updated', handleTokenModeChange as EventListener);
     return () => {
       window.removeEventListener('token-updated', handleTokenChange as EventListener);
+      window.removeEventListener('token-mode-updated', handleTokenModeChange as EventListener);
     };
   }, []);
 
@@ -36,6 +47,20 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
     clearJwtToken();
   };
 
+  const handleToggleTokenMode = () => {
+    const next = !tokenMode;
+    setTokenModeActive(next);
+    setTokenModeState(next);
+  };
+
+  const handleSaveCustomToken = () => {
+    if (tempToken.trim()) {
+      setJwtToken(tempToken.trim());
+    }
+    setIsEditingToken(false);
+    setTempToken('');
+  };
+
   return (
     <header className="header-bar glass-panel">
       <div className="header-left">
@@ -43,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
           <ShieldCheck className="logo-icon text-cyan" size={24} />
           <div>
             <h1 className="logo-title">Lawino Meet <span className="text-highlight">Pipeline Studio</span></h1>
-            <p className="logo-subtitle">TypeScript Visual API Tester & Lifecycle Flow</p>
+            <p className="logo-subtitle">TypeScript Visual API Tester &amp; Lifecycle Flow</p>
           </div>
         </div>
       </div>
@@ -73,6 +98,23 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
           )}
         </div>
 
+        {/* 🔐 Token Mode Toggle */}
+        <div className={`token-mode-toggle ${tokenMode ? 'mode-on' : 'mode-off'}`}>
+          <button
+            className="token-mode-btn"
+            onClick={handleToggleTokenMode}
+            title={tokenMode ? 'Token Mode ON — click to disable JWT on requests' : 'Token Mode OFF — click to enable JWT on requests'}
+          >
+            {tokenMode
+              ? <ToggleRight size={20} className="text-emerald" />
+              : <ToggleLeft size={20} className="text-amber" />
+            }
+            <span className="token-mode-label">
+              Send JWT: <strong>{tokenMode ? 'ON' : 'OFF'}</strong>
+            </span>
+          </button>
+        </div>
+
         {/* JWT Auth Token Badge */}
         <div className={`token-status-card ${token ? 'authenticated' : 'anonymous'}`}>
           <Key size={16} className={token ? 'text-emerald' : 'text-amber'} />
@@ -90,6 +132,30 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
               <span className="token-snippet text-amber">Public Requests Only</span>
             )}
           </div>
+
+          {/* Paste custom token */}
+          {isEditingToken ? (
+            <div className="token-edit-group">
+              <input
+                type="text"
+                className="input-field small-input"
+                value={tempToken}
+                onChange={(e) => setTempToken(e.target.value)}
+                placeholder="Paste JWT token here..."
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCustomToken(); }}
+              />
+              <button className="btn btn-sm btn-primary" onClick={handleSaveCustomToken} title="Set Token">
+                <Check size={12} />
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={() => setIsEditingToken(false)}>✕</button>
+            </div>
+          ) : (
+            <button className="btn-icon-muted" onClick={() => { setIsEditingToken(true); setTempToken(''); }} title="Paste a custom JWT token">
+              <Edit3 size={14} />
+            </button>
+          )}
+
           {token && (
             <button className="btn-icon-danger" onClick={handleClearToken} title="Clear saved JWT Token">
               <LogOut size={14} />
