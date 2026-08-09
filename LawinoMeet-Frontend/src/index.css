@@ -1036,3 +1036,222 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--cyan-color);
 }
+
+/* ======================================================
+   SERVER HEALTH BADGE
+   ====================================================== */
+.server-health-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: default;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.6);
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+
+.server-health-badge.online {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.server-health-badge.offline {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+  cursor: pointer;
+  animation: pulse-offline 2s ease-in-out infinite;
+}
+
+.server-health-badge.checking {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+@keyframes pulse-offline {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+}
+
+.server-health-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.server-health-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.server-health-label.online  { color: var(--emerald-color); }
+.server-health-label.offline { color: var(--ruby-color); }
+.server-health-label.checking { color: var(--amber-color); }
+
+.server-health-url {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.start-server-hint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--ruby-color);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.recheck-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.recheck-btn:hover { color: var(--cyan-color); }
+.recheck-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ======================================================
+   START SERVER PANEL
+   ====================================================== */
+.start-server-panel {
+  position: relative;
+  margin: 0 0 4px 0;
+  padding: 18px 22px;
+  border-left: 3px solid var(--ruby-color);
+  animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.start-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.start-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.start-panel-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.start-panel-desc code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--cyan-color);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.start-cmd-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(2, 6, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+}
+
+.cmd-prompt {
+  color: var(--emerald-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cmd-text {
+  flex: 1;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.copy-cmd-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--cyan-color);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.copy-cmd-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  transform: translateY(-1px);
+}
+
+.start-panel-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.note-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.note-cmd {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.start-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.start-panel-tip {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
