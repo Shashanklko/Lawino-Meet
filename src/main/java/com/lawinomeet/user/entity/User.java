@@ -24,6 +24,9 @@ public class User {
     private Role role;
     private Integer globalTokenBalance = 5;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ProfessionalProfile professionalProfile;
+
     // Explicit Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
