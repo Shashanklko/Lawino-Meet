@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { PipelineTelemetry } from '../types/api';
 
-const DEFAULT_BASE_URL = 'http://localhost:8080';
+const DEFAULT_BASE_URL = 'https://lawinomeet-backend.onrender.com';
 const TOKEN_MODE_KEY = 'lawinomeet_token_mode';
 const TOKEN_KEY = 'lawinomeet_jwt_token';
 

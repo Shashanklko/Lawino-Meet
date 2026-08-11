@@ -193,7 +193,17 @@ export const Header: React.FC<HeaderProps> = ({ onResetPipeline }) => {
             <ShieldCheck className="logo-icon text-cyan" size={24} />
             <div>
               <h1 className="logo-title">Lawino Meet <span className="text-highlight">Pipeline Studio</span></h1>
-              <p className="logo-subtitle">TypeScript Visual API Tester &amp; Lifecycle Flow</p>
+              <p className="logo-subtitle">
+                TypeScript Visual API Tester &amp; Lifecycle Flow |{' '}
+                <a 
+                  href="https://github.com/Shashanklko/Lawino-Meet" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-cyan hover:underline"
+                >
+                  GitHub Repo
+                </a>
+              </p>
             </div>
           </div>
         </div>
