@@ -27,6 +27,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGO_URI:mongodb://localhost:27017/lawinomeet}
+      database: ${MONGO_DATABASE:lawinomeet}
 
 # Custom JWT Application Properties
 jwt:

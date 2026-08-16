@@ -13,6 +13,8 @@ services:
         value: "lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456"
       - key: FRONTEND_URL
         value: "https://lawinomeet-frontend.onrender.com"
+      - key: MONGO_DATABASE
+        value: "lawinomeet"
 
   # 2. React TypeScript Frontend Static Site (Free by default)
   - type: web
