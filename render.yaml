@@ -11,6 +11,8 @@ services:
         value: "8080"
       - key: JWT_SECRET
         value: "lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456"
+      - key: FRONTEND_URL
+        value: "https://lawinomeet-frontend.onrender.com"
 
   # 2. React TypeScript Frontend Static Site (Free by default)
   - type: web
@@ -19,3 +21,8 @@ services:
     rootDir: LawinoMeet-Frontend
     buildCommand: npm run build
     staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+

@@ -37,3 +37,8 @@ jwt:
 app:
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:*}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  seed-data:
+    enabled: ${SEED_DATA_ENABLED:true}
+

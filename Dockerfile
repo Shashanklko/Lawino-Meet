@@ -3,6 +3,7 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
+RUN if [ ! -f src/main/resources/application.yml ]; then cp src/main/resources/application.yml.example src/main/resources/application.yml; fi
 RUN mvn clean package -DskipTests
 
 # Step 2: Runtime Container
