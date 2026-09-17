@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PORT
         value: "8080"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:+UseSerialGC -Xss512k -XX:MaxRAMPercentage=50.0 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -XX:+ExitOnOutOfMemoryError"
       - key: JWT_SECRET
         value: "lawinomeet_super_secret_jwt_key_256_bits_length_for_testing_purposes_123456"
       - key: FRONTEND_URL
