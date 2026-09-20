@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -B
 # 2. Copy source code and compile using multi-threading
 COPY src ./src
 RUN if [ ! -f src/main/resources/application.yml ]; then cp src/main/resources/application.yml.example src/main/resources/application.yml; fi
-RUN --mount=type=cache,target=/root/.m2 mvn package -DskipTests -T 1C
+RUN --mount=type=cache,target=/root/.m2 mvn package -DskipTests
 
 # 3. Extract Spring Boot layered JAR
 RUN java -Djarmode=layertools -jar target/*.jar extract
