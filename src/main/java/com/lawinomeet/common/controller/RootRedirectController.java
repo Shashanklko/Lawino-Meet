@@ -89,7 +89,7 @@ public class RootRedirectController {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Lawino Meet | API Hub & Service Console</title>
+                <title>Lawino Meet | Service Navigator & Hub</title>
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -97,18 +97,18 @@ public class RootRedirectController {
                     :root {
                         --bg-primary: #07090e;
                         --bg-surface: #0f172a;
-                        --bg-card: rgba(15, 23, 42, 0.75);
-                        --bg-card-hover: rgba(30, 41, 59, 0.85);
+                        --bg-card: rgba(15, 23, 42, 0.72);
+                        --bg-card-hover: rgba(26, 36, 56, 0.88);
                         --border-color: rgba(255, 255, 255, 0.08);
-                        --border-highlight: rgba(99, 102, 241, 0.35);
+                        --border-highlight: rgba(99, 102, 241, 0.4);
                         --accent-primary: #6366f1;
-                        --accent-glow: rgba(99, 102, 241, 0.25);
+                        --accent-primary-hover: #4f46e5;
+                        --accent-glow: rgba(99, 102, 241, 0.22);
                         --accent-cyan: #06b6d4;
                         --accent-emerald: #10b981;
                         --text-primary: #f8fafc;
                         --text-secondary: #94a3b8;
                         --text-muted: #64748b;
-                        --terminal-bg: #030712;
                     }
                     * {
                         box-sizing: border-box;
@@ -117,34 +117,35 @@ public class RootRedirectController {
                     }
                     body {
                         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-                        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-primary) 65%);
+                        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-primary) 70%);
                         color: var(--text-primary);
                         min-height: 100vh;
-                        padding: 32px 20px 60px;
+                        padding: 48px 24px 60px;
                         display: flex;
                         flex-direction: column;
                         align-items: center;
+                        justify-content: center;
                     }
                     .ambient-glow {
                         position: fixed;
-                        top: -100px;
+                        top: -120px;
                         left: 50%;
                         transform: translateX(-50%);
-                        width: 700px;
-                        height: 350px;
-                        background: radial-gradient(ellipse, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.08) 40%, transparent 70%);
+                        width: 800px;
+                        height: 400px;
+                        background: radial-gradient(ellipse, rgba(99, 102, 241, 0.18) 0%, rgba(6, 182, 212, 0.09) 45%, transparent 70%);
                         pointer-events: none;
                         z-index: 0;
                     }
                     .container {
-                        max-width: 1040px;
+                        max-width: 880px;
                         width: 100%;
                         position: relative;
                         z-index: 1;
                     }
                     header {
                         text-align: center;
-                        margin-bottom: 36px;
+                        margin-bottom: 40px;
                     }
                     .status-pill {
                         display: inline-flex;
@@ -152,15 +153,15 @@ public class RootRedirectController {
                         gap: 8px;
                         background: rgba(16, 185, 129, 0.12);
                         border: 1px solid rgba(16, 185, 129, 0.3);
-                        padding: 6px 14px;
+                        padding: 6px 16px;
                         border-radius: 9999px;
                         font-size: 0.8125rem;
                         font-weight: 600;
                         color: #34d399;
                         letter-spacing: 0.04em;
                         text-transform: uppercase;
-                        margin-bottom: 16px;
-                        box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+                        margin-bottom: 18px;
+                        box-shadow: 0 0 24px rgba(16, 185, 129, 0.2);
                     }
                     .status-dot {
                         width: 8px;
@@ -178,226 +179,198 @@ public class RootRedirectController {
                         font-size: 2.75rem;
                         font-weight: 800;
                         letter-spacing: -0.03em;
-                        background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 70%, #818cf8 100%);
+                        background: linear-gradient(135deg, #ffffff 25%, #cbd5e1 65%, #818cf8 100%);
                         -webkit-background-clip: text;
                         -webkit-text-fill-color: transparent;
-                        margin-bottom: 10px;
+                        margin-bottom: 12px;
                     }
                     .subtitle {
                         font-size: 1.0625rem;
                         color: var(--text-secondary);
-                        max-width: 620px;
+                        max-width: 600px;
                         margin: 0 auto;
                         line-height: 1.6;
                     }
-                    .grid {
+                    
+                    /* Portal Cards Grid */
+                    .nav-grid {
                         display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 24px;
-                        margin-bottom: 32px;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 20px;
+                        margin-bottom: 24px;
                     }
-                    @media (max-width: 840px) {
-                        .grid { grid-template-columns: 1fr; }
+                    @media (max-width: 680px) {
+                        .nav-grid { grid-template-columns: 1fr; }
                         h1 { font-size: 2.1rem; }
+                        body { padding: 32px 16px; }
                     }
-                    .card {
+                    
+                    .nav-card {
                         background: var(--bg-card);
-                        backdrop-filter: blur(16px);
+                        backdrop-filter: blur(20px);
+                        -webkit-backdrop-filter: blur(20px);
                         border: 1px solid var(--border-color);
                         border-radius: 16px;
                         padding: 24px;
-                        transition: all 0.25s ease;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        text-decoration: none;
+                        color: inherit;
+                        transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
                         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+                        position: relative;
+                        overflow: hidden;
                     }
-                    .card:hover {
+                    .nav-card::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        height: 2px;
+                        background: linear-gradient(90deg, transparent, transparent, transparent);
+                        transition: all 0.3s ease;
+                    }
+                    .nav-card:hover {
+                        transform: translateY(-4px);
                         border-color: var(--border-highlight);
-                        box-shadow: 0 12px 36px var(--accent-glow);
+                        background: var(--bg-card-hover);
+                        box-shadow: 0 16px 40px var(--accent-glow);
                     }
-                    .card-title {
-                        font-size: 1.125rem;
-                        font-weight: 700;
-                        color: var(--text-primary);
+                    .nav-card:hover::before {
+                        background: linear-gradient(90deg, var(--accent-cyan), var(--accent-primary), var(--accent-emerald));
+                    }
+                    .nav-card-header {
                         display: flex;
                         align-items: center;
-                        gap: 10px;
-                        margin-bottom: 18px;
+                        justify-content: space-between;
+                        margin-bottom: 12px;
                     }
-                    .btn-group {
+                    .nav-card-icon-wrap {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 44px;
+                        height: 44px;
+                        border-radius: 12px;
+                        background: rgba(99, 102, 241, 0.12);
+                        border: 1px solid rgba(99, 102, 241, 0.25);
+                        font-size: 1.35rem;
+                    }
+                    .nav-card-badge {
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        font-size: 0.6875rem;
+                        font-weight: 700;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        font-family: 'JetBrains Mono', monospace;
+                        background: rgba(255, 255, 255, 0.06);
+                        color: var(--text-secondary);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                    }
+                    .nav-card-badge.badge-primary {
+                        background: rgba(99, 102, 241, 0.15);
+                        color: #a5b4fc;
+                        border-color: rgba(99, 102, 241, 0.3);
+                    }
+                    .nav-card-badge.badge-cyan {
+                        background: rgba(6, 182, 212, 0.15);
+                        color: #67e8f9;
+                        border-color: rgba(6, 182, 212, 0.3);
+                    }
+                    .nav-card-badge.badge-emerald {
+                        background: rgba(16, 185, 129, 0.15);
+                        color: #6ee7b7;
+                        border-color: rgba(16, 185, 129, 0.3);
+                    }
+                    .nav-card-title {
+                        font-size: 1.15rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
+                        margin-bottom: 8px;
                         display: flex;
-                        flex-wrap: wrap;
-                        gap: 10px;
-                        margin-bottom: 18px;
+                        align-items: center;
+                        gap: 6px;
                     }
-                    button, .btn-link {
-                        font-family: inherit;
+                    .nav-card-desc {
                         font-size: 0.875rem;
-                        font-weight: 600;
-                        padding: 10px 18px;
-                        border-radius: 10px;
-                        border: none;
-                        cursor: pointer;
+                        color: var(--text-secondary);
+                        line-height: 1.5;
+                        margin-bottom: 20px;
+                        flex-grow: 1;
+                    }
+                    .nav-card-action {
                         display: inline-flex;
                         align-items: center;
                         gap: 8px;
-                        text-decoration: none;
-                        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                    }
-                    .btn-primary {
-                        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #06b6d4 100%);
-                        color: #ffffff;
-                        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
-                    }
-                    .btn-primary:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 22px rgba(99, 102, 241, 0.5);
-                    }
-                    .btn-secondary {
-                        background: rgba(255, 255, 255, 0.05);
-                        border: 1px solid var(--border-color);
-                        color: var(--text-primary);
-                    }
-                    .btn-secondary:hover {
-                        background: rgba(255, 255, 255, 0.1);
-                        border-color: var(--text-secondary);
-                        transform: translateY(-1px);
-                    }
-                    .btn-accent {
-                        background: rgba(6, 182, 212, 0.12);
-                        border: 1px solid rgba(6, 182, 212, 0.3);
-                        color: #22d3ee;
-                    }
-                    .btn-accent:hover {
-                        background: rgba(6, 182, 212, 0.2);
-                        box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
-                    }
-                    .input-row {
-                        display: flex;
-                        gap: 8px;
-                        margin-bottom: 16px;
-                    }
-                    .input-endpoint {
-                        flex: 1;
-                        background: var(--terminal-bg);
-                        border: 1px solid var(--border-color);
-                        border-radius: 8px;
-                        padding: 10px 14px;
-                        color: #38bdf8;
-                        font-family: 'JetBrains Mono', monospace;
                         font-size: 0.875rem;
-                        outline: none;
-                        transition: border-color 0.2s;
-                    }
-                    .input-endpoint:focus {
-                        border-color: var(--accent-primary);
-                    }
-                    /* Live Terminal Console */
-                    .terminal-box {
-                        background: var(--terminal-bg);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 12px;
-                        overflow: hidden;
-                    }
-                    .terminal-header {
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        padding: 10px 14px;
-                        background: rgba(255, 255, 255, 0.03);
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-                        font-size: 0.75rem;
-                        color: var(--text-muted);
-                    }
-                    .terminal-tags {
-                        display: flex;
-                        gap: 8px;
-                        align-items: center;
-                    }
-                    .tag {
-                        padding: 2px 8px;
-                        border-radius: 4px;
-                        font-family: 'JetBrains Mono', monospace;
                         font-weight: 600;
-                        font-size: 0.75rem;
+                        color: #818cf8;
+                        transition: gap 0.2s ease, color 0.2s ease;
                     }
-                    .tag-200 { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-                    .tag-time { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
-                    .terminal-body {
-                        padding: 14px;
-                        font-family: 'JetBrains Mono', monospace;
-                        font-size: 0.8125rem;
-                        color: #e2e8f0;
-                        max-height: 240px;
-                        overflow-y: auto;
-                        white-space: pre-wrap;
-                        word-break: break-all;
-                        line-height: 1.5;
-                    }
-                    /* Telemetry Specs */
-                    .spec-list {
-                        display: flex;
-                        flex-direction: column;
+                    .nav-card:hover .nav-card-action {
+                        color: #c7d2fe;
                         gap: 12px;
                     }
-                    .spec-item {
+                    
+                    /* Telemetry Specs Panel */
+                    .telemetry-card {
+                        background: var(--bg-card);
+                        backdrop-filter: blur(20px);
+                        -webkit-backdrop-filter: blur(20px);
+                        border: 1px solid var(--border-color);
+                        border-radius: 16px;
+                        padding: 24px 28px;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+                        margin-bottom: 28px;
+                    }
+                    .telemetry-header {
+                        font-size: 1rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
                         display: flex;
-                        justify-content: space-between;
                         align-items: center;
-                        padding: 8px 12px;
+                        gap: 10px;
+                        margin-bottom: 18px;
+                    }
+                    .telemetry-grid {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 14px;
+                    }
+                    @media (max-width: 680px) {
+                        .telemetry-grid { grid-template-columns: 1fr; }
+                    }
+                    .telemetry-item {
                         background: rgba(255, 255, 255, 0.02);
-                        border-radius: 8px;
                         border: 1px solid rgba(255, 255, 255, 0.04);
+                        border-radius: 10px;
+                        padding: 12px 14px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
                     }
-                    .spec-label {
-                        font-size: 0.8125rem;
-                        color: var(--text-secondary);
+                    .telemetry-label {
+                        font-size: 0.75rem;
+                        color: var(--text-muted);
+                        text-transform: uppercase;
+                        letter-spacing: 0.04em;
+                        font-weight: 600;
                     }
-                    .spec-val {
-                        font-size: 0.8125rem;
+                    .telemetry-value {
                         font-family: 'JetBrains Mono', monospace;
+                        font-size: 0.8125rem;
                         color: #38bdf8;
                         font-weight: 500;
+                        word-break: break-all;
                     }
-                    /* Endpoints cheat sheet */
-                    .endpoint-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 0.8125rem;
-                        margin-top: 10px;
-                    }
-                    .endpoint-table th, .endpoint-table td {
-                        padding: 10px 12px;
-                        text-align: left;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                    }
-                    .endpoint-table th {
-                        color: var(--text-muted);
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        font-size: 0.6875rem;
-                        letter-spacing: 0.05em;
-                    }
-                    .method-badge {
-                        padding: 2px 6px;
-                        border-radius: 4px;
-                        font-weight: 700;
-                        font-family: 'JetBrains Mono', monospace;
-                        font-size: 0.6875rem;
-                    }
-                    .method-get { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-                    .method-post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-                    .method-ws { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+                    
                     footer {
                         text-align: center;
-                        margin-top: 24px;
                         font-size: 0.8125rem;
                         color: var(--text-muted);
-                    }
-                    footer a {
-                        color: #818cf8;
-                        text-decoration: none;
-                    }
-                    footer a:hover {
-                        text-decoration: underline;
                     }
                 </style>
             </head>
@@ -409,155 +382,121 @@ public class RootRedirectController {
                             <div class="status-dot"></div>
                             System Online &bull; Healthy
                         </div>
-                        <h1>🏛️ Lawino Meet API Hub</h1>
+                        <h1>🏛️ Lawino Meet</h1>
                         <p class="subtitle">
-                            Enterprise Legal Consultation & Collaboration Platform Backend. Ready to serve authenticated REST API endpoints and real-time STOMP WebSockets.
+                            Enterprise Legal Consultation & Service Navigator Hub. Connect to client portals, developer documentation, and runtime telemetry.
                         </p>
                     </header>
 
-                    <div class="grid">
-                        <!-- Card 1: Interactive Live API Tester -->
-                        <div class="card">
-                            <div class="card-title">
-                                <span>⚡</span> Live API Test Console
-                            </div>
-                            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 14px;">
-                                Send instant AJAX queries directly to the backend to verify server responsiveness:
-                            </p>
-                            
-                            <div class="btn-group">
-                                <button id="btn-test-status" class="btn-primary" onclick="testEndpoint('/api/status')">
-                                    🚀 Test /api/status
-                                </button>
-                                <button id="btn-test-lawyers" class="btn-secondary" onclick="testEndpoint('/api/users/lawyers')">
-                                    👥 Test /api/users/lawyers
-                                </button>
-                                <button id="btn-test-docs" class="btn-secondary" onclick="testEndpoint('/v3/api-docs')">
-                                    📑 Test OpenAPI Schema
-                                </button>
-                            </div>
-
-                            <div class="input-row">
-                                <input type="text" id="custom-endpoint" class="input-endpoint" value="/api/status" placeholder="/api/custom-path">
-                                <button class="btn-accent" onclick="testEndpoint(document.getElementById('custom-endpoint').value)">
-                                    Execute &rarr;
-                                </button>
-                            </div>
-
-                            <div class="terminal-box">
-                                <div class="terminal-header">
-                                    <span id="terminal-endpoint">GET /api/status</span>
-                                    <div class="terminal-tags">
-                                        <span id="status-tag" class="tag tag-200">200 OK</span>
-                                        <span id="latency-tag" class="tag tag-time">-- ms</span>
-                                        <button onclick="copyResponse()" style="background:transparent; border:none; color:var(--text-secondary); font-size:0.75rem; padding:2px 6px; cursor:pointer;">📋 Copy</button>
+                    <!-- Navigation Portals Grid -->
+                    <div class="nav-grid">
+                        <!-- Portal 1: Launch Frontend -->
+                        <a href="__FRONTEND_URL__" target="_blank" class="nav-card">
+                            <div>
+                                <div class="nav-card-header">
+                                    <div class="nav-card-icon-wrap" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3);">
+                                        🌐
                                     </div>
+                                    <span class="nav-card-badge badge-primary">Web App</span>
                                 </div>
-                                <pre id="terminal-output" class="terminal-body">Loading API status...</pre>
+                                <div class="nav-card-title">Launch Frontend Portal</div>
+                                <div class="nav-card-desc">
+                                    Access the Lawino Meet client and lawyer web application for bookings, video consultations, and real-time messaging.
+                                </div>
                             </div>
-                        </div>
+                            <div class="nav-card-action">
+                                Open Web Application <span>&rarr;</span>
+                            </div>
+                        </a>
 
-                        <!-- Card 2: Quick Portals & Telemetry -->
-                        <div class="card">
-                            <div class="card-title">
-                                <span>🧭</span> Quick Portals & Documentation
+                        <!-- Portal 2: Swagger Documentation -->
+                        <a href="/swagger-ui.html" target="_blank" class="nav-card">
+                            <div>
+                                <div class="nav-card-header">
+                                    <div class="nav-card-icon-wrap" style="background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.3);">
+                                        📑
+                                    </div>
+                                    <span class="nav-card-badge badge-cyan">Interactive Docs</span>
+                                </div>
+                                <div class="nav-card-title">Swagger API Explorer</div>
+                                <div class="nav-card-desc">
+                                    Interactive API documentation to test endpoints, examine request/response schemas, and inspect authentication contracts.
+                                </div>
                             </div>
-                            
-                            <div class="btn-group">
-                                <a href="/swagger-ui.html" target="_blank" class="btn-primary">
-                                    📑 Swagger API Docs
-                                </a>
-                                <a href="__FRONTEND_URL__" target="_blank" class="btn-secondary">
-                                    🌐 Launch Frontend Web App &rarr;
-                                </a>
-                                <a href="/api/status" target="_blank" class="btn-accent">
-                                    🔌 Raw JSON Status
-                                </a>
+                            <div class="nav-card-action">
+                                View Swagger UI <span>&rarr;</span>
                             </div>
+                        </a>
 
-                            <div class="card-title" style="margin-top: 24px; font-size: 1rem;">
-                                <span>📊</span> Runtime Telemetry
+                        <!-- Portal 3: Raw JSON Health -->
+                        <a href="/api/status" target="_blank" class="nav-card">
+                            <div>
+                                <div class="nav-card-header">
+                                    <div class="nav-card-icon-wrap" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);">
+                                        🔌
+                                    </div>
+                                    <span class="nav-card-badge badge-emerald">JSON Telemetry</span>
+                                </div>
+                                <div class="nav-card-title">Live API Status</div>
+                                <div class="nav-card-desc">
+                                    Programmatic JSON health probe providing server uptime, active configuration, and heartbeat metrics for monitoring.
+                                </div>
                             </div>
+                            <div class="nav-card-action">
+                                Inspect JSON Status <span>&rarr;</span>
+                            </div>
+                        </a>
 
-                            <div class="spec-list">
-                                <div class="spec-item">
-                                    <span class="spec-label">Service Application</span>
-                                    <span class="spec-val">__APP_NAME__</span>
+                        <!-- Portal 4: OpenAPI Spec -->
+                        <a href="/v3/api-docs" target="_blank" class="nav-card">
+                            <div>
+                                <div class="nav-card-header">
+                                    <div class="nav-card-icon-wrap" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3);">
+                                        📜
+                                    </div>
+                                    <span class="nav-card-badge">OpenAPI 3.0</span>
                                 </div>
-                                <div class="spec-item">
-                                    <span class="spec-label">Environment / Stack</span>
-                                    <span class="spec-val">Java 17 &bull; Spring Boot 3.2.4</span>
-                                </div>
-                                <div class="spec-item">
-                                    <span class="spec-label">Configured Port</span>
-                                    <span class="spec-val">__SERVER_PORT__</span>
-                                </div>
-                                <div class="spec-item">
-                                    <span class="spec-label">Databases Active</span>
-                                    <span class="spec-val">JPA (MySQL/H2) + MongoDB Atlas</span>
-                                </div>
-                                <div class="spec-item">
-                                    <span class="spec-label">WebSocket Broker</span>
-                                    <span class="spec-val">SockJS + STOMP (/ws)</span>
+                                <div class="nav-card-title">OpenAPI Specification</div>
+                                <div class="nav-card-desc">
+                                    Standardized OpenAPI v3 JSON definition for Postman collection import, SDK generation, and automated integration pipelines.
                                 </div>
                             </div>
-                        </div>
+                            <div class="nav-card-action">
+                                View OpenAPI JSON <span>&rarr;</span>
+                            </div>
+                        </a>
                     </div>
 
-                    <!-- Full Width Card: Core API Reference -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📚</span> Core API Cheat Sheet
+                    <!-- Runtime Telemetry Card -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-header">
+                            <span>📊</span> Runtime Telemetry & Platform Specs
                         </div>
-                        <div style="overflow-x: auto;">
-                            <table class="endpoint-table">
-                                <thead>
-                                    <tr>
-                                        <th>Method</th>
-                                        <th>Endpoint</th>
-                                        <th>Auth Required</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><span class="method-badge method-get">GET</span></td>
-                                        <td><code>/api/status</code></td>
-                                        <td>No</td>
-                                        <td>Live server health and metadata</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="method-badge method-get">GET</span></td>
-                                        <td><code>/api/users/lawyers</code></td>
-                                        <td>No</td>
-                                        <td>Public verified lawyer directory</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="method-badge method-post">POST</span></td>
-                                        <td><code>/api/auth/login</code></td>
-                                        <td>No</td>
-                                        <td>Authenticate user & obtain JWT token</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="method-badge method-post">POST</span></td>
-                                        <td><code>/api/auth/register</code></td>
-                                        <td>No</td>
-                                        <td>Client / Lawyer registration</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="method-badge method-post">POST</span></td>
-                                        <td><code>/api/consultations/request</code></td>
-                                        <td>Bearer JWT</td>
-                                        <td>Book a legal consultation session</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="method-badge method-ws">WS</span></td>
-                                        <td><code>/ws</code></td>
-                                        <td>Token Handshake</td>
-                                        <td>Real-time chat & signaling socket</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="telemetry-grid">
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">Service Application</span>
+                                <span class="telemetry-value">__APP_NAME__</span>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">Environment / Stack</span>
+                                <span class="telemetry-value">Java 17 &bull; Spring Boot 3.2.4</span>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">Configured Port</span>
+                                <span class="telemetry-value">__SERVER_PORT__</span>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">Databases Active</span>
+                                <span class="telemetry-value">JPA (MySQL/H2) + MongoDB Atlas</span>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">WebSocket Broker</span>
+                                <span class="telemetry-value">SockJS + STOMP (/ws)</span>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="telemetry-label">Status Check</span>
+                                <span class="telemetry-value" style="color: #34d399;">UP (HTTP 200)</span>
+                            </div>
                         </div>
                     </div>
 
@@ -565,74 +504,6 @@ public class RootRedirectController {
                         &copy; 2026 Lawino Meet Platform &bull; Secure Legal Tech Solutions.
                     </footer>
                 </div>
-
-                <script>
-                    let lastResponseJson = "";
-
-                    async function testEndpoint(endpoint) {
-                        if (!endpoint.startsWith('/')) endpoint = '/' + endpoint;
-                        document.getElementById('custom-endpoint').value = endpoint;
-                        document.getElementById('terminal-endpoint').innerText = 'GET ' + endpoint;
-                        
-                        const outputEl = document.getElementById('terminal-output');
-                        const statusTag = document.getElementById('status-tag');
-                        const latencyTag = document.getElementById('latency-tag');
-                        
-                        outputEl.innerText = 'Connecting to ' + endpoint + '...';
-                        statusTag.className = 'tag tag-time';
-                        statusTag.innerText = 'FETCHING';
-                        latencyTag.innerText = '...';
-                        
-                        const startTime = performance.now();
-                        try {
-                            const res = await fetch(endpoint, {
-                                headers: { 'Accept': 'application/json' }
-                            });
-                            const latency = Math.round(performance.now() - startTime);
-                            latencyTag.innerText = latency + ' ms';
-                            
-                            statusTag.innerText = res.status + ' ' + res.statusText;
-                            if (res.ok) {
-                                statusTag.className = 'tag tag-200';
-                            } else {
-                                statusTag.className = 'tag tag-time';
-                                statusTag.style.background = 'rgba(239, 68, 68, 0.2)';
-                                statusTag.style.color = '#f87171';
-                            }
-
-                            const contentType = res.headers.get('content-type') || '';
-                            if (contentType.includes('application/json')) {
-                                const data = await res.json();
-                                lastResponseJson = JSON.stringify(data, null, 2);
-                                outputEl.innerText = lastResponseJson;
-                            } else {
-                                const text = await res.text();
-                                lastResponseJson = text.substring(0, 1000);
-                                outputEl.innerText = lastResponseJson + (text.length > 1000 ? '\\n... (truncated)' : '');
-                            }
-                        } catch (err) {
-                            const latency = Math.round(performance.now() - startTime);
-                            latencyTag.innerText = latency + ' ms';
-                            statusTag.className = 'tag tag-time';
-                            statusTag.style.background = 'rgba(239, 68, 68, 0.2)';
-                            statusTag.style.color = '#f87171';
-                            statusTag.innerText = 'NETWORK ERROR';
-                            outputEl.innerText = 'Error connecting to endpoint:\\n' + err.message;
-                        }
-                    }
-
-                    function copyResponse() {
-                        if (!lastResponseJson) return;
-                        navigator.clipboard.writeText(lastResponseJson).then(() => {
-                            alert('Response copied to clipboard!');
-                        });
-                    }
-
-                    // Automatically test /api/status on initial page load
-                    window.addEventListener('DOMContentLoaded', () => {
-                        testEndpoint('/api/status');
-                    });
-                </script>
             </body>
             </html>
             """

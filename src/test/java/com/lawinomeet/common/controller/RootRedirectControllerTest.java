@@ -25,9 +25,9 @@ class RootRedirectControllerTest {
                         .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
-                .andExpect(content().string(containsString("Lawino Meet API Hub")))
-                .andExpect(content().string(containsString("Live API Test Console")))
-                .andExpect(content().string(containsString("Test /api/status")));
+                .andExpect(content().string(containsString("Lawino Meet")))
+                .andExpect(content().string(containsString("Launch Frontend Portal")))
+                .andExpect(content().string(containsString("Swagger API Explorer")));
     }
 
     @Test
@@ -36,7 +36,7 @@ class RootRedirectControllerTest {
                         .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
-                .andExpect(content().string(containsString("Lawino Meet API Hub")));
+                .andExpect(content().string(containsString("Lawino Meet")));
     }
 
     @Test
