@@ -35,12 +35,12 @@ public class LawinoMeetBackendApplication {
             "========================================================================================\n" +
             " 🏛️  Lawino Meet Backend Server is Online & Running!\n" +
             "----------------------------------------------------------------------------------------\n" +
-            " 🌐  Backend Server URL:  http://localhost:" + serverPort + "  (Auto-redirects -> Frontend)\n" +
-            " 💻  Target Frontend URL: " + frontendUrl + "\n" +
+            " 🌐  API Hub & Console:  http://localhost:" + serverPort + "  (Interactive Testing & Health)\n" +
+            " 💻  Frontend Web App:   " + frontendUrl + "\n" +
             " 📑  Swagger API Docs:    http://localhost:" + serverPort + "/swagger-ui.html\n" +
             " 🔌  API Health Status:   http://localhost:" + serverPort + "/api/status\n" +
             "========================================================================================\n"
         );
-        log.info("Lawino Meet Backend ready on port {} -> Redirecting root requests to {}", serverPort, frontendUrl);
+        log.info("Lawino Meet Backend ready on port {} -> Serving interactive API Console at http://localhost:{}", serverPort, serverPort);
     }
 }

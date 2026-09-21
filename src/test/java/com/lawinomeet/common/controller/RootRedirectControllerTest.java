@@ -20,27 +20,38 @@ class RootRedirectControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void rootEndpoint_WithoutAuth_ShouldRedirectToFrontend() throws Exception {
+    void rootEndpoint_WithoutAuth_ShouldReturnLandingHtml() throws Exception {
         mockMvc.perform(get("/")
                         .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost:5173"));
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(containsString("Lawino Meet API Hub")))
+                .andExpect(content().string(containsString("Live API Test Console")))
+                .andExpect(content().string(containsString("Test /api/status")));
     }
 
     @Test
-    void frontendEndpoint_WithoutAuth_ShouldRedirectToFrontend() throws Exception {
+    void frontendEndpoint_WithoutAuth_ShouldReturnLandingHtml() throws Exception {
         mockMvc.perform(get("/frontend")
                         .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost:5173"));
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(containsString("Lawino Meet API Hub")));
     }
 
     @Test
-    void rootEndpoint_WithQueryParams_ShouldPreserveQueryParamsInRedirect() throws Exception {
-        mockMvc.perform(get("/?ref=portal&lang=en")
-                        .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost:5173?ref=portal&lang=en"));
+    void statusAliases_WithoutAuth_ShouldReturnLandingHtml() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+
+        mockMvc.perform(get("/status"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+
+        mockMvc.perform(get("/api"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
     }
 
     @Test
@@ -48,7 +59,7 @@ class RootRedirectControllerTest {
         mockMvc.perform(get("/")
                         .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.service").value("LawinoMeet Backend API"))
+                .andExpect(jsonPath("$.service").value("LawinoMeet-Backend"))
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.frontendUrl").value("http://localhost:5173"));
     }
@@ -57,7 +68,7 @@ class RootRedirectControllerTest {
     void apiStatusEndpoint_ShouldReturnServiceHealthInfo() throws Exception {
         mockMvc.perform(get("/api/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.service").value("LawinoMeet Backend API"))
+                .andExpect(jsonPath("$.service").value("LawinoMeet-Backend"))
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.swaggerDocs").value("/swagger-ui.html"));
     }
