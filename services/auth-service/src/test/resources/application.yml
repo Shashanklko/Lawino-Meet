@@ -1,0 +1,28 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: auth-service-test
+  datasource:
+    url: jdbc:h2:mem:auth_db;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt:
+    secret: test-secret-jwt-key-must-be-very-long-and-secure-for-testing-purpose-only
+    expiration-ms: 3600000
+    issuer: lawino-meet-test
