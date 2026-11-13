@@ -6,9 +6,9 @@
 |---|---|---|---|
 | **Phase 0** | Repository Inspection & Architecture Planning | 🟢 COMPLETED | Clean monorepo initialized, Java 21 LTS verified, Maven 3.9 configured, `.env.example`, `.gitignore`, `README.md` established |
 | **Phase 1** | Backend Foundation (6 Spring Boot Services) | 🟢 COMPLETED | 6 independent Spring Boot microservices created, configured with Actuator, JPA, MySQL, multi-stage Dockerfiles, passed full test suites |
-| **Phase 2** | Authentication & Security (Auth Service) | ⏳ READY TO START | Client/lawyer/firm registration, login, BCrypt password hashing, JWT generation/validation, role checks |
-| **Phase 3** | User & Firm Management (User Service) | ⚪ NOT STARTED | Profiles, specializations, services, discovery & search APIs |
-| **Phase 4** | Appointment Service | ⚪ NOT STARTED | Availability slots, appointment lifecycle, atomic slot reservation, double-booking prevention |
+| **Phase 2** | Authentication & Security (Auth Service) | 🟢 COMPLETED | Dual-ID architecture (`publicId: UUID` + unique `username`), BCrypt encryption, registration for Client/Lawyer/Firm Admin, dual-login (username/email), JWT with no internal IDs, single-use refresh token rotation, 8/8 tests passing |
+| **Phase 3** | User & Firm Management (User Service) | ⏳ READY TO START | Client profiles, Lawyer profiles, Law Firms (`law_firms`), Firm Members (`firm_members`), Legal Services, Specializations, Discovery & Search |
+| **Phase 4** | Appointment Service | ⚪ NOT STARTED | Availability slots, appointment lifecycle, atomic slot reservation, double-booking prevention, firm-level appointment roster |
 | **Phase 5** | Notification Service | ⚪ NOT STARTED | In-app notification storage, retrieval, read status, event triggers |
 | **Phase 6** | Chat Service | ⚪ NOT STARTED | One-to-one WebSocket & REST messaging, lawyer messaging toggle |
 | **Phase 7** | Meeting Service | ⚪ NOT STARTED | WebRTC signaling over WebSocket, room lifecycle, participant authorization |
@@ -21,77 +21,54 @@
 
 ---
 
-## Completed in Phase 1
+## Completed in Phase 2: Authentication & Security
 
-### 1. Root Aggregator & Maven Setup
-- **Root POM (`pom.xml`):** Configured with Java 21, Spring Boot 3.3.5, and child modules.
-- **Maven Configuration (`.mvn/maven.config`):** Local repository isolated to workspace `.m2/repository`.
-- **Reproducible Build:** Verified with `mvn clean test package` across all 6 services.
+### 1. Enterprise Security & Dual-ID Identity
+- **Dual-ID Protection:**
+  - `id: BIGINT`: Internal database primary key for fast relational indexing and joins in MySQL. **Never exposed to clients or JWT**.
+  - `publicId: UUID`: 36-character unguessable external ID used for token claims, APIs, and inter-service communication. Prevents IDOR and enumeration attacks.
+  - `username: VARCHAR(50)`: Case-insensitive unique handle (e.g. `adv_sharma`, `client_rahul`) for human support, clean discovery URLs, and friendly interaction.
+- **BCrypt Encryption:** Passwords salted and hashed with BCrypt. Plaintext passwords are never stored.
+- **Password Strength Policy:** Validated via regex requiring at least 8 characters with uppercase, lowercase, numbers, and special characters.
 
-### 2. Six Independent Spring Boot Microservices
-- **`auth-service` (Port 8081):**
-  - Database: `auth_db`
-  - Dependencies: Spring Web, Security, Data JPA, Actuator, JJWT 0.12.6, MySQL Connector, Validation, Lombok
-  - Endpoints: `/actuator/health`, `/api/auth/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
-- **`user-service` (Port 8082):**
-  - Database: `user_db`
-  - Dependencies: Spring Web, Data JPA, Actuator, MySQL Connector, Validation, Lombok
-  - Endpoints: `/actuator/health`, `/api/users/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
-- **`appointment-service` (Port 8083):**
-  - Database: `appointment_db`
-  - Dependencies: Spring Web, Data JPA, Actuator, MySQL Connector, Validation, Lombok
-  - Endpoints: `/actuator/health`, `/api/appointments/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
-- **`meeting-service` (Port 8084):**
-  - Database: `meeting_db`
-  - Dependencies: Spring Web, WebSocket, Data JPA, Actuator, MySQL Connector, Validation, Lombok
-  - STUN/TURN configuration bindings
-  - Endpoints: `/actuator/health`, `/api/meetings/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
-- **`notification-service` (Port 8085):**
-  - Database: `notification_db`
-  - Dependencies: Spring Web, Data JPA, Actuator, MySQL Connector, Validation, Lombok
-  - Endpoints: `/actuator/health`, `/api/notifications/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
-- **`chat-service` (Port 8086):**
-  - Database: `chat_db`
-  - Dependencies: Spring Web, WebSocket, Data JPA, Actuator, MySQL Connector, Validation, Lombok
-  - Endpoints: `/actuator/health`, `/api/chat/ping`
-  - Multi-stage `Dockerfile` and `.dockerignore`
+### 2. Implemented Endpoints (`/api/auth`)
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/auth/register/client` | Register client account (`ROLE_CLIENT`) | Public |
+| `POST` | `/api/auth/register/lawyer` | Register lawyer account (`ROLE_LAWYER`) | Public |
+| `POST` | `/api/auth/register/firm` | Register law firm administrator (`ROLE_FIRM_ADMIN`) | Public |
+| `POST` | `/api/auth/login` | Login with **either email or username** + password | Public |
+| `POST` | `/api/auth/refresh` | Single-use refresh token rotation | Public |
+| `POST` | `/api/auth/logout` | Revoke all active refresh tokens for user | Authenticated |
+| `GET` | `/api/auth/me` | Fetch authenticated user summary (publicId, username, role, status) | Authenticated |
 
-### 3. Architecture & Reliability Standardization
-- **Uniform API Responses:** `ApiResponse<T>` wrapper class in every service.
-- **Uniform Error Responses:** `ErrorResponse` model with `errorCode`, `message`, `timestamp`, and `details` adhering to Section 25.
-- **Centralized Exception Handling:** `@RestControllerAdvice` in `GlobalExceptionHandler` handling `ApiException`, `MethodArgumentNotValidException`, and unhandled errors.
-- **Environment-Driven Configuration:** `application.yml` supporting containerized environments and local dev overrides.
-- **Test Database Isolation:** `application.yml` under `src/test/resources` configuring in-memory H2 database for clean, isolated test runs.
+### 3. JWT Architecture & Token Security
+- **JWT Payload Claims:**
+  - `sub`: `username` (User's unique public handle)
+  - `publicId`: `UUID` (Secure external identifier)
+  - `email`: User's registered email
+  - `role`: User role (`CLIENT`, `LAWYER`, `FIRM_ADMIN`, `PLATFORM_ADMIN`)
+  - `accountStatus`: Current status (`ACTIVE`, `PENDING`, `SUSPENDED`, `DISABLED`)
+  - `iss`: `lawino-meet`
+- **Zero Database ID Exposure:** No numeric auto-increment primary key is exposed in the token.
+- **Refresh Token Rotation:** Refresh tokens are single-use; a new refresh token is issued and the old one revoked on every refresh request.
 
-### 4. Build & Test Verification Results
+### 4. Automated Test Verification Results
 ```text
-[INFO] ------------------------------------------------------------------------
-[INFO] Reactor Summary for Lawino Meet - Microservices Platform 1.0.0-SNAPSHOT:
-[INFO] 
-[INFO] auth-service ....................................... SUCCESS
-[INFO] user-service ....................................... SUCCESS
-[INFO] appointment-service ................................ SUCCESS
-[INFO] meeting-service .................................... SUCCESS
-[INFO] notification-service ............................... SUCCESS
-[INFO] chat-service ....................................... SUCCESS
-[INFO] Lawino Meet - Microservices Platform ............... SUCCESS
+[INFO] Running com.lawinomeet.auth.AuthControllerTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lawinomeet.auth.AuthServiceApplicationTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
+[INFO] Total time: 14.317 s
 ```
-All six application contexts load and all tests pass with 0 failures and 0 errors.
-
----
-
-## Next Steps: Phase 2 — Authentication (Auth Service)
-1. User entity and repository (`users` table in `auth_db`).
-2. User roles enum (`CLIENT`, `LAWYER`, `FIRM_ADMIN`, `PLATFORM_ADMIN`).
-3. Registration DTOs and endpoints for Client, Lawyer, and Firm Administrator.
-4. Login DTO and endpoint with BCrypt password authentication.
-5. JWT token provider (token creation, claims extraction, signature verification).
-6. Protected `/api/auth/me` endpoint.
-7. Unit and integration tests for authentication workflows.
+All 8 test scenarios passed with 0 failures and 0 errors:
+1. `testClientRegistration` (HTTP 201 Created)
+2. `testLawyerRegistration` (HTTP 201 Created)
+3. `testDuplicateUsernameConflict` (HTTP 409 Conflict)
+4. `testLoginWithUsernameAndEmail` (HTTP 200 OK via email and via username)
+5. `testLoginFailureOnWrongPassword` (HTTP 401 Unauthorized)
+6. `testMeEndpointWithValidToken` (HTTP 200 OK with correct claims)
+7. `testMeEndpointWithoutTokenFails` (HTTP 401 Unauthorized)
+8. `contextLoads` (Clean Spring Boot application bootstrap)
