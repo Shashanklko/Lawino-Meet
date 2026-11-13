@@ -20,3 +20,8 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  jwt:
+    secret: super-secret-jwt-key-change-this-in-production-min-256-bits-length
+    issuer: lawino-meet

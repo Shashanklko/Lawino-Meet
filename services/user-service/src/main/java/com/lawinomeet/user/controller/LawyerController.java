@@ -1,0 +1,75 @@
+package com.lawinomeet.user.controller;
+
+import com.lawinomeet.user.dto.*;
+import com.lawinomeet.user.security.UserPrincipal;
+import com.lawinomeet.user.service.LawyerService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/lawyers")
+@RequiredArgsConstructor
+public class LawyerController {
+
+    private final LawyerService lawyerService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<LawyerProfileDto>>> getPublicLawyers(
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<LawyerProfileDto> lawyers = lawyerService.getPublicLawyers(pageable);
+        return ResponseEntity.ok(ApiResponse.ok(lawyers));
+    }
+
+    @GetMapping("/{identifier}")
+    public ResponseEntity<ApiResponse<LawyerProfileDto>> getLawyerProfile(
+            @PathVariable String identifier) {
+        LawyerProfileDto profile = lawyerService.getLawyerPublicProfile(identifier);
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<LawyerProfileDto>> getMyLawyerProfile(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        LawyerProfileDto profile = lawyerService.getOrCreateMyProfile(principal.getPublicId(), principal.getUsername());
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    @PutMapping("/profile")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<LawyerProfileDto>> updateMyLawyerProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateLawyerProfileRequest request) {
+        LawyerProfileDto updated = lawyerService.updateMyProfile(principal.getPublicId(), principal.getUsername(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Professional profile updated successfully", updated));
+    }
+
+    @PatchMapping("/messaging-setting")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleMessaging(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam boolean enabled) {
+        boolean result = lawyerService.toggleMessaging(principal.getPublicId(), enabled);
+        return ResponseEntity.ok(ApiResponse.ok("Messaging preference updated", Map.of(
+                "messagingEnabled", result
+        )));
+    }
+
+    @PostMapping("/services")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<LegalServiceDto>> addLegalService(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateLegalServiceRequest request) {
+        LegalServiceDto service = lawyerService.addLegalService(principal.getPublicId(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Legal consultation service added", service));
+    }
+}
