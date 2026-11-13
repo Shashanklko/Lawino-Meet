@@ -1,138 +1,256 @@
-# Lawino Meet - Implementation Status
+# Lawino Meet - Implementation Status & Architectural Roadmap
 
-## Project Tracking & Phase Progress
-
-| Phase | Description | Status | Notes |
-|---|---|---|---|
-| **Phase 0** | Repository Inspection & Architecture Planning | 🟢 COMPLETED | Clean monorepo initialized, Java 21 LTS verified, Maven 3.9 configured, `.env.example`, `.gitignore`, `README.md` established |
-| **Phase 1** | Backend Foundation (6 Spring Boot Services) | 🟢 COMPLETED | 6 independent Spring Boot microservices created, configured with Actuator, JPA, MySQL, multi-stage Dockerfiles, passed full test suites |
-| **Phase 2** | Authentication & Security (Auth Service) | 🟢 COMPLETED | Dual-ID architecture (`publicId: UUID` + unique `username`), BCrypt encryption, registration for Client/Lawyer/Firm Admin, dual-login (username/email), JWT with no internal IDs, single-use refresh token rotation, 8/8 tests passing |
-| **Phase 3** | User & Firm Management (User Service) | 🟢 COMPLETED | Client profiles, Lawyer profiles, Law Firms (`law_firms`), Firm Members (`firm_members`), Legal Services, Specializations, Discovery & Search, 6/6 tests passing |
-| **Phase 4** | Appointment Service | 🟢 COMPLETED | Availability slots, appointment lifecycle, atomic slot reservation, double-booking prevention, firm-level appointment roster, background expiration scheduler, 8/8 tests passing |
-| **Phase 5** | Notification Service | ⏳ READY TO START | In-app notification storage, retrieval, read status, event triggers |
-| **Phase 6** | Chat Service | ⚪ NOT STARTED | One-to-one WebSocket & REST messaging, lawyer messaging toggle |
-| **Phase 7** | Meeting Service | ⚪ NOT STARTED | WebRTC signaling over WebSocket, room lifecycle, participant authorization |
-| **Phase 8** | Frontend Development | ⚪ NOT STARTED | React, Vite, Tailwind CSS, role dashboards, WebRTC client, chat UI |
-| **Phase 9** | Docker Integration | ⚪ NOT STARTED | Docker compose multi-service orchestration with MySQL & Nginx gateway |
-| **Phase 10** | Docker Swarm | ⚪ NOT STARTED | Docker stack deployment, overlay network, rolling updates, secrets |
-| **Phase 11** | Jenkins CI/CD Pipeline | ⚪ NOT STARTED | Declarative Jenkinsfile, build, test, Docker image push to ECR |
-| **Phase 12** | AWS Cloud Deployment | ⚪ NOT STARTED | EC2 Swarm cluster, RDS MySQL, S3 bucket, CloudWatch monitoring |
-| **Phase 13** | Final Verification & Documentation | ⚪ NOT STARTED | E2E integration verification, test suites, architecture guides |
+> **Current Status:** 5 of 14 Phases Completed (All Foundation, Auth, User/Firm, and Appointment Microservices verified with 100% test pass rate).
 
 ---
 
-## Completed in Phase 3: User & Firm Management (`user-service`)
+## 1. Executive Progress Summary
 
-### 1. Database Entities & Tables in `user_db`
-- **`client_profiles`:** Client details (`user_public_id`, `username`, `full_name`, `phone`, `city`, `state`, `country`, `profile_image_url`).
-- **`lawyer_profiles`:** Professional credentials (`user_public_id`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `messaging_enabled`, `verification_status`, `public_profile_status`).
-- **`law_firms`:** Law firm organization details (`public_id`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `logo_url`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `country`, `verification_status`).
-- **`firm_members`:** Associates & Partners management (`firm_id`, `lawyer_user_public_id`, `membership_status` [INVITED, ACCEPTED, REJECTED, INACTIVE], `role_in_firm` [MANAGING_PARTNER, PARTNER, SENIOR_ASSOCIATE, ASSOCIATE]).
-- **`legal_specializations`:** Pre-seeded practice areas (Corporate, Criminal, Matrimonial, IPR, Civil, Taxation, Real Estate, Cyber Law).
-- **`legal_services`:** Specific consultation offerings with fees, duration, and type (ONLINE / IN_PERSON), either lawyer-owned or firm-standardized.
-
-### 2. Implemented Endpoints
-| Service Group | Method | Endpoint | Description | Auth Requirement |
-|---|---|---|---|---|
-| **Client Profiles** | `GET` | `/api/users/profile` | Retrieve current user profile | Authenticated |
-| | `PUT` | `/api/users/profile` | Update current user profile | Authenticated |
-| **Lawyer Profiles** | `GET` | `/api/lawyers` | Paginated public lawyer list | Public |
-| | `GET` | `/api/lawyers/{identifier}` | Get lawyer by slug, username, or publicId | Public |
-| | `GET` | `/api/lawyers/me` | Current lawyer's professional profile | Role: `LAWYER` |
-| | `PUT` | `/api/lawyers/profile` | Update professional qualifications & bio | Role: `LAWYER` |
-| | `PATCH` | `/api/lawyers/messaging-setting` | Toggle optional client messaging on/off | Role: `LAWYER` |
-| | `POST` | `/api/lawyers/services` | Add legal consultation service & fee | Role: `LAWYER` |
-| **Law Firms** | `GET` | `/api/firms` | Paginated public law firms | Public |
-| | `GET` | `/api/firms/{identifier}` | Get law firm details with associated lawyers | Public |
-| | `POST` | `/api/firms` | Register law firm profile | Role: `FIRM_ADMIN` |
-| | `PUT` | `/api/firms/{firmPublicId}` | Update law firm details | Role: `FIRM_ADMIN` |
-| | `POST` | `/api/firms/{firmPublicId}/members/invitations` | Invite a lawyer to join the firm | Role: `FIRM_ADMIN` |
-| | `PATCH` | `/api/firms/members/{invitationId}/accept` | Accept firm invitation | Role: `LAWYER` |
-| | `PATCH` | `/api/firms/members/{invitationId}/reject` | Reject firm invitation | Role: `LAWYER` |
-| | `DELETE` | `/api/firms/{firmPublicId}/members/{memberId}` | Deactivate firm membership | Role: `FIRM_ADMIN` |
-| | `POST` | `/api/firms/{firmPublicId}/services` | Standardized firm-wide services & pricing | Role: `FIRM_ADMIN` |
-| **Discovery Search** | `GET` | `/api/search/lawyers` | Filter lawyers by name, city, specialization, experience | Public |
-| | `GET` | `/api/search/firms` | Filter firms by name, city | Public |
-| **Specializations** | `GET` | `/api/specializations` | Pre-seeded legal specializations list | Public |
-
-### 3. Automated Test Verification Results
 ```text
-[INFO] Running com.lawinomeet.user.UserControllerTest
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
-[INFO] Running com.lawinomeet.user.UserServiceApplicationTests
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] Total time: 24.366 s
+[████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 36% Total Platform Completion
+Backend Core Microservices: [████████████████████████████████████░░░░░░░░░░░░] 50% (3 of 6 Services Active)
+Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (22 / 22 Tests Passing)
 ```
-All integration scenarios passed with 0 failures and 0 errors:
-1. `testClientProfileGetAndPut` (HTTP 200 OK)
-2. `testLawyerProfileUpdateAndMessagingToggle` (HTTP 200 OK)
-3. `testFirmCreationInvitationAndAcceptanceFlow` (Firm creation -> invitation -> acceptance -> profile reflection)
-4. `testSearchLawyersAndFirms` (Filtered search with full text matching)
-5. `testSpecializationsSeedAvailable` (8 seeded practice areas)
-6. `UserServiceApplicationTests` (Clean application bootstrap)
 
+| Phase | Service / Module | Port | DB Name | Status | Automated Test Result |
+|---|---|---|---|---|---|
+| **Phase 0** | Monorepo & Tooling Setup | - | - | 🟢 COMPLETED | Java 21 LTS, Maven 3.9, Repo configs |
+| **Phase 1** | Microservice Architecture Foundation | 8081-8086 | 6 DBs | 🟢 COMPLETED | 6 Scaffolds, Health/Ping, Dockerfiles |
+| **Phase 2** | `auth-service` | 8081 | `auth_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
+| **Phase 3** | `user-service` | 8082 | `user_db` | 🟢 COMPLETED | **6 / 6 tests passed** (0 failures) |
+| **Phase 4** | `appointment-service` | 8083 | `appointment_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
+| **Phase 5** | `notification-service` | 8085 | `notification_db` | ⏳ **READY TO START** | Next immediate phase |
+| **Phase 6** | `chat-service` | 8086 | `chat_db` | ⚪ NOT STARTED | WebSocket & REST Messaging |
+| **Phase 7** | `meeting-service` | 8084 | `meeting_db` | ⚪ NOT STARTED | WebRTC Signaling & Room Lifecycle |
+| **Phase 8** | `frontend` | 3000/5173 | - | ⚪ NOT STARTED | React, Vite, Tailwind, Dashboards |
+| **Phase 9** | Docker Orchestration | 80 / 443 | - | ⚪ NOT STARTED | Multi-service Docker Compose & Nginx |
+| **Phase 10** | Docker Swarm | - | - | ⚪ NOT STARTED | Stack Deploy, Overlay Network, Secrets |
+| **Phase 11** | Jenkins CI/CD Pipeline | - | - | ⚪ NOT STARTED | Automated Build, Test, ECR Push |
+| **Phase 12** | AWS Cloud Infrastructure | - | - | ⚪ NOT STARTED | EC2 Swarm, RDS MySQL, S3, CloudWatch |
+| **Phase 13** | Verification & Handover | - | - | ⚪ NOT STARTED | End-to-End Testing & Postman Docs |
 
 ---
 
-## Completed in Phase 4: Appointment Service (`appointment-service`)
+## 2. Completed Phases Breakdown (Detailed)
 
-### 1. Database Entities & Tables in `appointment_db`
-- **`availability_slots`:** Lawyer availability slots (`public_id: UUID`, `lawyer_user_public_id: UUID`, `start_time: Instant`, `end_time: Instant`, `slot_status` [AVAILABLE, PENDING, BOOKED, BLOCKED], `version: BIGINT` for optimistic locking).
-- **`appointments`:** Consultation appointment records (`public_id: UUID`, `client_user_public_id: UUID`, `client_username: VARCHAR(50)`, `lawyer_user_public_id: UUID`, `lawyer_username: VARCHAR(50)`, `firm_public_id: UUID` (optional), `service_id: BIGINT`, `slot_id: BIGINT` (FK), `consultation_type` [ONLINE, IN_PERSON], `consultation_reason: TEXT`, `appointment_status` [PENDING, CONFIRMED, REJECTED, CANCELLED, IN_PROGRESS, COMPLETED, EXPIRED, NO_SHOW], `requested_at`, `response_deadline`, `accepted_at`, `rejected_at`, `rejection_reason`, `cancelled_at`, `cancellation_reason`, `completed_at`).
+###  Phase 0 & 1: Monorepo Foundation & Microservice Scaffolding
+- Clean multi-module root `pom.xml` with shared parent Spring Boot 3.3.5 and Java 21 LTS.
+- Maven local cache isolation configured (`.mvn/maven.config`).
+- Independent configuration profiles (`application.yml` and test `application.yml` using H2 MySQL-mode).
+- Multi-stage production `Dockerfile` created for each microservice.
+- Standardized cross-service DTO envelope: `ApiResponse<T>`, `ErrorResponse`, `ApiException`, and `GlobalExceptionHandler`.
+- Independent databases per microservice:
+  - `auth_db`, `user_db`, `appointment_db`, `meeting_db`, `notification_db`, `chat_db`.
 
-### 2. High-Concurrency & Double-Booking Prevention
-- **Conditional Atomic Slot Reservation:**
-  ```sql
-  UPDATE availability_slots 
-  SET slot_status = 'PENDING', updated_at = :now 
-  WHERE public_id = :publicId AND slot_status = 'AVAILABLE'
-  ```
-  Guarantees race-condition safety at the database level: if multiple clients attempt to reserve the same slot concurrently, only 1 transaction receives an update count of 1; all other requests receive 0 and are rejected with HTTP 409 Conflict (`SLOT_NOT_AVAILABLE`).
-- **Mutual Exclusion Checks:**
-  - Active appointment conflict validation for Lawyer: prevents overlapping consultations for lawyers across all non-terminal statuses (`PENDING`, `CONFIRMED`, `IN_PROGRESS`).
-  - Active appointment conflict validation for Client: prevents clients from having two simultaneous consultations.
-  - Self-booking guard: prevents lawyers from booking appointments with themselves.
+---
 
-### 3. Automated Expiration Engine
-- **`AppointmentExpirationScheduler`:** Periodic background runner (`@Scheduled(fixedDelay = 60000)`) evaluating pending appointments whose `responseDeadline` has elapsed without lawyer response.
-- Automatically transitions appointment status to `EXPIRED` and atomically returns the underlying slot to `AVAILABLE` (if slot start time remains in the future) or `BLOCKED` (if in the past).
+###  Phase 2: Authentication & Security (`auth-service` - Port 8081)
+- **Dual-ID & Username Architecture:**
+  - Internal DB ID (`id: BIGINT`) remains completely hidden inside MySQL.
+  - External public ID (`publicId: UUID`) and unique handle (`username: VARCHAR(50)`) used for all APIs and JWT claims.
+- **Security & Cryptography:**
+  - BCrypt password hashing.
+  - Dual-mode login: Users can log in using either **Username OR Email**.
+  - JWT Tokens signed with HMAC-SHA256 containing `sub: username`, `publicId`, `role`, `accountStatus` (Zero internal database ID exposure).
+  - Single-use Refresh Token rotation: Tokens are revoked immediately upon use to prevent token replay attacks.
+- **Registered Roles:** `CLIENT`, `LAWYER`, `FIRM_ADMIN`, `PLATFORM_ADMIN`.
+- **Endpoints:**
+  - `POST /api/auth/register/client`, `POST /api/auth/register/lawyer`, `POST /api/auth/register/firm`
+  - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
+- **Tests:** 8/8 passed (`AuthControllerTest`, `AuthServiceApplicationTests`).
+- **Git Commit:** `65e1afd`.
 
-### 4. Implemented Endpoints
-| Service Group | Method | Endpoint | Description | Auth Requirement |
-|---|---|---|---|---|
-| **Availability Slots** | `POST` | `/api/availability` | Create single availability slot | Role: `LAWYER` |
-| | `POST` | `/api/availability/batch` | Batch create multiple availability slots | Role: `LAWYER` |
-| | `GET` | `/api/availability/my` | Retrieve lawyer's own slots | Role: `LAWYER` |
-| | `DELETE` | `/api/availability/{slotPublicId}` | Delete or remove an available slot | Role: `LAWYER` |
-| | `GET` | `/api/lawyers/{lawyerPublicId}/slots` | Publicly browse open slots for a lawyer | Public |
-| **Appointments** | `POST` | `/api/appointments` | Book appointment with atomic slot reservation | Role: `CLIENT` |
-| | `GET` | `/api/appointments/{appointmentPublicId}` | View appointment details | Client, Lawyer, or Firm Admin |
-| | `GET` | `/api/appointments/my` | Retrieve client's appointment list | Role: `CLIENT` |
-| | `GET` | `/api/appointments/lawyer` | Retrieve lawyer's appointment requests & schedule | Role: `LAWYER` |
-| | `GET` | `/api/appointments/firm/{firmPublicId}` | Firm oversight: view all firm appointments | Role: `FIRM_ADMIN`, `PLATFORM_ADMIN` |
-| | `PATCH` | `/api/appointments/{appointmentPublicId}/accept` | Confirm appointment (transitions slot to BOOKED) | Assigned Lawyer (`ROLE_LAWYER`) |
-| | `PATCH` | `/api/appointments/{appointmentPublicId}/reject` | Reject appointment (releases slot to AVAILABLE) | Assigned Lawyer (`ROLE_LAWYER`) |
-| | `PATCH` | `/api/appointments/{appointmentPublicId}/cancel` | Cancel appointment (releases slot to AVAILABLE) | Client, Lawyer, or Admin |
-| | `PATCH` | `/api/appointments/{appointmentPublicId}/complete` | Mark consultation as completed | Assigned Lawyer (`ROLE_LAWYER`) |
+---
 
-### 5. Automated Test Verification Results
-```text
-[INFO] Running com.lawinomeet.appointment.AppointmentControllerTest
-[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
-[INFO] Running com.lawinomeet.appointment.AppointmentServiceApplicationTests
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] Total time: 15.347 s
+###  Phase 3: User & Law Firm Management (`user-service` - Port 8082)
+- **Entities & Relationships:**
+  - `ClientProfile`: Personal details, contact, location.
+  - `LawyerProfile`: Professional credentials, bar qualification, experience years, public slug, messaging toggle.
+  - `LawFirm`: Organization details, contact, admin assignment, verified status.
+  - `FirmMember`: Firm-to-lawyer invitation lifecycle (`INVITED`, `ACCEPTED`, `REJECTED`, `INACTIVE`) and firm roles (`MANAGING_PARTNER`, `PARTNER`, `SENIOR_ASSOCIATE`, `ASSOCIATE`). Enforces business rule: A lawyer can belong to at most one active firm.
+  - `LegalSpecialization`: Seeded practice areas (Corporate, Criminal, Matrimonial, IPR, Civil, Taxation, Real Estate, Cyber Law).
+  - `LegalService`: Online/in-person consultation fee structures (lawyer-owned or firm-standardized).
+- **Discovery Search:** Filter lawyers by name, city, specialization, and minimum experience; filter law firms by name and city.
+- **Endpoints:**
+  - Profile APIs: `GET/PUT /api/users/profile`, `GET/PUT /api/lawyers/profile`, `PATCH /api/lawyers/messaging-setting`
+  - Firm Management: `POST/PUT /api/firms`, `POST /api/firms/{id}/members/invitations`, `PATCH /api/firms/members/{id}/accept`, `PATCH /api/firms/members/{id}/reject`, `DELETE /api/firms/{id}/members/{id}`
+  - Discovery: `GET /api/search/lawyers`, `GET /api/search/firms`, `GET /api/specializations`
+- **Tests:** 6/6 passed (`UserControllerTest`, `UserServiceApplicationTests`).
+- **Git Commit:** `496c598`.
+
+---
+
+###  Phase 4: Appointment Service (`appointment-service` - Port 8083)
+- **Availability Slots & Concurrency Safety:**
+  - `AvailabilitySlot` (`public_id`, `lawyer_user_public_id`, `start_time`, `end_time`, `slot_status`, `@Version version`).
+  - **Conditional Atomic Slot Reservation:**
+    ```sql
+    UPDATE availability_slots 
+    SET slot_status = 'PENDING', updated_at = :now 
+    WHERE public_id = :publicId AND slot_status = 'AVAILABLE'
+    ```
+    Guarantees race-condition safety at the database level: concurrent booking attempts fail with **`HTTP 409 CONFLICT`** (`SLOT_NOT_AVAILABLE`).
+  - Active appointment mutual exclusion check for both Lawyer and Client.
+  - Self-booking guard preventing lawyers from booking themselves.
+- **Appointment Lifecycle & State Machine:**
+  - `PENDING` -> Lawyer Accepts -> `CONFIRMED` (Slot -> `BOOKED`) -> `COMPLETED`.
+  - `PENDING` -> Lawyer Rejects -> `REJECTED` (Slot released to `AVAILABLE`).
+  - `PENDING`/`CONFIRMED` -> Cancellation -> `CANCELLED` (Slot released to `AVAILABLE`).
+- **Automated Expiration Scheduler:**
+  - Periodic runner (`@Scheduled`) auto-expires appointments exceeding 24h response deadline and releases the slot.
+- **Firm-Level Oversight:**
+  - `GET /api/appointments/firm/{firmPublicId}` allows Firm Admins to oversee appointments for all lawyers in their firm.
+- **Endpoints:**
+  - `POST /api/availability`, `POST /api/availability/batch`, `GET /api/availability/my`, `DELETE /api/availability/{id}`
+  - `GET /api/lawyers/{lawyerPublicId}/slots` (Public slot view)
+  - `POST /api/appointments`, `GET /api/appointments/my`, `GET /api/appointments/lawyer`, `GET /api/appointments/firm/{id}`
+  - `PATCH /api/appointments/{id}/accept`, `PATCH /api/appointments/{id}/reject`, `PATCH /api/appointments/{id}/cancel`, `PATCH /api/appointments/{id}/complete`
+- **Tests:** 8/8 passed (`AppointmentControllerTest`, `AppointmentServiceApplicationTests`).
+- **Git Commit:** `29bd730`.
+
+---
+
+## 3. What is LEFT / PENDING (Phases 5 to 13)
+
+The remaining work is divided into clear, incremental modules:
+
+```mermaid
+flowchart TD
+    subgraph BACKEND_REMAINING["Remaining Backend Services"]
+        P5["Phase 5: Notification Service (Port 8085)"] --> P6["Phase 6: Chat Service (Port 8086)"]
+        P6 --> P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
+    end
+
+    subgraph FRONTEND["Frontend Application"]
+        P8["Phase 8: React + Vite + Tailwind Frontend"]
+    end
+
+    subgraph DEVOPS["DevOps & Cloud Infrastructure"]
+        P9["Phase 9: Docker Compose & Nginx Gateway"] --> P10["Phase 10: Docker Swarm Cluster"]
+        P10 --> P11["Phase 11: Jenkins CI/CD Pipeline"]
+        P11 --> P12["Phase 12: AWS Deployment (EC2, RDS, S3)"]
+    end
+
+    subgraph FINAL["Final Validation"]
+        P13["Phase 13: E2E Verification & Handover Docs"]
+    end
+
+    BACKEND_REMAINING --> FRONTEND
+    FRONTEND --> DEVOPS
+    DEVOPS --> FINAL
 ```
-All 8 integration scenarios passed with 0 failures and 0 errors:
-1. `testCreateAndQueryAvailabilitySlots` (Slot creation and public/private querying)
-2. `testBatchCreateAndDeleteAvailabilitySlot` (Batch creation and safe deletion)
-3. `testBookAppointmentAndDoubleBookingAtomicPrevention` (Atomic slot reservation and HTTP 409 Conflict on concurrent duplicate attempts)
-4. `testLawyerAcceptsAppointmentAndCompletes` (Full acceptance lifecycle: PENDING -> CONFIRMED -> COMPLETED, slot status BOOKED)
-5. `testLawyerRejectsAppointmentReleasesSlot` (Rejection lifecycle: PENDING -> REJECTED, slot safely released to AVAILABLE)
-6. `testClientCancelsAppointmentReleasesSlot` (Cancellation lifecycle: PENDING -> CANCELLED, slot released to AVAILABLE)
-7. `testFirmOversightAndSchedulerExpiration` (Firm Admin visibility and scheduled response deadline auto-expiration)
-8. `AppointmentServiceApplicationTests` (Clean Spring Boot application bootstrap)
+
+---
+
+###  Phase 5: Notification Service (`services/notification-service` - Port 8085)
+**Status:** ⏳ *Ready to implement next*
+- **Purpose:** Store in-app user notifications and dispatch alerts for platform events.
+- **Database (`notification_db`):**
+  - Table: `notifications` (`id`, `public_id`, `recipient_user_public_id`, `notification_type`, `title`, `message`, `reference_type`, `reference_id`, `is_read`, `created_at`).
+  - Enums: `NotificationType` (`APPOINTMENT_REQUESTED`, `APPOINTMENT_ACCEPTED`, `APPOINTMENT_REJECTED`, `APPOINTMENT_CANCELLED`, `FIRM_INVITATION_RECEIVED`, `NEW_CHAT_MESSAGE`, `SYSTEM_ALERT`).
+- **Key Features:**
+  - Read/unread status management (`PATCH /api/notifications/{id}/read`, `PATCH /api/notifications/mark-all-read`).
+  - Badge counter endpoint (`GET /api/notifications/unread-count`).
+  - Paginated user notification list (`GET /api/notifications`).
+  - Internal event intake API (`POST /api/notifications/events`) for appointment, user, and chat events.
+
+---
+
+###  Phase 6: Chat Service (`services/chat-service` - Port 8086)
+**Status:** ⚪ *Not Started*
+- **Purpose:** 1-to-1 messaging between clients, lawyers, and firm members.
+- **Database (`chat_db`):**
+  - Table: `chat_messages` (`id`, `public_id`, `conversation_id`, `sender_user_public_id`, `recipient_user_public_id`, `content`, `read_at`, `created_at`).
+  - Table: `chat_conversations` (`id`, `public_id`, `participant_one_public_id`, `participant_two_public_id`, `last_message_at`).
+- **Key Features:**
+  - STOMP over WebSocket (`/ws-chat`) for real-time instant messaging.
+  - Respects lawyer's `messaging_enabled` setting (from `user-service`).
+  - Historical conversation pagination & message retrieval over REST.
+
+---
+
+###  Phase 7: Meeting Service (`services/meeting-service` - Port 8084)
+**Status:** ⚪ *Not Started*
+- **Purpose:** WebRTC video consultation signaling and room lifecycle management.
+- **Database (`meeting_db`):**
+  - Table: `meeting_rooms` (`id`, `public_id`, `appointment_public_id`, `room_token`, `room_status` [WAITING, ACTIVE, ENDED], `started_at`, `ended_at`).
+  - Table: `meeting_participants` (`id`, `room_id`, `user_public_id`, `role`, `joined_at`, `left_at`).
+- **Key Features:**
+  - WebSocket signaling channel (`/ws-meeting`) to relay SDP Offer, SDP Answer, and ICE Candidates.
+  - Strict Authorization: Only the confirmed Client and Lawyer assigned to the appointment can join the consultation room.
+  - Room status tracking & consultation duration logging.
+
+---
+
+###  Phase 8: Frontend Development (`frontend/`)
+**Status:** ⚪ *Not Started*
+- **Tech Stack:** React 18, Vite, Tailwind CSS, Lucide Icons, Axios, STOMP.js, WebRTC Native API.
+- **Key Modules & Pages:**
+  1. **Authentication:** Login (Username/Email), Registration (Client, Lawyer, Firm), JWT storage & interceptor.
+  2. **Public Discovery:** Lawyer Search (filters by name, city, practice area, fee), Firm Directory, Public Lawyer Profile.
+  3. **Client Dashboard:** Book Consultation calendar, My Appointments, Active Chats, Video Call launcher.
+  4. **Lawyer Dashboard:** Manage Availability Slots, Pending Appointment Requests (Accept/Reject), Client consultations.
+  5. **Firm Admin Dashboard:** Manage Firm Profile, Invite Lawyers, Associate List, Firm-wide appointments roster.
+  6. **Real-Time Video Consultation Room:** WebRTC stream rendering, Camera/Mic toggles, screen sharing, call end button.
+  7. **Real-Time Chat Widget:** In-app messaging drawer with unread badges.
+
+---
+
+###  Phase 9: Docker Orchestration (Docker Compose & Nginx Gateway)
+**Status:** ⚪ *Not Started*
+- Complete `docker-compose.yml` orchestrating:
+  - MySQL container (with auto-initialization of 6 databases).
+  - 6 Spring Boot microservices with resource limits and health checks.
+  - Nginx Reverse Proxy / API Gateway (routes traffic from port 80/443 to respective microservices and serves React frontend).
+
+---
+
+###  Phase 10: Docker Swarm Production Stack
+**Status:** ⚪ *Not Started*
+- `docker-stack.yml` with overlay networks.
+- Service replication, health-check based rolling updates, and Docker Secrets management.
+
+---
+
+###  Phase 11: Jenkins CI/CD Pipeline
+**Status:** ⚪ *Not Started*
+- Declarative `Jenkinsfile` pipeline:
+  - Stage 1: Checkout & Lint.
+  - Stage 2: Parallel Maven compile & test execution across all microservices.
+  - Stage 3: Docker image build & tag.
+  - Stage 4: Push images to AWS ECR.
+  - Stage 5: Deploy stack to Docker Swarm cluster.
+
+---
+
+###  Phase 12: AWS Cloud Infrastructure
+**Status:** ⚪ *Not Started*
+- Infrastructure deployment plan:
+  - AWS EC2 Swarm cluster (Manager & Worker nodes).
+  - AWS RDS Multi-AZ MySQL.
+  - AWS S3 for document storage and profile avatar uploads.
+  - AWS CloudWatch for centralized logging and container health metrics.
+
+---
+
+###  Phase 13: Final Verification & Handover
+**Status:** ⚪ *Not Started*
+- Complete End-to-End integration test suite (Registration -> Profile -> Slot -> Booking -> Notification -> Chat -> Video Consultation).
+- Postman API Collection with automated environment variables.
+- Production Runbook, disaster recovery guide, and architecture handover documentation.
+
+---
+
+## 4. Current Test Suite Summary Across Codebase
+
+```text
+========================================================================
+MICROSERVICE TEST EXECUTION SUMMARY
+========================================================================
+auth-service:        8 tests  |  0 failures  |  0 errors  [PASSED]
+user-service:        6 tests  |  0 failures  |  0 errors  [PASSED]
+appointment-service: 8 tests  |  0 failures  |  0 errors  [PASSED]
+------------------------------------------------------------------------
+TOTAL TESTS PASSING: 22 / 22 (100% Zero-Failure Rate)
+========================================================================
+```
