@@ -1,95 +1,100 @@
 import React from 'react';
-import { Scale, ShieldCheck, Lock, Globe } from 'lucide-react';
+import { Scale, ShieldCheck, Lock, Building, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Footer = () => {
   return (
-    <footer className="bg-slate-950 text-slate-400 border-t border-slate-900 pt-12 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand & Mission */}
+    <footer className="bg-maroon-950 text-cream-200 border-t border-luxury-gold/30 pt-16 pb-12 relative overflow-hidden">
+      {/* Decorative Wave Divider at Top */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+          {/* Brand & Seal */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Scale className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-maroon-800 to-maroon-700 border border-luxury-gold flex items-center justify-center shadow-lg">
+                <Scale className="w-6 h-6 text-luxury-gold" />
               </div>
-              <span className="font-bold text-lg text-white">
-                Lawino<span className="text-blue-400">Meet</span>
+              <span className="font-serif font-black text-xl tracking-wider text-cream-50">
+                LAWINO<span className="text-luxury-gold">MEET</span>
               </span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              India's premier legal consultation platform connecting clients with verified advocates,
-              arbitrators, and top law firms for seamless, confidential video conferences.
+            <p className="text-xs text-cream-300 font-light leading-relaxed">
+              India's premier legal consultation sanctuary connecting verified advocates, High Court practitioners,
+              and law firm chambers for encrypted video hearings and authorized chamber meetings.
             </p>
-            <div className="flex items-center space-x-4 text-xs text-slate-400 pt-1">
+            <div className="flex items-center space-x-4 text-xs text-luxury-gold pt-2 font-serif">
               <span className="flex items-center space-x-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Bar Verified</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Bar Council Verified</span>
               </span>
               <span className="flex items-center space-x-1">
-                <Lock className="w-4 h-4 text-blue-400" />
-                <span>WebRTC Encrypted</span>
+                <Lock className="w-4 h-4" />
+                <span>SRTP Encrypted</span>
               </span>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Jurisdictions */}
           <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Practice Areas
+            <h4 className="text-xs font-serif font-bold uppercase tracking-[0.2em] text-luxury-gold mb-4">
+              Practice Domains
             </h4>
-            <ul className="space-y-2 text-xs">
-              <li>Corporate & Commercial Law</li>
-              <li>Criminal Defense & Bail</li>
-              <li>Family & Matrimonial Disputes</li>
-              <li>Intellectual Property & Patents</li>
-              <li>Cyber Crime & Data Protection</li>
+            <ul className="space-y-2.5 text-xs text-cream-300 font-light">
+              <li className="hover:text-luxury-gold transition cursor-pointer">Corporate M&A & Boardroom Advisory</li>
+              <li className="hover:text-luxury-gold transition cursor-pointer">Criminal Defense & High Court Bail</li>
+              <li className="hover:text-luxury-gold transition cursor-pointer">Matrimonial & Custody Settlements</li>
+              <li className="hover:text-luxury-gold transition cursor-pointer">Intellectual Property & Patents</li>
+              <li className="hover:text-luxury-gold transition cursor-pointer">Cyber Crime & IT Act Litigations</li>
             </ul>
           </div>
 
-          {/* Platform */}
+          {/* Consultation Formats */}
           <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Platform
+            <h4 className="text-xs font-serif font-bold uppercase tracking-[0.2em] text-luxury-gold mb-4">
+              Consultation Formats
             </h4>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2.5 text-xs text-cream-300 font-light">
               <li>
-                <Link to="/lawyers" className="hover:text-white transition">
-                  Find Advocates
+                <Link to="/lawyers?mode=ONLINE" className="hover:text-luxury-gold transition">
+                  🌐 Online Encrypted Video Rooms
                 </Link>
               </li>
               <li>
-                <Link to="/firms" className="hover:text-white transition">
-                  Law Firm Network
+                <Link to="/lawyers?mode=OFFLINE" className="hover:text-luxury-gold transition">
+                  🏛️ Chamber In-Person Meetings
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-white transition">
-                  Join as an Advocate
+                <Link to="/firms" className="hover:text-luxury-gold transition">
+                  ⚖️ Law Firm Associates Directory
+                </Link>
+              </li>
+              <li>
+                <Link to="/register?role=LAWYER" className="hover:text-luxury-gold transition">
+                  📜 Enroll Advocate Chamber
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Legal Disclaimer */}
+          {/* Statutory Bar Notice */}
           <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Legal Disclaimer
+            <h4 className="text-xs font-serif font-bold uppercase tracking-[0.2em] text-luxury-gold mb-4">
+              Statutory Disclaimer
             </h4>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              Lawino Meet is a legal facilitation platform under the Advocates Act, 1961. This website
-              does not constitute legal advertisement or solicitation. Video consultations are confidential
-              between advocates and clients.
+            <p className="text-[11px] text-cream-400 font-light leading-relaxed">
+              This platform adheres strictly to the Bar Council of India Rules under the Advocates Act, 1961.
+              It does not advertise, solicit, or promise outcomes. In-person chamber meetings require prior advocate approval.
             </p>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Lawino Meet Technologies. All rights reserved.</p>
-          <div className="flex space-x-6 mt-4 sm:mt-0">
-            <span className="hover:text-slate-300 cursor-pointer">Terms of Service</span>
-            <span className="hover:text-slate-300 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-300 cursor-pointer">Disclaimers</span>
+        <div className="pt-8 border-t border-luxury-gold/20 flex flex-col sm:flex-row items-center justify-between text-xs text-cream-400 font-light">
+          <p>© {new Date().getFullYear()} Lawino Meet Technologies LLP. All Rights Reserved.</p>
+          <div className="flex space-x-6 mt-4 sm:mt-0 font-serif text-[11px]">
+            <span className="hover:text-luxury-gold transition cursor-pointer">Chamber Protocols</span>
+            <span className="hover:text-luxury-gold transition cursor-pointer">Privacy & SRTP</span>
+            <span className="hover:text-luxury-gold transition cursor-pointer">Terms of Advocacy</span>
           </div>
         </div>
       </div>

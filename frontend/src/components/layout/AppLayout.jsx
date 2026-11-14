@@ -14,7 +14,7 @@ export const AppLayout = () => {
   const isMeeting = location.pathname.startsWith('/meeting');
 
   if (isMeeting) {
-    // Immersive meeting mode - no navbar, no sidebar, full screen
+    // Immersive meeting mode - no navbar, no sidebar, full screen dark room
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col">
         <Outlet />
@@ -23,7 +23,7 @@ export const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-cream-50 text-maroon-950 transition-colors duration-500">
       <Navbar />
       <div className="flex-1 flex">
         {isAuthenticated && isDashboard && <Sidebar />}

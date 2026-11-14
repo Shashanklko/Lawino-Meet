@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ChatProvider } from './context/ChatContext';
@@ -22,55 +23,57 @@ import { NotificationPage } from './pages/NotificationPage';
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <NotificationProvider>
-          <ChatProvider>
-            <Routes>
-              {/* App Layout Route */}
-              <Route element={<AppLayout />}>
-                {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/lawyers" element={<LawyerDiscoveryPage />} />
-                <Route path="/lawyers/:lawyerPublicId" element={<LawyerProfilePage />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <ChatProvider>
+              <Routes>
+                {/* App Layout Route */}
+                <Route element={<AppLayout />}>
+                  {/* Public Routes */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/lawyers" element={<LawyerDiscoveryPage />} />
+                  <Route path="/lawyers/:lawyerPublicId" element={<LawyerProfilePage />} />
 
-                {/* Common Protected Routes */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/notifications" element={<NotificationPage />} />
+                  {/* Common Protected Routes */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/notifications" element={<NotificationPage />} />
+                  </Route>
+
+                  {/* Client Protected Routes */}
+                  <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
+                    <Route path="/dashboard/client" element={<ClientDashboardPage />} />
+                  </Route>
+
+                  {/* Lawyer Protected Routes */}
+                  <Route element={<ProtectedRoute allowedRoles={['LAWYER']} />}>
+                    <Route path="/dashboard/lawyer" element={<LawyerDashboardPage />} />
+                    <Route path="/dashboard/lawyer/slots" element={<LawyerSlotsPage />} />
+                    <Route path="/dashboard/lawyer/services" element={<LawyerSlotsPage />} />
+                  </Route>
+
+                  {/* Firm Admin Protected Routes */}
+                  <Route element={<ProtectedRoute allowedRoles={['FIRM_ADMIN']} />}>
+                    <Route path="/dashboard/firm" element={<FirmAdminDashboardPage />} />
+                    <Route path="/dashboard/firm/members" element={<FirmAdminDashboardPage />} />
+                    <Route path="/dashboard/firm/appointments" element={<FirmAdminDashboardPage />} />
+                  </Route>
+
+                  {/* Full-screen Meeting Route */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/meeting/:roomPublicId" element={<VideoMeetingPage />} />
+                  </Route>
                 </Route>
 
-                {/* Client Protected Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
-                  <Route path="/dashboard/client" element={<ClientDashboardPage />} />
-                </Route>
-
-                {/* Lawyer Protected Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['LAWYER']} />}>
-                  <Route path="/dashboard/lawyer" element={<LawyerDashboardPage />} />
-                  <Route path="/dashboard/lawyer/slots" element={<LawyerSlotsPage />} />
-                  <Route path="/dashboard/lawyer/services" element={<LawyerSlotsPage />} />
-                </Route>
-
-                {/* Firm Admin Protected Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['FIRM_ADMIN']} />}>
-                  <Route path="/dashboard/firm" element={<FirmAdminDashboardPage />} />
-                  <Route path="/dashboard/firm/members" element={<FirmAdminDashboardPage />} />
-                  <Route path="/dashboard/firm/appointments" element={<FirmAdminDashboardPage />} />
-                </Route>
-
-                {/* Full-screen Meeting Route */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/meeting/:roomPublicId" element={<VideoMeetingPage />} />
-                </Route>
-              </Route>
-
-              {/* Catch-all redirect */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </ChatProvider>
-        </NotificationProvider>
-      </AuthProvider>
+                {/* Catch-all redirect */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </ChatProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
