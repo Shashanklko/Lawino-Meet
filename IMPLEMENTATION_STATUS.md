@@ -1,15 +1,15 @@
 # Lawino Meet - Implementation Status & Architectural Roadmap
 
-> **Current Status:** 6 of 14 Phases Completed (Foundation, Auth, User/Firm, Appointment, and Notification Microservices verified with 100% test pass rate).
+> **Current Status:** 7 of 14 Phases Completed (Foundation, Auth, User/Firm, Appointment, Notification, and Chat Microservices verified with 100% test pass rate).
 
 ---
 
 ## 1. Executive Progress Summary
 
 ```text
-[████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 43% Total Platform Completion
-Backend Core Microservices: [████████████████████████████████████████████░░░░] 67% (4 of 6 Services Active)
-Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (26 / 26 Tests Passing)
+[████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 50% Total Platform Completion
+Backend Core Microservices: [██████████████████████████████████████████████████░░] 83% (5 of 6 Services Active)
+Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (30 / 30 Tests Passing)
 ```
 
 | Phase | Service / Module | Port | DB Name | Status | Automated Test Result |
@@ -20,8 +20,8 @@ Active Test Passing Rate:   [█████████████████
 | **Phase 3** | `user-service` | 8082 | `user_db` | 🟢 COMPLETED | **6 / 6 tests passed** (0 failures) |
 | **Phase 4** | `appointment-service` | 8083 | `appointment_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
 | **Phase 5** | `notification-service` | 8085 | `notification_db` | 🟢 COMPLETED | **4 / 4 tests passed** (0 failures) |
-| **Phase 6** | `chat-service` | 8086 | `chat_db` | ⏳ **READY TO START** | Next immediate phase |
-| **Phase 7** | `meeting-service` | 8084 | `meeting_db` | ⚪ NOT STARTED | WebRTC Signaling & Room Lifecycle |
+| **Phase 6** | `chat-service` | 8086 | `chat_db` | 🟢 COMPLETED | **4 / 4 tests passed** (0 failures) |
+| **Phase 7** | `meeting-service` | 8084 | `meeting_db` | ⏳ **READY TO START** | Next immediate phase |
 | **Phase 8** | `frontend` | 3000/5173 | - | ⚪ NOT STARTED | React, Vite, Tailwind, Dashboards |
 | **Phase 9** | Docker Orchestration | 80 / 443 | - | ⚪ NOT STARTED | Multi-service Docker Compose & Nginx |
 | **Phase 10** | Docker Swarm | - | - | ⚪ NOT STARTED | Stack Deploy, Overlay Network, Secrets |
@@ -131,14 +131,36 @@ Active Test Passing Rate:   [█████████████████
 
 ---
 
-## 3. What is LEFT / PENDING (Phases 6 to 13)
+###  Phase 6: Chat Service (`chat-service` - Port 8086)
+- **Database (`chat_db`):**
+  - Table `chat_conversations`: `id: BIGINT` (internal), `public_id: VARCHAR(36)` (UUID external), `participant_one_public_id`, `participant_one_username`, `participant_two_public_id`, `participant_two_username`, `last_message_content: VARCHAR(500)`, `last_message_at: Instant`, `created_at`, `updated_at`.
+  - Table `chat_messages`: `id: BIGINT` (internal), `public_id: VARCHAR(36)` (UUID external), `conversation_id: BIGINT` (FK), `sender_user_public_id`, `sender_username`, `recipient_user_public_id`, `recipient_username`, `content: TEXT`, `is_read: BOOLEAN`, `read_at: Instant`, `created_at: Instant`.
+- **Dual Transport & Real-Time Architecture:**
+  - **STOMP over WebSocket (`/ws-chat`):** In-memory message broker with destinations `/topic`, `/queue`, and user-scoped private destination `/user/{recipientPublicId}/queue/messages`.
+  - **REST API Fallback:** Messages sent via REST (`POST /api/chat/messages`) are persisted to MySQL and instantly dispatched asynchronously to the recipient's private WebSocket queue via `SimpMessagingTemplate`.
+- **Data Isolation & Concurrency:**
+  - Canonical participant ordering: Guarantees exactly one conversation thread between any pair of users, avoiding duplicate threads.
+  - Strict data isolation: Non-participants attempting to read messages or mark conversation as read receive **`HTTP 403 FORBIDDEN`**.
+  - Self-messaging prevention: Users cannot send messages to themselves (**`HTTP 400 BAD REQUEST`**).
+- **Endpoints:**
+  - `POST /api/chat/messages` (Send 1-to-1 message via REST + WebSocket dispatch)
+  - `GET /api/chat/conversations` (Active threads with last snippet, other participant info, unread count)
+  - `GET /api/chat/conversations/{id}/messages` (Chronological paginated message history)
+  - `PATCH /api/chat/conversations/{id}/read` (Mark all conversation messages as read)
+  - `GET /api/chat/unread-count` (Total unread message count badge for UI)
+  - `/ws-chat` (WebSocket connection with SockJS fallback)
+- **Tests:** 4/4 passed (`ChatControllerTest`, `ChatServiceApplicationTests`).
+
+---
+
+## 3. What is LEFT / PENDING (Phases 7 to 13)
 
 The remaining work is divided into clear, incremental modules:
 
 ```mermaid
 flowchart TD
     subgraph BACKEND_REMAINING["Remaining Backend Services"]
-        P6["Phase 6: Chat Service (Port 8086)"] --> P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
+        P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
     end
 
     subgraph FRONTEND["Frontend Application"]
@@ -162,22 +184,16 @@ flowchart TD
 
 ---
 
-###  Phase 6: Chat Service (`services/chat-service` - Port 8086)
-**Status:** ⏳ *Ready to implement next*
-- **Purpose:** 1-to-1 messaging between clients, lawyers, and firm members.
-- **Database (`chat_db`):**
-  - Table: `chat_messages` (`id`, `public_id`, `conversation_id`, `sender_user_public_id`, `recipient_user_public_id`, `content`, `read_at`, `created_at`).
-  - Table: `chat_conversations` (`id`, `public_id`, `participant_one_public_id`, `participant_two_public_id`, `last_message_at`).
-- **Key Features:**
-  - STOMP over WebSocket (`/ws-chat`) for real-time instant messaging.
-  - Respects lawyer's `messaging_enabled` setting (from `user-service`).
-  - Historical conversation pagination & message retrieval over REST.
-
----
-
 ###  Phase 7: Meeting Service (`services/meeting-service` - Port 8084)
-**Status:** ⚪ *Not Started*
+**Status:** ⏳ *Ready to implement next*
 - **Purpose:** WebRTC video consultation signaling and room lifecycle management.
+- **Database (`meeting_db`):**
+  - Table: `meeting_rooms` (`id`, `public_id`, `appointment_public_id`, `room_token`, `room_status` [WAITING, ACTIVE, ENDED], `started_at`, `ended_at`).
+  - Table: `meeting_participants` (`id`, `room_id`, `user_public_id`, `role`, `joined_at`, `left_at`).
+- **Key Features:**
+  - WebSocket signaling channel (`/ws-meeting`) to relay SDP Offer, SDP Answer, and ICE Candidates.
+  - Strict Authorization: Only the confirmed Client and Lawyer assigned to the appointment can join the consultation room.
+  - Room status tracking & consultation duration logging.
 - **Database (`meeting_db`):**
   - Table: `meeting_rooms` (`id`, `public_id`, `appointment_public_id`, `room_token`, `room_status` [WAITING, ACTIVE, ENDED], `started_at`, `ended_at`).
   - Table: `meeting_participants` (`id`, `room_id`, `user_public_id`, `role`, `joined_at`, `left_at`).
@@ -257,7 +273,8 @@ auth-service:         8 tests  |  0 failures  |  0 errors  [PASSED]
 user-service:         6 tests  |  0 failures  |  0 errors  [PASSED]
 appointment-service:  8 tests  |  0 failures  |  0 errors  [PASSED]
 notification-service: 4 tests  |  0 failures  |  0 errors  [PASSED]
+chat-service:         4 tests  |  0 failures  |  0 errors  [PASSED]
 ------------------------------------------------------------------------
-TOTAL TESTS PASSING: 26 / 26 (100% Zero-Failure Rate)
+TOTAL TESTS PASSING: 30 / 30 (100% Zero-Failure Rate)
 ========================================================================
 ```
