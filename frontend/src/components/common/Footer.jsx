@@ -1,21 +1,22 @@
 import React from 'react';
-import { Scale, ShieldCheck, Lock, Building, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, Building, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Footer = () => {
   return (
     <footer className="bg-maroon-950 text-cream-200 border-t border-luxury-gold/30 pt-16 pb-12 relative overflow-hidden">
-      {/* Decorative Wave Divider at Top */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          {/* Brand & Seal */}
+          {/* Brand & Logo */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-maroon-800 to-maroon-700 border border-luxury-gold flex items-center justify-center shadow-lg">
-                <Scale className="w-6 h-6 text-luxury-gold" />
-              </div>
-              <span className="font-serif font-black text-xl tracking-wider text-cream-50">
-                LAWINO<span className="text-luxury-gold">MEET</span>
+              <img
+                src="/logo.jpg"
+                alt="LawinoMeet Logo"
+                className="w-10 h-10 rounded-full object-cover ring-1 ring-luxury-gold/50 shadow-md"
+              />
+              <span className="font-serif font-black text-xl tracking-wide text-cream-50">
+                Lawino<span className="text-luxury-gold">Meet</span>
               </span>
             </div>
             <p className="text-xs text-cream-300 font-light leading-relaxed">
@@ -90,7 +91,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-luxury-gold/20 flex flex-col sm:flex-row items-center justify-between text-xs text-cream-400 font-light">
-          <p>© {new Date().getFullYear()} Lawino Meet Technologies LLP. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} LawinoMeet Technologies LLP. All Rights Reserved.</p>
           <div className="flex space-x-6 mt-4 sm:mt-0 font-serif text-[11px]">
             <span className="hover:text-luxury-gold transition cursor-pointer">Chamber Protocols</span>
             <span className="hover:text-luxury-gold transition cursor-pointer">Privacy & SRTP</span>
