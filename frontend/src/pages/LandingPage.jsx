@@ -183,168 +183,184 @@ export const LandingPage = () => {
       </section>
 
       {/* =========================================================================
-          THE GENESIS: Founder's Story (One Continuous Left-Right Narrative Flow)
+          THE GENESIS: Founder's Story (Clean Editorial Layout matching Sketch)
           ========================================================================= */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
-        {/* Subtle decorative background watermarks */}
-        <div className="text-center max-w-3xl mx-auto mb-20 space-y-3">
-          <span className="text-xs font-serif font-bold tracking-[0.25em] text-maroon-700 uppercase">
-            The Genesis • Why We Built LawinoMeet
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-serif font-black text-maroon-950 tracking-tight">
-            "I Was in a New City, Confused and Frightened."
-          </h2>
-          <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
-            How a midnight crisis in an unfamiliar city transformed from personal helplessness into a nationwide legal sanctuary.
+      <section className="py-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto bg-white">
+        {/* Top Eyebrow & Master Title (Inspired by Eternal / Zomato Culture Reference) */}
+        <div className="text-center max-w-3xl mx-auto mb-28 space-y-4">
+          <p className="text-xs sm:text-sm font-sans font-medium text-stone-500 tracking-wide">
+            Our founding story at LawinoMeet
           </p>
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-tight">
+            Where no stranger ever stands alone
+          </h2>
         </div>
 
-        {/* Narrative Flow Container with Central Guided Gold Thread */}
-        <div className="relative">
-          {/* Vertical Golden Flow Line (Visible on lg screens) */}
-          <div className="hidden lg:block absolute left-1/2 top-12 bottom-12 w-0.5 -translate-x-1/2 bg-gradient-to-b from-luxury-gold/20 via-luxury-gold to-luxury-gold/20" />
-
-          <div className="space-y-24">
-            {/* -------------------------------------------------------------
-                BEAT 1: Left Text, Right Image
-                ------------------------------------------------------------- */}
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-              {/* Central Node Badge */}
-              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
-                01
+        {/* Narrative Flow matching User's Exact Wireframe Sketch (Alternating Circles & Text) */}
+        <div className="space-y-32">
+          {/* -------------------------------------------------------------
+              ROW 1 (Wireframe): BIG CIRCLE ON LEFT, STORY TEXT ON RIGHT
+              ------------------------------------------------------------- */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Left Big Circular Frame */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-start">
+              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
+                  <img
+                    src="/Story/incident-1.png"
+                    alt="Stranger in a new city"
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
+                  />
+                </div>
               </div>
+            </div>
 
-              {/* Text Side (Left) */}
-              <div className="space-y-4 lg:pr-12">
-                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
-                  The Strangers' City • Midnight Dilemma
+            {/* Right Story Text */}
+            <div className="lg:col-span-7 space-y-5">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
+                In a new city, it is{' '}
+                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
+                  terrifying...
+                  {/* Organic hand-drawn sketched loop around key word */}
+                  <svg
+                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 -rotate-1"
+                    viewBox="0 0 120 45"
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
-                  Moving into the Unknown
-                </h3>
-                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
+              </h3>
+
+              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+                <p>
                   Imagine moving to a completely new city for your first job. You barely know the streets,
                   have no relatives nearby, and don't know anyone who can guide you.
                 </p>
-                <div className="p-4 rounded-2xl bg-maroon-50/60 border border-maroon-200 text-xs sm:text-sm text-maroon-950 italic font-serif leading-relaxed">
-                  "Within your first week, one night, you suddenly find yourself involved in a police case.
-                  You're confused, frightened, and don't know what to do next. You need a lawyer, but you don't know where to find one or whom to trust."
+                <p>
+                  Within your first week, one night, you suddenly find yourself involved in a police case.
+                  You're confused, frightened, and don't know what to do next.
+                </p>
+                <p className="font-medium text-slate-800">
+                  You need a lawyer, but you don't know where to find one or whom to trust.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* -------------------------------------------------------------
+              ROW 2 (Wireframe): STORY TEXT ON LEFT, BIG CIRCLE ON RIGHT
+              ------------------------------------------------------------- */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Left Story Text (on lg) */}
+            <div className="lg:col-span-7 space-y-5 order-2 lg:order-1">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
+                This isn't imagination. I{' '}
+                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
+                  experienced it myself
+                  {/* Organic hand-drawn sketched loop around key word */}
+                  <svg
+                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 rotate-1"
+                    viewBox="0 0 120 45"
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </h3>
+
+              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+                <p>
+                  This isn't just a situation someone might imagine or read in a news article. I lived through that exact vulnerability.
+                </p>
+                <p>
+                  As a tech engineer, sitting in that confusion, I kept thinking: What if someone in this situation could find the right legal professional with just a few clicks?
+                </p>
+                <p className="font-medium text-slate-800">
+                  Without depending on local contacts, without desperately asking strangers, and without struggling alone in the dark.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Big Circular Frame */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
+              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
+                  <img
+                    src="/Story/Incident-2.png"
+                    alt="The Engineer's moment of clarity"
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
+                  />
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Image Side (Right) */}
-              <div className="lg:pl-12 flex justify-center">
-                <div className="relative group max-w-md w-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-luxury-gold/30 to-maroon-800/20 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
-                    <img
-                      src="/Story/incident-1.png"
-                      alt="Alone in an unfamiliar city facing an unexpected crisis"
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
-                    />
-                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
-                      The Vulnerability of Being New & Without Counsel
-                    </div>
-                  </div>
+          {/* -------------------------------------------------------------
+              ROW 3 (Wireframe): BIG CIRCLE ON LEFT, STORY TEXT ON RIGHT
+              ------------------------------------------------------------- */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Left Big Circular Frame */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-start">
+              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
+                  <img
+                    src="/Story/Incident-3.png"
+                    alt="LawinoMeet Legal Sanctuary"
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* -------------------------------------------------------------
-                BEAT 2: Left Image, Right Text (Reversed Alternating Flow)
-                ------------------------------------------------------------- */}
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-              {/* Central Node Badge */}
-              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
-                02
-              </div>
-
-              {/* Image Side (Left on lg) */}
-              <div className="lg:pr-12 order-2 lg:order-1 flex justify-center">
-                <div className="relative group max-w-md w-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-maroon-800/30 to-luxury-gold/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
-                    <img
-                      src="/Story/Incident-2.png"
-                      alt="The Engineer's Realization - Turning adversity into purpose"
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
+            {/* Right Story Text */}
+            <div className="lg:col-span-7 space-y-5">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
+                At LawinoMeet,{' '}
+                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
+                  it is always Day 1
+                  {/* Organic hand-drawn sketched loop around key word */}
+                  <svg
+                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 -rotate-1"
+                    viewBox="0 0 120 45"
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
-                      Not an Imagination — A Lived Reality
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Text Side (Right on lg) */}
-              <div className="space-y-4 lg:pl-12 order-1 lg:order-2">
-                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
-                  The Turning Point • The Engineer's Calling
+                  </svg>
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
-                  A Tech Engineer's Revelation
-                </h3>
-                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
-                  <strong className="text-maroon-950 font-serif">This isn't just a situation someone might imagine. I experienced it myself.</strong>
+              </h3>
+
+              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+                <p>
+                  That thought became the founding inspiration behind <strong className="text-slate-900 font-semibold">LawinoMeet</strong>.
                 </p>
-                <div className="p-5 rounded-2xl bg-cream-100 border border-luxury-gold/40 shadow-sm space-y-2">
-                  <p className="text-xs sm:text-sm text-stone-800 font-sans leading-relaxed">
-                    As a tech engineer, I kept thinking in that difficult moment:
-                  </p>
-                  <blockquote className="text-sm sm:text-base font-serif font-bold text-maroon-900 border-l-4 border-luxury-gold pl-3 italic">
-                    "What if someone in this situation could find the right legal professional with just a few clicks,
-                    without depending on local contacts or struggling to find help?"
-                  </blockquote>
-                </div>
-              </div>
-            </div>
-
-            {/* -------------------------------------------------------------
-                BEAT 3: Left Text, Right Image
-                ------------------------------------------------------------- */}
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-              {/* Central Node Badge */}
-              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
-                03
-              </div>
-
-              {/* Text Side (Left) */}
-              <div className="space-y-4 lg:pr-12">
-                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
-                  The Purpose • The Conviction
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
-                  The Foundation of LawinoMeet
-                </h3>
-                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
-                  That thought became the driving inspiration behind <strong className="font-serif text-maroon-950">LawinoMeet</strong>.
-                  We set out to engineer an unbreakable bridge between citizens and verified legal luminaries across India.
+                <p className="text-xl sm:text-2xl font-serif italic text-maroon-900 py-1 font-semibold leading-relaxed">
+                  "We started with one simple belief: No one should feel helpless just because they are new to a place and don't know where to find legal help."
                 </p>
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-maroon-950 via-maroon-900 to-maroon-950 text-cream-100 border border-luxury-gold/50 shadow-xl space-y-2">
-                  <span className="text-[10px] font-serif uppercase tracking-[0.2em] text-luxury-gold font-bold">
-                    Our Unwavering Core Creed
-                  </span>
-                  <p className="text-sm sm:text-base font-serif font-bold text-cream-50 leading-relaxed italic">
-                    "No one should feel helpless just because they are new to a place and don't know where to find legal help."
-                  </p>
-                </div>
-              </div>
-
-              {/* Image Side (Right) */}
-              <div className="lg:pl-12 flex justify-center">
-                <div className="relative group max-w-md w-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-luxury-gold/40 to-maroon-700/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
-                    <img
-                      src="/Story/Incident-3.png"
-                      alt="Empowerment through accessible legal consultations"
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
-                    />
-                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
-                      Democratizing Immediate Access to Supreme Legal Counsel
-                    </div>
-                  </div>
-                </div>
+                <p>
+                  Today, verified senior advocates and High Court chambers are accessible with just a few clicks — either through private encrypted video consultations or direct in-person chamber meetings.
+                </p>
               </div>
             </div>
           </div>
