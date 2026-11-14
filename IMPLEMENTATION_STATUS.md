@@ -1,15 +1,15 @@
 # Lawino Meet - Implementation Status & Architectural Roadmap
 
-> **Current Status:** 5 of 14 Phases Completed (All Foundation, Auth, User/Firm, and Appointment Microservices verified with 100% test pass rate).
+> **Current Status:** 6 of 14 Phases Completed (Foundation, Auth, User/Firm, Appointment, and Notification Microservices verified with 100% test pass rate).
 
 ---
 
 ## 1. Executive Progress Summary
 
 ```text
-[████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 36% Total Platform Completion
-Backend Core Microservices: [████████████████████████████████████░░░░░░░░░░░░] 50% (3 of 6 Services Active)
-Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (22 / 22 Tests Passing)
+[████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 43% Total Platform Completion
+Backend Core Microservices: [████████████████████████████████████████████░░░░] 67% (4 of 6 Services Active)
+Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (26 / 26 Tests Passing)
 ```
 
 | Phase | Service / Module | Port | DB Name | Status | Automated Test Result |
@@ -19,8 +19,8 @@ Active Test Passing Rate:   [█████████████████
 | **Phase 2** | `auth-service` | 8081 | `auth_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
 | **Phase 3** | `user-service` | 8082 | `user_db` | 🟢 COMPLETED | **6 / 6 tests passed** (0 failures) |
 | **Phase 4** | `appointment-service` | 8083 | `appointment_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
-| **Phase 5** | `notification-service` | 8085 | `notification_db` | ⏳ **READY TO START** | Next immediate phase |
-| **Phase 6** | `chat-service` | 8086 | `chat_db` | ⚪ NOT STARTED | WebSocket & REST Messaging |
+| **Phase 5** | `notification-service` | 8085 | `notification_db` | 🟢 COMPLETED | **4 / 4 tests passed** (0 failures) |
+| **Phase 6** | `chat-service` | 8086 | `chat_db` | ⏳ **READY TO START** | Next immediate phase |
 | **Phase 7** | `meeting-service` | 8084 | `meeting_db` | ⚪ NOT STARTED | WebRTC Signaling & Room Lifecycle |
 | **Phase 8** | `frontend` | 3000/5173 | - | ⚪ NOT STARTED | React, Vite, Tailwind, Dashboards |
 | **Phase 9** | Docker Orchestration | 80 / 443 | - | ⚪ NOT STARTED | Multi-service Docker Compose & Nginx |
@@ -110,15 +110,35 @@ Active Test Passing Rate:   [█████████████████
 
 ---
 
-## 3. What is LEFT / PENDING (Phases 5 to 13)
+###  Phase 5: Notification Service (`notification-service` - Port 8085)
+- **Database (`notification_db`):**
+  - Table `notifications`: `id: BIGINT` (internal), `public_id: VARCHAR(36)` (UUID external), `recipient_user_public_id`, `recipient_username`, `notification_type`, `title`, `message: TEXT`, `reference_type`, `reference_id`, `is_read: BOOLEAN`, `read_at: Instant`, `created_at: Instant`.
+  - Enums: `NotificationType` (`APPOINTMENT_REQUESTED`, `APPOINTMENT_ACCEPTED`, `APPOINTMENT_REJECTED`, `APPOINTMENT_CANCELLED`, `APPOINTMENT_COMPLETED`, `FIRM_INVITATION_RECEIVED`, `FIRM_MEMBERSHIP_ACCEPTED`, `NEW_CHAT_MESSAGE`, `SYSTEM_ALERT`).
+- **Core Functionality & Security:**
+  - JWT Authentication with claim extraction (`publicId`, `username`, `role`).
+  - Strict data isolation: Users can only view, mark as read, or delete their own notifications (cross-user access blocked with `HTTP 403 FORBIDDEN`).
+  - Batch operation: Atomic update for marking all user's notifications as read (`PATCH /api/notifications/mark-all-read`).
+  - Dynamic unread count calculation for frontend notification badge (`GET /api/notifications/unread-count`).
+  - Inter-service event intake endpoint (`POST /api/notifications/events`) allowing appointment, chat, and user services to trigger in-app notifications.
+- **Endpoints:**
+  - `POST /api/notifications/events` (Internal event dispatch)
+  - `GET /api/notifications` (Paginated user notifications)
+  - `GET /api/notifications/unread-count` (Badge counter)
+  - `PATCH /api/notifications/{id}/read` (Mark individual notification as read)
+  - `PATCH /api/notifications/mark-all-read` (Mark all notifications as read)
+  - `DELETE /api/notifications/{id}` (Delete notification)
+- **Tests:** 4/4 passed (`NotificationControllerTest`, `NotificationServiceApplicationTests`).
+
+---
+
+## 3. What is LEFT / PENDING (Phases 6 to 13)
 
 The remaining work is divided into clear, incremental modules:
 
 ```mermaid
 flowchart TD
     subgraph BACKEND_REMAINING["Remaining Backend Services"]
-        P5["Phase 5: Notification Service (Port 8085)"] --> P6["Phase 6: Chat Service (Port 8086)"]
-        P6 --> P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
+        P6["Phase 6: Chat Service (Port 8086)"] --> P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
     end
 
     subgraph FRONTEND["Frontend Application"]
@@ -142,22 +162,8 @@ flowchart TD
 
 ---
 
-###  Phase 5: Notification Service (`services/notification-service` - Port 8085)
-**Status:** ⏳ *Ready to implement next*
-- **Purpose:** Store in-app user notifications and dispatch alerts for platform events.
-- **Database (`notification_db`):**
-  - Table: `notifications` (`id`, `public_id`, `recipient_user_public_id`, `notification_type`, `title`, `message`, `reference_type`, `reference_id`, `is_read`, `created_at`).
-  - Enums: `NotificationType` (`APPOINTMENT_REQUESTED`, `APPOINTMENT_ACCEPTED`, `APPOINTMENT_REJECTED`, `APPOINTMENT_CANCELLED`, `FIRM_INVITATION_RECEIVED`, `NEW_CHAT_MESSAGE`, `SYSTEM_ALERT`).
-- **Key Features:**
-  - Read/unread status management (`PATCH /api/notifications/{id}/read`, `PATCH /api/notifications/mark-all-read`).
-  - Badge counter endpoint (`GET /api/notifications/unread-count`).
-  - Paginated user notification list (`GET /api/notifications`).
-  - Internal event intake API (`POST /api/notifications/events`) for appointment, user, and chat events.
-
----
-
 ###  Phase 6: Chat Service (`services/chat-service` - Port 8086)
-**Status:** ⚪ *Not Started*
+**Status:** ⏳ *Ready to implement next*
 - **Purpose:** 1-to-1 messaging between clients, lawyers, and firm members.
 - **Database (`chat_db`):**
   - Table: `chat_messages` (`id`, `public_id`, `conversation_id`, `sender_user_public_id`, `recipient_user_public_id`, `content`, `read_at`, `created_at`).
@@ -247,10 +253,11 @@ flowchart TD
 ========================================================================
 MICROSERVICE TEST EXECUTION SUMMARY
 ========================================================================
-auth-service:        8 tests  |  0 failures  |  0 errors  [PASSED]
-user-service:        6 tests  |  0 failures  |  0 errors  [PASSED]
-appointment-service: 8 tests  |  0 failures  |  0 errors  [PASSED]
+auth-service:         8 tests  |  0 failures  |  0 errors  [PASSED]
+user-service:         6 tests  |  0 failures  |  0 errors  [PASSED]
+appointment-service:  8 tests  |  0 failures  |  0 errors  [PASSED]
+notification-service: 4 tests  |  0 failures  |  0 errors  [PASSED]
 ------------------------------------------------------------------------
-TOTAL TESTS PASSING: 22 / 22 (100% Zero-Failure Rate)
+TOTAL TESTS PASSING: 26 / 26 (100% Zero-Failure Rate)
 ========================================================================
 ```
