@@ -30,4 +30,13 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> ok(T data) {
         return ok("Operation completed successfully", data);
     }
+
+    public static <T> ApiResponse<T> created(String message, T data) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .data(data)
+                .timestamp(Instant.now())
+                .build();
+    }
 }

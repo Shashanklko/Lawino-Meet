@@ -1,15 +1,15 @@
 # Lawino Meet - Implementation Status & Architectural Roadmap
 
-> **Current Status:** 7 of 14 Phases Completed (Foundation, Auth, User/Firm, Appointment, Notification, and Chat Microservices verified with 100% test pass rate).
+> **Current Status:** 8 of 14 Phases Completed (All 6 Backend Microservices 100% completed & verified with 100% test pass rate).
 
 ---
 
 ## 1. Executive Progress Summary
 
 ```text
-[████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 50% Total Platform Completion
-Backend Core Microservices: [██████████████████████████████████████████████████░░] 83% (5 of 6 Services Active)
-Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (30 / 30 Tests Passing)
+[████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 57% Total Platform Completion
+Backend Core Microservices: [████████████████████████████████████████████████████] 100% (6 of 6 Services Active)
+Active Test Passing Rate:   [████████████████████████████████████████████████] 100% (35 / 35 Tests Passing)
 ```
 
 | Phase | Service / Module | Port | DB Name | Status | Automated Test Result |
@@ -21,8 +21,8 @@ Active Test Passing Rate:   [█████████████████
 | **Phase 4** | `appointment-service` | 8083 | `appointment_db` | 🟢 COMPLETED | **8 / 8 tests passed** (0 failures) |
 | **Phase 5** | `notification-service` | 8085 | `notification_db` | 🟢 COMPLETED | **4 / 4 tests passed** (0 failures) |
 | **Phase 6** | `chat-service` | 8086 | `chat_db` | 🟢 COMPLETED | **4 / 4 tests passed** (0 failures) |
-| **Phase 7** | `meeting-service` | 8084 | `meeting_db` | ⏳ **READY TO START** | Next immediate phase |
-| **Phase 8** | `frontend` | 3000/5173 | - | ⚪ NOT STARTED | React, Vite, Tailwind, Dashboards |
+| **Phase 7** | `meeting-service` | 8084 | `meeting_db` | 🟢 COMPLETED | **5 / 5 tests passed** (0 failures) |
+| **Phase 8** | `frontend` | 3000/5173 | - | ⏳ **READY TO START** | Next immediate phase |
 | **Phase 9** | Docker Orchestration | 80 / 443 | - | ⚪ NOT STARTED | Multi-service Docker Compose & Nginx |
 | **Phase 10** | Docker Swarm | - | - | ⚪ NOT STARTED | Stack Deploy, Overlay Network, Secrets |
 | **Phase 11** | Jenkins CI/CD Pipeline | - | - | ⚪ NOT STARTED | Automated Build, Test, ECR Push |
@@ -153,16 +153,39 @@ Active Test Passing Rate:   [█████████████████
 
 ---
 
-## 3. What is LEFT / PENDING (Phases 7 to 13)
+###  Phase 7: Meeting Service (`meeting-service` - Port 8084)
+- **Database (`meeting_db`):**
+  - Table `meeting_rooms`: `id: BIGINT` (internal), `public_id: VARCHAR(36)` (UUID external), `appointment_public_id: VARCHAR(36)`, `client_user_public_id`, `client_username`, `lawyer_user_public_id`, `lawyer_username`, `room_status` [WAITING, ACTIVE, ENDED], `room_token`, `started_at`, `ended_at`, `duration_seconds`, `created_at`, `updated_at`.
+  - Table `meeting_participants`: `id: BIGINT` (internal), `room_id: BIGINT` (FK), `user_public_id`, `username`, `role` [CLIENT, LAWYER], `joined_at`, `left_at`.
+- **WebRTC Signaling & Room State Machine:**
+  - **STOMP over WebSocket (`/ws-meeting`):** Real-time broker channel `/topic/rooms/{roomPublicId}` relaying WebRTC SDP Offer, SDP Answer, ICE Candidates, Join, and Leave events between peers.
+  - **Consultation Room Lifecycle:**
+    - `WAITING`: Room initialized for confirmed appointment.
+    - `ACTIVE`: Automatically transitions as soon as both Client and Lawyer join the room.
+    - `ENDED`: Concludes consultation, computes duration in seconds, logs completion, and dispatches room closure.
+- **Strict Security & Anti-Intruder Authorization:**
+  - Only confirmed Client and assigned Lawyer (or authorized Admin) can access room details, ICE servers, or signaling channel. Unauthorized access blocked with **`HTTP 403 FORBIDDEN`**.
+  - Joining an already ended consultation is rejected with **`HTTP 400 BAD REQUEST`** (`ROOM_ENDED`).
+- **Endpoints:**
+  - `POST /api/meetings/rooms` (Create or retrieve consultation room for appointment)
+  - `GET /api/meetings/rooms/{roomPublicId}` (Get room details & ICE servers config)
+  - `GET /api/meetings/appointments/{appointmentPublicId}/room` (Get room by appointment ID)
+  - `POST /api/meetings/rooms/{roomPublicId}/join` (Join room + lifecycle transition to ACTIVE)
+  - `POST /api/meetings/rooms/{roomPublicId}/leave` (Leave room + record leftAt)
+  - `PATCH /api/meetings/rooms/{roomPublicId}/end` (End consultation + compute duration)
+  - `POST /api/meetings/rooms/{roomPublicId}/signal` (WebRTC signaling message relay fallback)
+  - `GET /api/meetings/ice-servers` (Retrieve STUN/TURN configurations)
+  - `/ws-meeting` (WebSocket signaling endpoint with SockJS fallback)
+- **Tests:** 5/5 passed (`MeetingControllerTest`, `MeetingServiceApplicationTests`).
+
+---
+
+## 3. What is LEFT / PENDING (Phases 8 to 13)
 
 The remaining work is divided into clear, incremental modules:
 
 ```mermaid
 flowchart TD
-    subgraph BACKEND_REMAINING["Remaining Backend Services"]
-        P7["Phase 7: Meeting Service WebRTC (Port 8084)"]
-    end
-
     subgraph FRONTEND["Frontend Application"]
         P8["Phase 8: React + Vite + Tailwind Frontend"]
     end
@@ -177,23 +200,23 @@ flowchart TD
         P13["Phase 13: E2E Verification & Handover Docs"]
     end
 
-    BACKEND_REMAINING --> FRONTEND
     FRONTEND --> DEVOPS
     DEVOPS --> FINAL
 ```
 
 ---
 
-###  Phase 7: Meeting Service (`services/meeting-service` - Port 8084)
+###  Phase 8: Frontend Development (`frontend/`)
 **Status:** ⏳ *Ready to implement next*
-- **Purpose:** WebRTC video consultation signaling and room lifecycle management.
-- **Database (`meeting_db`):**
-  - Table: `meeting_rooms` (`id`, `public_id`, `appointment_public_id`, `room_token`, `room_status` [WAITING, ACTIVE, ENDED], `started_at`, `ended_at`).
-  - Table: `meeting_participants` (`id`, `room_id`, `user_public_id`, `role`, `joined_at`, `left_at`).
-- **Key Features:**
-  - WebSocket signaling channel (`/ws-meeting`) to relay SDP Offer, SDP Answer, and ICE Candidates.
-  - Strict Authorization: Only the confirmed Client and Lawyer assigned to the appointment can join the consultation room.
-  - Room status tracking & consultation duration logging.
+- **Tech Stack:** React 18, Vite, Tailwind CSS, Lucide Icons, Axios, STOMP.js, WebRTC Native API.
+- **Key Modules & Pages:**
+  1. **Authentication:** Login (Username/Email), Registration (Client, Lawyer, Firm), JWT storage & interceptor.
+  2. **Public Discovery:** Lawyer Search (filters by name, city, practice area, fee), Firm Directory, Public Lawyer Profile.
+  3. **Client Dashboard:** Book Consultation calendar, My Appointments, Active Chats, Video Call launcher.
+  4. **Lawyer Dashboard:** Manage Availability Slots, Pending Appointment Requests (Accept/Reject), Client consultations.
+  5. **Firm Admin Dashboard:** Manage Firm Profile, Invite Lawyers, Associate List, Firm-wide appointments roster.
+  6. **Real-Time Video Consultation Room:** WebRTC stream rendering, Camera/Mic toggles, screen sharing, call end button.
+  7. **Real-Time Chat Widget:** In-app messaging drawer with unread badges.
 - **Database (`meeting_db`):**
   - Table: `meeting_rooms` (`id`, `public_id`, `appointment_public_id`, `room_token`, `room_status` [WAITING, ACTIVE, ENDED], `started_at`, `ended_at`).
   - Table: `meeting_participants` (`id`, `room_id`, `user_public_id`, `role`, `joined_at`, `left_at`).
@@ -272,9 +295,10 @@ MICROSERVICE TEST EXECUTION SUMMARY
 auth-service:         8 tests  |  0 failures  |  0 errors  [PASSED]
 user-service:         6 tests  |  0 failures  |  0 errors  [PASSED]
 appointment-service:  8 tests  |  0 failures  |  0 errors  [PASSED]
+meeting-service:      5 tests  |  0 failures  |  0 errors  [PASSED]
 notification-service: 4 tests  |  0 failures  |  0 errors  [PASSED]
 chat-service:         4 tests  |  0 failures  |  0 errors  [PASSED]
 ------------------------------------------------------------------------
-TOTAL TESTS PASSING: 30 / 30 (100% Zero-Failure Rate)
+TOTAL TESTS PASSING: 35 / 35 (100% Zero-Failure Rate)
 ========================================================================
 ```

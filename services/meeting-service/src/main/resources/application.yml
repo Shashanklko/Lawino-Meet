@@ -34,6 +34,11 @@ management:
       probes:
         enabled: true
 
+app:
+  jwt:
+    secret: ${JWT_SECRET:super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+    issuer: ${JWT_ISSUER:lawino-meet}
+
 webrtc:
   stun-server: ${STUN_SERVER_URL:stun:stun.l.google.com:19302}
   turn-server: ${TURN_SERVER_URL:}
