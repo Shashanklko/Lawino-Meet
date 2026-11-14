@@ -14,7 +14,7 @@ export const THEMES = [
   },
   {
     id: 'navy',
-    name: 'High Court Navy & Gold',
+    name: 'Imperial Navy & Gold',
     subtitle: 'Judicial Authority',
     primary: '#0B192C',
     cream: '#F8F9FA',

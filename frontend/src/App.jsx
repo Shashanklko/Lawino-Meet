@@ -19,6 +19,8 @@ import { LawyerSlotsPage } from './pages/LawyerSlotsPage';
 import { FirmAdminDashboardPage } from './pages/FirmAdminDashboardPage';
 import { VideoMeetingPage } from './pages/VideoMeetingPage';
 import { NotificationPage } from './pages/NotificationPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
                 <Route element={<AppLayout />}>
                   {/* Public Routes */}
                   <Route path="/" element={<LandingPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/lawyers" element={<LawyerDiscoveryPage />} />

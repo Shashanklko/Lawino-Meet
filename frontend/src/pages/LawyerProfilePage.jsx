@@ -184,7 +184,7 @@ export const LawyerProfilePage = () => {
               <h2 className="text-base font-serif font-bold text-maroon-950">Professional Background</h2>
               <p className="text-xs sm:text-sm text-stone-600 leading-relaxed whitespace-pre-line">
                 {lawyer.bio ||
-                  'High Court and Supreme Court advocate specializing in complex civil litigation, corporate dispute resolution, commercial arbitration, and criminal trial defense with complete confidentiality.'}
+                  'Legal professional expert specializing in complex civil litigation, corporate dispute resolution, commercial arbitration, and criminal trial defense with complete confidentiality.'}
               </p>
             </div>
 
@@ -195,7 +195,7 @@ export const LawyerProfilePage = () => {
                 <span>Chamber & Court Practice Location</span>
               </div>
               <p className="text-xs text-stone-600">
-                {lawyer.city || 'New Delhi'} Jurisdiction • High Court Bar Association Member
+                {lawyer.city || 'New Delhi'} Jurisdiction • Bar Association Member
               </p>
               <div className="p-3 bg-cream-100 rounded-xl border border-cream-300 text-xs text-stone-600 flex items-start space-x-2">
                 <Info className="w-4 h-4 text-maroon-800 shrink-0 mt-0.5" />

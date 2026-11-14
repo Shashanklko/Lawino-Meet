@@ -87,7 +87,7 @@ export const FirmAdminDashboardPage = () => {
               Registration No: <span className="text-slate-800 font-semibold">{activeFirm?.registrationNumber || 'LLP-DEL-2024-981'}</span>
             </p>
             <p className="text-xs text-slate-500 mt-2 max-w-xl">
-              {activeFirm?.description || 'Full-service corporate and litigation law firm practicing across High Courts and specialized tribunals.'}
+              {activeFirm?.description || 'Full-service corporate and litigation law firm practicing across legal chambers and specialized tribunals.'}
             </p>
           </div>
         </div>

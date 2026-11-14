@@ -246,7 +246,7 @@ export const ClientDashboardPage = () => {
                         <div className="p-3 bg-white rounded-xl border border-cream-300 text-xs text-stone-700 space-y-1">
                           <p className="font-serif font-bold text-maroon-950 flex items-center space-x-1.5">
                             <MapPin className="w-3.5 h-3.5 text-maroon-800" />
-                            <span>Chamber 412, Lawyers Chambers Block, Delhi High Court Complex, New Delhi</span>
+                            <span>Chamber 412, Lawyers Chambers Block, Court Complex, New Delhi</span>
                           </p>
                           <p className="text-[11px] text-stone-500 pl-5">
                             Reporting time: 10 minutes prior to scheduled slot. Please present digital confirmation badge at court gate security.
@@ -317,7 +317,7 @@ export const ClientDashboardPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-500">Chamber:</span>
-                <span className="font-semibold text-stone-800">Chamber 412, Delhi High Court</span>
+                <span className="font-semibold text-stone-800">Chamber 412, Court Complex</span>
               </div>
               <div className="flex justify-between border-t border-cream-300 pt-2 font-serif text-sm">
                 <span className="font-bold text-maroon-950">Total Retainer:</span>

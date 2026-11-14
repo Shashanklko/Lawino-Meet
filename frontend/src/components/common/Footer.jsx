@@ -20,7 +20,7 @@ export const Footer = () => {
               </span>
             </div>
             <p className="text-xs text-cream-300 font-light leading-relaxed">
-              India's premier legal consultation sanctuary connecting verified advocates, High Court practitioners,
+              India's premier legal consultation sanctuary connecting verified legal professional experts, advocates,
               and law firm chambers for encrypted video hearings and authorized chamber meetings.
             </p>
             <div className="flex items-center space-x-4 text-xs text-luxury-gold pt-2 font-serif">
@@ -42,7 +42,7 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-2.5 text-xs text-cream-300 font-light">
               <li className="hover:text-luxury-gold transition cursor-pointer">Corporate M&A & Boardroom Advisory</li>
-              <li className="hover:text-luxury-gold transition cursor-pointer">Criminal Defense & High Court Bail</li>
+              <li className="hover:text-luxury-gold transition cursor-pointer">Criminal Defense & Urgent Bail</li>
               <li className="hover:text-luxury-gold transition cursor-pointer">Matrimonial & Custody Settlements</li>
               <li className="hover:text-luxury-gold transition cursor-pointer">Intellectual Property & Patents</li>
               <li className="hover:text-luxury-gold transition cursor-pointer">Cyber Crime & IT Act Litigations</li>

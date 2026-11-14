@@ -306,7 +306,7 @@ export const LawyerDashboardPage = () => {
               rows={3}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. Pre-scheduled High Court hearing, conflict of interest..."
+              placeholder="e.g. Pre-scheduled trial hearing, conflict of interest..."
               className="w-full text-xs border border-cream-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             <div className="flex items-center space-x-3 pt-2">

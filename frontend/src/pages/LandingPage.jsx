@@ -23,7 +23,7 @@ import {
 
 const practiceAreas = [
   { name: 'Corporate & M&A', code: 'CORPORATE_LAW', cases: '1,420+ Consultations', desc: 'Mergers, shareholder agreements, regulatory compliance & boardroom advisory.' },
-  { name: 'Criminal Defense & Bail', code: 'CRIMINAL_DEFENSE', cases: '2,890+ Consultations', desc: 'Anticipatory bail, trial defense, CBI/ED summons, High Court litigation.' },
+  { name: 'Criminal Defense & Bail', code: 'CRIMINAL_DEFENSE', cases: '2,890+ Consultations', desc: 'Anticipatory bail, trial defense, legal notices, and criminal litigation.' },
   { name: 'Family & Matrimonial', code: 'FAMILY_LAW', cases: '3,100+ Consultations', desc: 'Divorce settlements, child custody, alimony & high-net-worth estate partition.' },
   { name: 'Intellectual Property', code: 'INTELLECTUAL_PROPERTY', cases: '980+ Consultations', desc: 'Patents, trademark infringement, copyright protection & technology licensing.' },
   { name: 'Cyber & White Collar', code: 'CYBER_LAW', cases: '1,150+ Consultations', desc: 'Financial cyber fraud, IT Act investigations, privacy and data disputes.' },
@@ -69,12 +69,12 @@ export const LandingPage = () => {
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-black tracking-tight leading-[1.15] text-cream-50">
             Navigating Critical Legal Waters with{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-luxury-gold-light via-luxury-gold to-luxury-gold-dark italic">
-              Supreme Advocates.
+              Legal Professional Experts.
             </span>
           </h1>
 
           <p className="max-w-3xl mx-auto text-base sm:text-lg text-cream-200 font-sans font-light leading-relaxed">
-            When disputes arise, clarity is your strongest shield. Connect instantly with verified High Court & Supreme Court advocates
+            When disputes arise, clarity is your strongest shield. Connect instantly with verified legal professional experts
             via <strong className="font-semibold text-luxury-gold">Encrypted HD Video</strong> or reserve a private audience in their <strong className="font-semibold text-luxury-gold">Chambers</strong>.
           </p>
 
@@ -130,7 +130,7 @@ export const LandingPage = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by advocate name, legal issue, High Court, or practice area..."
+                  placeholder="Search by advocate name, legal issue, city, or practice area..."
                   className="w-full bg-transparent px-3 text-xs sm:text-sm text-cream-100 placeholder-cream-400/60 focus:outline-none"
                 />
               </div>
@@ -156,7 +156,7 @@ export const LandingPage = () => {
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Building className="w-4 h-4 text-luxury-gold" />
-              <span>High Court Chambers</span>
+              <span>Chamber Consultations</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Award className="w-4 h-4 text-luxury-gold" />
@@ -196,47 +196,27 @@ export const LandingPage = () => {
           </h2>
         </div>
 
-        {/* Narrative Flow matching User's Exact Wireframe Sketch (Alternating Circles & Text) */}
-        <div className="space-y-32">
+        {/* Narrative Flow: Seamless Canvas-Blended Illustrations (No Circles / No Borders) */}
+        <div className="space-y-28">
           {/* -------------------------------------------------------------
-              ROW 1 (Wireframe): BIG CIRCLE ON LEFT, STORY TEXT ON RIGHT
+              ROW 1: FADED ILLUSTRATION ON LEFT, STORY TEXT ON RIGHT
               ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            {/* Left Big Circular Frame */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-start">
-              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
-                  <img
-                    src="/Story/incident-1.png"
-                    alt="Stranger in a new city"
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
-                  />
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+            {/* Left Faded Illustration (Blends seamlessly into canvas) */}
+            <div className="lg:col-span-5 flex justify-center items-center">
+              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
+                <img
+                  src="/Story/incident-1.png"
+                  alt="Stranger in a new city"
+                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
+                />
               </div>
             </div>
 
             {/* Right Story Text */}
             <div className="lg:col-span-7 space-y-5">
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                In a new city, it is{' '}
-                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
-                  terrifying...
-                  {/* Organic hand-drawn sketched loop around key word */}
-                  <svg
-                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 -rotate-1"
-                    viewBox="0 0 120 45"
-                    fill="none"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
+                In a new city, it is terrifying...
               </h3>
 
               <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
@@ -256,31 +236,13 @@ export const LandingPage = () => {
           </div>
 
           {/* -------------------------------------------------------------
-              ROW 2 (Wireframe): STORY TEXT ON LEFT, BIG CIRCLE ON RIGHT
+              ROW 2: STORY TEXT ON LEFT, FADED ILLUSTRATION ON RIGHT
               ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
             {/* Left Story Text (on lg) */}
             <div className="lg:col-span-7 space-y-5 order-2 lg:order-1">
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                This isn't imagination. I{' '}
-                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
-                  experienced it myself
-                  {/* Organic hand-drawn sketched loop around key word */}
-                  <svg
-                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 rotate-1"
-                    viewBox="0 0 120 45"
-                    fill="none"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
+                This isn't imagination. I experienced it myself.
               </h3>
 
               <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
@@ -296,59 +258,37 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* Right Big Circular Frame */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
-              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
-                  <img
-                    src="/Story/Incident-2.png"
-                    alt="The Engineer's moment of clarity"
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
-                  />
-                </div>
+            {/* Right Faded Illustration (Blends seamlessly into canvas) */}
+            <div className="lg:col-span-5 flex justify-center items-center order-1 lg:order-2">
+              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
+                <img
+                  src="/Story/Incident-2.png"
+                  alt="The Engineer's moment of clarity"
+                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
+                />
               </div>
             </div>
           </div>
 
           {/* -------------------------------------------------------------
-              ROW 3 (Wireframe): BIG CIRCLE ON LEFT, STORY TEXT ON RIGHT
+              ROW 3: FADED ILLUSTRATION ON LEFT, STORY TEXT ON RIGHT
               ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            {/* Left Big Circular Frame */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-start">
-              <div className="w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-[3px] border-slate-900 p-2.5 shadow-2xl bg-white flex items-center justify-center group hover:scale-[1.02] transition duration-500 shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden bg-cream-50 flex items-center justify-center">
-                  <img
-                    src="/Story/Incident-3.png"
-                    alt="LawinoMeet Legal Sanctuary"
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
-                  />
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+            {/* Left Faded Illustration (Blends seamlessly into canvas) */}
+            <div className="lg:col-span-5 flex justify-center items-center">
+              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
+                <img
+                  src="/Story/Incident-3.png"
+                  alt="LawinoMeet Legal Sanctuary"
+                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
+                />
               </div>
             </div>
 
             {/* Right Story Text */}
             <div className="lg:col-span-7 space-y-5">
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                At LawinoMeet,{' '}
-                <span className="relative inline-block px-1.5 text-slate-900 whitespace-nowrap">
-                  it is always Day 1
-                  {/* Organic hand-drawn sketched loop around key word */}
-                  <svg
-                    className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+14px)] pointer-events-none text-blue-600 -rotate-1"
-                    viewBox="0 0 120 45"
-                    fill="none"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M8,22 C14,8 55,4 105,10 C118,12 118,28 102,35 C65,42 15,38 6,28 C1,22 18,14 45,12"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
+                At LawinoMeet, no one stands alone.
               </h3>
 
               <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
@@ -359,7 +299,7 @@ export const LandingPage = () => {
                   "We started with one simple belief: No one should feel helpless just because they are new to a place and don't know where to find legal help."
                 </p>
                 <p>
-                  Today, verified senior advocates and High Court chambers are accessible with just a few clicks — either through private encrypted video consultations or direct in-person chamber meetings.
+                  Today, verified legal professional experts and legal chambers are accessible with just a few clicks — either through private encrypted video consultations or direct in-person chamber meetings.
                 </p>
               </div>
             </div>
@@ -449,7 +389,7 @@ export const LandingPage = () => {
                 <span className="px-2.5 py-0.5 rounded-full bg-luxury-gold/20 text-luxury-gold-light border border-luxury-gold/40 text-[10px] font-bold uppercase tracking-wider">
                   Chamber Privilege
                 </span>
-                <span className="text-xs text-cream-400">High Court / Chamber Meet</span>
+                <span className="text-xs text-cream-400">Legal Chamber Meet</span>
               </div>
               <h3 className="text-2xl font-serif font-bold text-cream-50">
                 Chamber In-Person Consultation
@@ -588,7 +528,7 @@ export const LandingPage = () => {
               <FileCheck className="w-8 h-8 text-luxury-gold" />
               <h4 className="font-serif font-bold text-cream-100 text-base">Confidential Chambers</h4>
               <p className="text-xs text-cream-300 leading-relaxed">
-                High Court & Supreme Court chambers accessible only on approved appointment schedules.
+                Verified advocate and legal consultant chambers accessible only on approved appointment schedules.
               </p>
             </div>
 

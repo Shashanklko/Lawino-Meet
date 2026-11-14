@@ -80,7 +80,7 @@ export const LawyerDiscoveryPage = () => {
               Directory of Luminaries
             </span>
             <h1 className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-cream-50">
-              Discover Supreme & High Court Advocates
+              Discover Legal Professional Experts
             </h1>
             <p className="text-xs text-cream-300 font-light">
               Filter verified advocates available for online encrypted video counsel and in-person chamber hearings.
@@ -212,7 +212,7 @@ export const LawyerDiscoveryPage = () => {
 
                   {/* Bio */}
                   <p className="text-xs text-stone-600 mt-3.5 line-clamp-2 leading-relaxed">
-                    {lawyer.bio || 'Practicing advocate handling High Court litigation, bail proceedings, and corporate contracts.'}
+                    {lawyer.bio || 'Practicing advocate handling legal advisory, trial litigation, bail proceedings, and corporate contracts.'}
                   </p>
 
                   {/* Badges */}
