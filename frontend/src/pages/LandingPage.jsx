@@ -183,6 +183,175 @@ export const LandingPage = () => {
       </section>
 
       {/* =========================================================================
+          THE GENESIS: Founder's Story (One Continuous Left-Right Narrative Flow)
+          ========================================================================= */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
+        {/* Subtle decorative background watermarks */}
+        <div className="text-center max-w-3xl mx-auto mb-20 space-y-3">
+          <span className="text-xs font-serif font-bold tracking-[0.25em] text-maroon-700 uppercase">
+            The Genesis • Why We Built LawinoMeet
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-serif font-black text-maroon-950 tracking-tight">
+            "I Was in a New City, Confused and Frightened."
+          </h2>
+          <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
+            How a midnight crisis in an unfamiliar city transformed from personal helplessness into a nationwide legal sanctuary.
+          </p>
+        </div>
+
+        {/* Narrative Flow Container with Central Guided Gold Thread */}
+        <div className="relative">
+          {/* Vertical Golden Flow Line (Visible on lg screens) */}
+          <div className="hidden lg:block absolute left-1/2 top-12 bottom-12 w-0.5 -translate-x-1/2 bg-gradient-to-b from-luxury-gold/20 via-luxury-gold to-luxury-gold/20" />
+
+          <div className="space-y-24">
+            {/* -------------------------------------------------------------
+                BEAT 1: Left Text, Right Image
+                ------------------------------------------------------------- */}
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* Central Node Badge */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
+                01
+              </div>
+
+              {/* Text Side (Left) */}
+              <div className="space-y-4 lg:pr-12">
+                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
+                  The Strangers' City • Midnight Dilemma
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
+                  Moving into the Unknown
+                </h3>
+                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
+                  Imagine moving to a completely new city for your first job. You barely know the streets,
+                  have no relatives nearby, and don't know anyone who can guide you.
+                </p>
+                <div className="p-4 rounded-2xl bg-maroon-50/60 border border-maroon-200 text-xs sm:text-sm text-maroon-950 italic font-serif leading-relaxed">
+                  "Within your first week, one night, you suddenly find yourself involved in a police case.
+                  You're confused, frightened, and don't know what to do next. You need a lawyer, but you don't know where to find one or whom to trust."
+                </div>
+              </div>
+
+              {/* Image Side (Right) */}
+              <div className="lg:pl-12 flex justify-center">
+                <div className="relative group max-w-md w-full">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-luxury-gold/30 to-maroon-800/20 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
+                    <img
+                      src="/Story/incident-1.png"
+                      alt="Alone in an unfamiliar city facing an unexpected crisis"
+                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
+                    />
+                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
+                      The Vulnerability of Being New & Without Counsel
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* -------------------------------------------------------------
+                BEAT 2: Left Image, Right Text (Reversed Alternating Flow)
+                ------------------------------------------------------------- */}
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* Central Node Badge */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
+                02
+              </div>
+
+              {/* Image Side (Left on lg) */}
+              <div className="lg:pr-12 order-2 lg:order-1 flex justify-center">
+                <div className="relative group max-w-md w-full">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-maroon-800/30 to-luxury-gold/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
+                    <img
+                      src="/Story/Incident-2.png"
+                      alt="The Engineer's Realization - Turning adversity into purpose"
+                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
+                    />
+                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
+                      Not an Imagination — A Lived Reality
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Side (Right on lg) */}
+              <div className="space-y-4 lg:pl-12 order-1 lg:order-2">
+                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
+                  The Turning Point • The Engineer's Calling
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
+                  A Tech Engineer's Revelation
+                </h3>
+                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
+                  <strong className="text-maroon-950 font-serif">This isn't just a situation someone might imagine. I experienced it myself.</strong>
+                </p>
+                <div className="p-5 rounded-2xl bg-cream-100 border border-luxury-gold/40 shadow-sm space-y-2">
+                  <p className="text-xs sm:text-sm text-stone-800 font-sans leading-relaxed">
+                    As a tech engineer, I kept thinking in that difficult moment:
+                  </p>
+                  <blockquote className="text-sm sm:text-base font-serif font-bold text-maroon-900 border-l-4 border-luxury-gold pl-3 italic">
+                    "What if someone in this situation could find the right legal professional with just a few clicks,
+                    without depending on local contacts or struggling to find help?"
+                  </blockquote>
+                </div>
+              </div>
+            </div>
+
+            {/* -------------------------------------------------------------
+                BEAT 3: Left Text, Right Image
+                ------------------------------------------------------------- */}
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* Central Node Badge */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-maroon-950 border-2 border-luxury-gold text-luxury-gold items-center justify-center font-serif font-bold text-xs shadow-xl z-20">
+                03
+              </div>
+
+              {/* Text Side (Left) */}
+              <div className="space-y-4 lg:pr-12">
+                <span className="inline-block px-3 py-1 rounded-full bg-cream-200 text-maroon-900 border border-cream-300 font-serif text-[11px] font-bold uppercase tracking-wider">
+                  The Purpose • The Conviction
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-serif font-black text-maroon-950 leading-snug">
+                  The Foundation of LawinoMeet
+                </h3>
+                <p className="text-sm sm:text-base text-stone-600 font-sans leading-relaxed">
+                  That thought became the driving inspiration behind <strong className="font-serif text-maroon-950">LawinoMeet</strong>.
+                  We set out to engineer an unbreakable bridge between citizens and verified legal luminaries across India.
+                </p>
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-maroon-950 via-maroon-900 to-maroon-950 text-cream-100 border border-luxury-gold/50 shadow-xl space-y-2">
+                  <span className="text-[10px] font-serif uppercase tracking-[0.2em] text-luxury-gold font-bold">
+                    Our Unwavering Core Creed
+                  </span>
+                  <p className="text-sm sm:text-base font-serif font-bold text-cream-50 leading-relaxed italic">
+                    "No one should feel helpless just because they are new to a place and don't know where to find legal help."
+                  </p>
+                </div>
+              </div>
+
+              {/* Image Side (Right) */}
+              <div className="lg:pl-12 flex justify-center">
+                <div className="relative group max-w-md w-full">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-luxury-gold/40 to-maroon-700/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-cream-300 shadow-2xl bg-white">
+                    <img
+                      src="/Story/Incident-3.png"
+                      alt="Empowerment through accessible legal consultations"
+                      className="w-full h-auto object-cover transform group-hover:scale-105 transition duration-700"
+                    />
+                    <div className="p-3 bg-maroon-950/90 backdrop-blur text-center text-xs font-serif text-cream-200">
+                      Democratizing Immediate Access to Supreme Legal Counsel
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
           ACT II: The Dual Consultation Paradigm (Online vs. Chamber Workflow)
           ========================================================================= */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
