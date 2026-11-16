@@ -64,7 +64,7 @@ pipeline {
                 stage('Build Consumer & Advocate Portal') {
                     steps {
                         dir('frontend') {
-                            sh 'npm ci'
+                            sh 'npm install'
                             sh 'npm run build'
                         }
                     }
@@ -72,7 +72,7 @@ pipeline {
                 stage('Build Admin & Firm Portal') {
                     steps {
                         dir('admin-frontend') {
-                            sh 'npm ci'
+                            sh 'npm install'
                             sh 'npm run build'
                         }
                     }

@@ -191,7 +191,20 @@ lawino-gateway               nginx:1.25-alpine            Up                    
 - **Law Firm & Admin Portal:** Open [http://localhost:3002](http://localhost:3002)
 - **API Gateway Direct Test:** [http://localhost:80/api/specializations](http://localhost:80/api/specializations)
 
-### 3.4 Stopping the Stack
+### 3.4 Instant Login with Seeded Test Accounts
+The database automatically seeds with 5 ready-to-test accounts representing each platform persona.
+
+**Universal Password for all accounts:** `Password123!`
+
+| Role | Username | Email | Persona Details | Pre-seeded Features |
+|---|---|---|---|---|
+| **CLIENT** | `rohit_client` | `rohit.verma@example.com` | Individual citizen seeking legal help (Delhi) | 1 active emergency bail brief with Adv. Meera, chat history & notifications |
+| **LAWYER** | `adv_meera` | `meera.deshmukh@example.com` | Independent High Court Counsel (12 yrs exp) | 3 consultation services, slots booked & available, pending booking |
+| **LAWYER** | `adv_raghavan` | `raghavan.nambiar@example.com` | Managing Partner at Lex Veritas Legal LLP (18 yrs exp) | Linked to Law Firm, active chat with client Rohit, calendar slots |
+| **FIRM_ADMIN** | `firm_admin` | `admin@lexveritas.com` | Administrator of Lex Veritas Legal LLP | Manages advocates, chambers in Mumbai & New Delhi |
+| **PLATFORM_ADMIN** | `platform_admin` | `admin@lawinomeet.com` | LawinoMeet Super Administrator | Platform compliance, advocate KYC verification, audit oversight |
+
+### 3.5 Stopping the Stack
 ```bash
 docker compose down
 ```

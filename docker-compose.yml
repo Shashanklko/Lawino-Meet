@@ -14,7 +14,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init-multi-db.sql:/docker-entrypoint-initdb.d/init-multi-db.sql:ro
+      - ./docker/mysql/init-multi-db.sql:/docker-entrypoint-initdb.d/01-init-multi-db.sql:ro
+      - ./docker/mysql/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1"]
       interval: 10s
