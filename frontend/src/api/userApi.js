@@ -3,11 +3,19 @@ import apiClient from './client';
 export const userApi = {
   // Client Profile
   getClientProfile: async () => {
-    const res = await apiClient.get('/api/users/client/me');
+    const res = await apiClient.get('/api/users/profile');
     return res.data;
   },
   updateClientProfile: async (data) => {
-    const res = await apiClient.put('/api/users/client/me', data);
+    const res = await apiClient.put('/api/users/profile', data);
+    return res.data;
+  },
+  uploadClientPhoto: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/api/users/profile/photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
 
@@ -17,7 +25,15 @@ export const userApi = {
     return res.data;
   },
   updateLawyerProfile: async (data) => {
-    const res = await apiClient.put('/api/lawyers/me', data);
+    const res = await apiClient.put('/api/lawyers/profile', data);
+    return res.data;
+  },
+  uploadLawyerPhoto: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/api/lawyers/profile/photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
   getLawyerByPublicId: async (lawyerPublicId) => {
@@ -25,8 +41,13 @@ export const userApi = {
     return res.data;
   },
   searchLawyers: async (params = {}) => {
-    const res = await apiClient.get('/api/lawyers/search', { params });
-    return res.data;
+    try {
+      const res = await apiClient.get('/api/search/lawyers', { params });
+      return res.data;
+    } catch {
+      const res = await apiClient.get('/api/lawyers/search', { params });
+      return res.data;
+    }
   },
 
   // Lawyer Legal Services

@@ -1,0 +1,273 @@
+{
+  "info": {
+    "name": "LawinoMeet - Complete Microservices API Suite",
+    "_postman_id": "a984f1b2-7312-4d1a-bf42-990d6350c382",
+    "description": "Production Postman Collection for LawinoMeet legal discovery and chamber consultation platform.\nMicroservices:\n- auth-service (8081)\n- user-service (8082)\n- appointment-service (8083)\n- meeting-service (8084)\n- notification-service (8085)\n- chat-service (8086)\n- gateway (80 / 3001)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:80" },
+    { "key": "authToken", "value": "" },
+    { "key": "clientToken", "value": "" },
+    { "key": "lawyerToken", "value": "" },
+    { "key": "lawyerPublicId", "value": "" },
+    { "key": "slotPublicId", "value": "" },
+    { "key": "appointmentPublicId", "value": "" },
+    { "key": "conversationPublicId", "value": "" },
+    { "key": "meetingRoomId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication (auth-service)",
+      "item": [
+        {
+          "name": "Register Client",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"rohit_client\",\n  \"email\": \"rohit.client@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Rohit Verma\",\n  \"phone\": \"+919810233491\",\n  \"city\": \"Delhi\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register/client", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register", "client"] }
+          }
+        },
+        {
+          "name": "Register Lawyer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"adv_meera\",\n  \"email\": \"meera.lawyer@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Adv. Meera Deshmukh\",\n  \"barCouncilEnrollmentNumber\": \"D/1842/2012\",\n  \"phone\": \"+919820011223\",\n  \"yearsOfExperience\": 12,\n  \"city\": \"New Delhi\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register/lawyer", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register", "lawyer"] }
+          }
+        },
+        {
+          "name": "Login Client (Get JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('clientToken', jsonData.data.token);",
+                  "    pm.collectionVariables.set('authToken', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"rohit_client\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login Lawyer (Get JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('lawyerToken', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"adv_meera\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Current User Profile (/me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Users & Discovery (user-service)",
+      "item": [
+        {
+          "name": "Search Verified Lawyers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/search/lawyers?query=bail&city=Delhi&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search", "lawyers"],
+              "query": [
+                { "key": "query", "value": "bail" },
+                { "key": "city", "value": "Delhi" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Legal Specializations",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/specializations", "host": ["{{baseUrl}}"], "path": ["api", "specializations"] }
+          }
+        },
+        {
+          "name": "Upload Client Profile Photo (S3 / Local)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/profile/photo", "host": ["{{baseUrl}}"], "path": ["api", "users", "profile", "photo"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Availability & Appointments (appointment-service)",
+      "item": [
+        {
+          "name": "Create Availability Slot (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{lawyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"2026-11-17T10:00:00\",\n  \"endTime\": \"2026-11-17T10:45:00\",\n  \"practiceType\": \"INDEPENDENT\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/availability", "host": ["{{baseUrl}}"], "path": ["api", "availability"] }
+          }
+        },
+        {
+          "name": "Book Consultation (Client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotPublicId\": \"{{slotPublicId}}\",\n  \"lawyerUserPublicId\": \"{{lawyerPublicId}}\",\n  \"consultationType\": \"ONLINE\",\n  \"clientNotes\": \"Need immediate bail advice regarding police inquiry.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/appointments", "host": ["{{baseUrl}}"], "path": ["api", "appointments"] }
+          }
+        },
+        {
+          "name": "Confirm Consultation (Lawyer)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{lawyerToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/appointments/{{appointmentPublicId}}/confirm", "host": ["{{baseUrl}}"], "path": ["api", "appointments", "{{appointmentPublicId}}", "confirm"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Video Consultation (meeting-service)",
+      "item": [
+        {
+          "name": "Create Encrypted Meeting Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentPublicId\": \"{{appointmentPublicId}}\",\n  \"scheduledDurationMinutes\": 45\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/meetings/rooms", "host": ["{{baseUrl}}"], "path": ["api", "meetings", "rooms"] }
+          }
+        },
+        {
+          "name": "Join Meeting Room & Validate Pass",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/meetings/rooms/{{meetingRoomId}}/join", "host": ["{{baseUrl}}"], "path": ["api", "meetings", "rooms", "{{meetingRoomId}}", "join"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Real-Time Chat & Documents (chat-service)",
+      "item": [
+        {
+          "name": "Get User Conversations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/chat/conversations", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations"] }
+          }
+        },
+        {
+          "name": "Upload Case Document / Attachment (S3)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "caption", "value": "Case Notice Scan PDF", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/chat/conversations/{{conversationPublicId}}/attachments", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations", "{{conversationPublicId}}", "attachments"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications & Audit (notification-service)",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/my", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "my"] }
+          }
+        },
+        {
+          "name": "Mark All Notifications As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/mark-all-read", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "mark-all-read"] }
+          }
+        }
+      ]
+    }
+  ]
+}

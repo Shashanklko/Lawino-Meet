@@ -51,4 +51,16 @@ public class ClientProfileService {
         log.info("Updated client profile for user: {}", username);
         return ClientProfileDto.fromEntity(saved);
     }
+
+    @Transactional
+    public ClientProfileDto updateProfilePhoto(String userPublicId, String photoUrl) {
+        ClientProfile profile = clientProfileRepository.findByUserPublicId(userPublicId)
+                .orElseGet(() -> ClientProfile.builder()
+                        .userPublicId(userPublicId)
+                        .username("client_" + userPublicId.substring(0, 8))
+                        .build());
+        profile.setProfileImageUrl(photoUrl);
+        ClientProfile saved = clientProfileRepository.save(profile);
+        return ClientProfileDto.fromEntity(saved);
+    }
 }

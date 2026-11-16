@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --admin-bg-base: #161210;
+  --admin-bg-panel: #1A1614;
+  --admin-bg-sidebar: #1C1816;
+  --admin-bg-header: #241E1C;
+  --admin-accent-burgundy: #941B2B;
+  --admin-accent-gold: #E9A943;
+  --admin-border: #2E2724;
+}
+
+/* Custom scrollbars for admin tables and logs */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #171412;
+}
+::-webkit-scrollbar-thumb {
+  background: #3A322E;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4E433E;
+}

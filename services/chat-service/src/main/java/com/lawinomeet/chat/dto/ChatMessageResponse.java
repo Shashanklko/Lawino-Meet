@@ -22,6 +22,11 @@ public class ChatMessageResponse {
     private String recipientUserPublicId;
     private String recipientUsername;
     private String content;
+    private String attachmentUrl;
+    private String attachmentName;
+    private String attachmentType;
+    private Long attachmentSize;
+    private String messageType;
 
     @JsonProperty("isRead")
     private boolean isRead;
@@ -41,6 +46,11 @@ public class ChatMessageResponse {
                 .recipientUserPublicId(message.getRecipientUserPublicId())
                 .recipientUsername(message.getRecipientUsername())
                 .content(message.getContent())
+                .attachmentUrl(message.getAttachmentUrl())
+                .attachmentName(message.getAttachmentName())
+                .attachmentType(message.getAttachmentType())
+                .attachmentSize(message.getAttachmentSize())
+                .messageType(message.getMessageType())
                 .isRead(message.isRead())
                 .readAt(message.getReadAt())
                 .createdAt(message.getCreatedAt())

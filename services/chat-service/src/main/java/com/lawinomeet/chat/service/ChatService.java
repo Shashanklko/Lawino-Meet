@@ -81,6 +81,70 @@ public class ChatService {
         return response;
     }
 
+    @Transactional
+    public ChatMessageResponse sendAttachmentMessage(
+            UserPrincipal sender, String conversationPublicId, String caption,
+            ChatStorageService.StoredAttachment attachment) {
+        Conversation conversation = conversationRepository.findByPublicId(conversationPublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation not found."));
+
+        if (!conversation.isParticipant(sender.getPublicId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                    "You are not a participant in this conversation.");
+        }
+
+        String recipientPublicId = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
+                ? conversation.getParticipantTwoPublicId()
+                : conversation.getParticipantOnePublicId();
+
+        String recipientUsername = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
+                ? conversation.getParticipantTwoUsername()
+                : conversation.getParticipantOneUsername();
+
+        String messageContent = (caption != null && !caption.trim().isEmpty())
+                ? caption.trim()
+                : "[Document: " + attachment.fileName() + "]";
+
+        Instant now = Instant.now();
+        conversation.setLastMessageContent(messageContent);
+        conversation.setLastMessageAt(now);
+        conversationRepository.save(conversation);
+
+        String messageType = (attachment.contentType() != null && attachment.contentType().startsWith("image/")) ? "IMAGE" : "FILE";
+
+        ChatMessage message = ChatMessage.builder()
+                .publicId(UUID.randomUUID().toString())
+                .conversation(conversation)
+                .senderUserPublicId(sender.getPublicId())
+                .senderUsername(sender.getUsername())
+                .recipientUserPublicId(recipientPublicId)
+                .recipientUsername(recipientUsername)
+                .content(messageContent)
+                .attachmentUrl(attachment.url())
+                .attachmentName(attachment.fileName())
+                .attachmentType(attachment.contentType())
+                .attachmentSize(attachment.size())
+                .messageType(messageType)
+                .isRead(false)
+                .build();
+
+        ChatMessage saved = messageRepository.save(message);
+        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved);
+
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    recipientPublicId,
+                    "/queue/messages",
+                    response
+            );
+            log.info("Dispatched WebSocket document message {} to user {}", saved.getPublicId(), recipientPublicId);
+        } catch (Exception e) {
+            log.warn("WebSocket dispatch failed for document: {}", e.getMessage());
+        }
+
+        return response;
+    }
+
     @Transactional(readOnly = true)
     public List<ConversationResponse> getMyConversations(String userPublicId) {
         List<Conversation> list = conversationRepository

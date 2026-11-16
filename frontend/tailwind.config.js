@@ -60,7 +60,10 @@ export default {
         }
       },
       fontFamily: {
-        serif: ['Cinzel', 'Playfair Display', 'Georgia', 'serif'],
+        serif: ['Playfair Display', 'Cinzel', 'Georgia', 'serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        cinzel: ['Cinzel', 'serif'],
+        handwriting: ['Caveat', 'Kalam', 'cursive'],
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       animation: {

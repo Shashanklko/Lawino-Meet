@@ -1,0 +1,256 @@
+services:
+  # =========================================================================
+  # 1. High-Performance MySQL 8 Multi-Database Cluster
+  # =========================================================================
+  mysql:
+    image: mysql:8.3
+    container_name: lawino-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init-multi-db.sql:/docker-entrypoint-initdb.d/init-multi-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 2. Microservice: Auth Service (Port 8081)
+  # =========================================================================
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: lawino-auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      AUTH_SERVICE_PORT: 8081
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      AUTH_DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 3. Microservice: User & Firm Service (Port 8082)
+  # =========================================================================
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: lawino-user-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      USER_SERVICE_PORT: 8082
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      USER_DB_NAME: ${USER_DB_NAME:-user_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 4. Microservice: Appointment Service (Port 8083)
+  # =========================================================================
+  appointment-service:
+    build:
+      context: ./services/appointment-service
+      dockerfile: Dockerfile
+    container_name: lawino-appointment-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      APPOINTMENT_SERVICE_PORT: 8083
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      APPOINTMENT_DB_NAME: ${APPOINTMENT_DB_NAME:-appointment_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 5. Microservice: Meeting & WebRTC Signaling Service (Port 8084)
+  # =========================================================================
+  meeting-service:
+    build:
+      context: ./services/meeting-service
+      dockerfile: Dockerfile
+    container_name: lawino-meeting-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      MEETING_SERVICE_PORT: 8084
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MEETING_DB_NAME: ${MEETING_DB_NAME:-meeting_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 6. Microservice: Notification Service (Port 8085)
+  # =========================================================================
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: lawino-notification-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      NOTIFICATION_SERVICE_PORT: 8085
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      NOTIFICATION_DB_NAME: ${NOTIFICATION_DB_NAME:-notification_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 7. Microservice: Chat & WebSocket Messaging Service (Port 8086)
+  # =========================================================================
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    container_name: lawino-chat-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      CHAT_SERVICE_PORT: 8086
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      CHAT_DB_NAME: ${CHAT_DB_NAME:-chat_db}
+      MYSQL_USER: ${MYSQL_USER:-lawino_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+      JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 8. Web Frontend Application (Port 3000)
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lawino-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 9. Admin Portal Application (Port 3002)
+  # =========================================================================
+  admin-frontend:
+    build:
+      context: ./admin-frontend
+      dockerfile: Dockerfile
+    container_name: lawino-admin-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 10. API Gateway & Reverse Proxy (Port 80 & 3001)
+  # =========================================================================
+  gateway:
+    image: nginx:1.25-alpine
+    container_name: lawino-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "3001:3001"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - user-service
+      - appointment-service
+      - meeting-service
+      - notification-service
+      - chat-service
+      - frontend
+      - admin-frontend
+    networks:
+      - lawino-net
+
+volumes:
+  mysql_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  lawino-net:
+    driver: bridge

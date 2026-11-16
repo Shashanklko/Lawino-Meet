@@ -119,3 +119,12 @@ h1, h2, h3, .font-legal-heading {
 ::-webkit-scrollbar-thumb:hover {
   background: #8F7249;
 }
+
+@keyframes shrinkBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

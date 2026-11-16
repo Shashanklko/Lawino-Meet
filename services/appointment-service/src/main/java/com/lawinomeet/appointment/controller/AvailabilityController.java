@@ -23,7 +23,7 @@ public class AvailabilityController {
 
     private final AvailabilityService availabilityService;
 
-    @PostMapping("/api/availability")
+    @PostMapping({"/api/availability", "/api/slots"})
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<AvailabilitySlotResponse>> createSlot(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -33,7 +33,7 @@ public class AvailabilityController {
                 .body(ApiResponse.created("Availability slot created successfully", response));
     }
 
-    @PostMapping("/api/availability/batch")
+    @PostMapping({"/api/availability/batch", "/api/slots/batch"})
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<List<AvailabilitySlotResponse>>> batchCreateSlots(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -43,7 +43,7 @@ public class AvailabilityController {
                 .body(ApiResponse.created("Availability slots created successfully", response));
     }
 
-    @GetMapping("/api/availability/my")
+    @GetMapping({"/api/availability/my", "/api/slots/me", "/api/slots/my"})
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<List<AvailabilitySlotResponse>>> getMySlots(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -53,7 +53,7 @@ public class AvailabilityController {
         return ResponseEntity.ok(ApiResponse.ok("Availability slots retrieved successfully", slots));
     }
 
-    @DeleteMapping("/api/availability/{slotPublicId}")
+    @DeleteMapping({"/api/availability/{slotPublicId}", "/api/slots/{slotPublicId}"})
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<Void>> deleteSlot(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -62,7 +62,7 @@ public class AvailabilityController {
         return ResponseEntity.ok(ApiResponse.ok("Availability slot deleted successfully", null));
     }
 
-    @GetMapping("/api/lawyers/{lawyerPublicId}/slots")
+    @GetMapping({"/api/lawyers/{lawyerPublicId}/slots", "/api/slots/lawyer/{lawyerPublicId}"})
     public ResponseEntity<ApiResponse<List<AvailabilitySlotResponse>>> getLawyerAvailableSlots(
             @PathVariable String lawyerPublicId) {
         List<AvailabilitySlotResponse> slots = availabilityService.getAvailableSlotsForLawyer(lawyerPublicId);

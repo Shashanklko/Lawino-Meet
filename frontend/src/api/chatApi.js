@@ -19,6 +19,15 @@ export const chatApi = {
     const res = await apiClient.post(`/api/chat/conversations/${conversationPublicId}/messages`, { content });
     return res.data;
   },
+  uploadAttachment: async (conversationPublicId, file, caption = '') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (caption) formData.append('caption', caption);
+    const res = await apiClient.post(`/api/chat/conversations/${conversationPublicId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
   markConversationAsRead: async (conversationPublicId) => {
     const res = await apiClient.put(`/api/chat/conversations/${conversationPublicId}/read`);
     return res.data;

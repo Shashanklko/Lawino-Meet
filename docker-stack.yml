@@ -1,0 +1,199 @@
+version: '3.8'
+
+# =========================================================================
+# LawinoMeet - Docker Swarm Cluster Stack (Phase 10)
+# Deploy command: docker stack deploy -c docker-stack.yml lawino
+# =========================================================================
+
+networks:
+  lawino-overlay:
+    driver: overlay
+    attachable: true
+
+volumes:
+  lawino_uploads_data:
+    driver: local
+
+services:
+  # =========================================================================
+  # 1. Edge Gateway Proxy (Nginx)
+  # =========================================================================
+  gateway:
+    image: ${REGISTRY:-lawinomeet}/gateway:${TAG:-latest}
+    ports:
+      - target: 80
+        published: 80
+        mode: ingress
+      - target: 443
+        published: 443
+        mode: ingress
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 2. Frontend Consumer / Advocate Web Portal
+  # =========================================================================
+  frontend:
+    image: ${REGISTRY:-lawinomeet}/frontend:${TAG:-latest}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 3. Admin & Firm Management Web Portal
+  # =========================================================================
+  admin-frontend:
+    image: ${REGISTRY:-lawinomeet}/admin-frontend:${TAG:-latest}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 4. Auth Service (JWT, OAuth2, RBAC)
+  # =========================================================================
+  auth-service:
+    image: ${REGISTRY:-lawinomeet}/auth-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 5. User & Profile Service (Client, Advocate & Firm Profiles, S3 Photos)
+  # =========================================================================
+  user-service:
+    image: ${REGISTRY:-lawinomeet}/user-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/user_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-lawino-meet-assets}
+    volumes:
+      - lawino_uploads_data:/app/uploads
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 6. Appointment & Slot Booking Service
+  # =========================================================================
+  appointment-service:
+    image: ${REGISTRY:-lawinomeet}/appointment-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/appointment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 7. Video Meeting & WebRTC Signaling Service
+  # =========================================================================
+  meeting-service:
+    image: ${REGISTRY:-lawinomeet}/meeting-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/meeting_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 8. Notification & Audit Log Service
+  # =========================================================================
+  notification-service:
+    image: ${REGISTRY:-lawinomeet}/notification-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 9. Real-Time Chat & Document Sharing Service
+  # =========================================================================
+  chat-service:
+    image: ${REGISTRY:-lawinomeet}/chat-service:${TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/chat_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
+      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-lawino-meet-assets}
+    volumes:
+      - lawino_uploads_data:/app/uploads
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure

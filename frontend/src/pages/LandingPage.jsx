@@ -1,305 +1,542 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Scale,
   ShieldCheck,
   Video,
-  Building,
-  Calendar,
-  Lock,
-  ArrowRight,
-  Search,
-  CheckCircle2,
-  Users,
+  FileText,
+  Home,
+  Briefcase,
+  AlertCircle,
+  Globe,
   Award,
-  Sparkles,
-  MapPin,
-  CreditCard,
-  FileCheck,
-  Compass,
-  Gavel,
-  ChevronRight,
+  Calendar,
+  HeartHandshake,
+  ChevronDown,
 } from 'lucide-react';
-
-const practiceAreas = [
-  { name: 'Corporate & M&A', code: 'CORPORATE_LAW', cases: '1,420+ Consultations', desc: 'Mergers, shareholder agreements, regulatory compliance & boardroom advisory.' },
-  { name: 'Criminal Defense & Bail', code: 'CRIMINAL_DEFENSE', cases: '2,890+ Consultations', desc: 'Anticipatory bail, trial defense, legal notices, and criminal litigation.' },
-  { name: 'Family & Matrimonial', code: 'FAMILY_LAW', cases: '3,100+ Consultations', desc: 'Divorce settlements, child custody, alimony & high-net-worth estate partition.' },
-  { name: 'Intellectual Property', code: 'INTELLECTUAL_PROPERTY', cases: '980+ Consultations', desc: 'Patents, trademark infringement, copyright protection & technology licensing.' },
-  { name: 'Cyber & White Collar', code: 'CYBER_LAW', cases: '1,150+ Consultations', desc: 'Financial cyber fraud, IT Act investigations, privacy and data disputes.' },
-  { name: 'Real Estate & Land', code: 'CIVIL_LITIGATION', cases: '2,340+ Consultations', desc: 'Title search, builder dispute, RERA trials & commercial property arbitration.' },
-];
+import { useLanguage } from '../context/LanguageContext';
 
 export const LandingPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [consultationMode, setConsultationMode] = useState('ALL');
-  const navigate = useNavigate();
+  const { t } = useLanguage();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const queryParam = searchQuery.trim() ? `query=${encodeURIComponent(searchQuery.trim())}` : '';
-    const modeParam = consultationMode !== 'ALL' ? `mode=${consultationMode}` : '';
-    const params = [queryParam, modeParam].filter(Boolean).join('&');
-    navigate(`/lawyers${params ? `?${params}` : ''}`);
+  const scrollToStory = () => {
+    const el = document.getElementById('story');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="bg-cream-50 text-maroon-950 overflow-hidden relative">
+    <div className="bg-[#FAF6EE] text-[#2E2A29] min-h-screen selection:bg-[#831826]/15 selection:text-[#831826]">
       {/* =========================================================================
-          HERO CHAPTER: The Ocean of Justice & The Sanctuary
+          HERO SECTION: A story, before a service
           ========================================================================= */}
-      <section className="relative min-h-[90vh] bg-gradient-to-b from-maroon-950 via-maroon-900 to-maroon-950 text-cream-100 pt-16 pb-32 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-        {/* Subtle Ambient Waves & Glow Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -left-40 w-96 h-96 bg-luxury-gold/10 rounded-full blur-3xl animate-float-slow" />
-          <div className="absolute top-1/2 -right-40 w-[30rem] h-[30rem] bg-maroon-700/20 rounded-full blur-3xl animate-float-delayed" />
-          
-          {/* Subtle Grid Pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(#c5a880_1px,transparent_1px)] [background-size:32px_32px] opacity-15" />
+      <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Left Hero Column */}
+          <div className="lg:col-span-7 space-y-6 lg:pr-8">
+            <span className="text-xs tracking-[0.25em] font-sans font-medium uppercase text-[#8C847E] block">
+              {t('landing.heroEyebrow', 'A STORY, BEFORE A SERVICE')}
+            </span>
+
+            <h1 className="text-5xl sm:text-6xl lg:text-[4.5rem] font-serif font-normal text-[#2E2A29] leading-[1.08] tracking-tight">
+              {t('landing.heroTitlePre', 'Moving into ')}
+              <span className="italic text-[#831826] font-normal font-serif">
+                {t('landing.heroTitleHighlight', 'the Unknown')}
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-[#66605B] font-sans font-light leading-relaxed max-w-xl">
+              {t(
+                'landing.heroDesc',
+                "Imagine moving to a completely new city for your first job. You barely know the streets, have no relatives nearby, and don't know anyone who can guide you."
+              )}
+            </p>
+
+            <div className="pt-6">
+              <button
+                onClick={scrollToStory}
+                className="group inline-flex items-center space-x-2.5 text-xs font-sans tracking-[0.2em] font-medium text-[#7D756F] hover:text-[#831826] transition cursor-pointer"
+              >
+                <span>{t('landing.followFootsteps', 'FOLLOW THE FOOTSTEPS')}</span>
+                <ChevronDown className="w-4 h-4 text-[#831826] group-hover:translate-y-1 transition-transform duration-300" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Hero Column: Illustration with subtle background ring, dot grid & gold dot */}
+          <div className="lg:col-span-5 flex justify-center items-center relative py-6">
+            {/* Subtle Atmospheric Dot Grid Pattern filling the right background with soft radial fade */}
+            <div
+              className="absolute -inset-10 sm:-inset-20 pointer-events-none -z-10 [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_75%)]"
+              style={{
+                backgroundImage: 'radial-gradient(#831826 1.3px, transparent 1.3px)',
+                backgroundSize: '22px 22px',
+                opacity: 0.22,
+              }}
+              aria-hidden="true"
+            />
+
+            {/* Architectural Accent Dot Matrix Cluster - Top Right */}
+            <div
+              className="absolute -top-3 -right-3 sm:-right-8 grid grid-cols-6 gap-2.5 opacity-30 pointer-events-none -z-0"
+              aria-hidden="true"
+            >
+              {Array.from({ length: 36 }).map((_, i) => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#831826]" />
+              ))}
+            </div>
+
+            {/* Architectural Accent Dot Matrix Cluster - Bottom Left */}
+            <div
+              className="absolute -bottom-6 -left-4 sm:-left-8 grid grid-cols-5 gap-2.5 opacity-25 pointer-events-none -z-0"
+              aria-hidden="true"
+            >
+              {Array.from({ length: 25 }).map((_, i) => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#C5A880]" />
+              ))}
+            </div>
+
+            {/* Elegant faint outlined circle and gold dot */}
+            <div className="absolute w-[22rem] h-[22rem] sm:w-[26rem] sm:h-[26rem] rounded-full border border-[#DFD3C3] pointer-events-none -z-0">
+              <div className="absolute top-10 right-8 w-3 h-3 rounded-full bg-[#E5A952] shadow-sm" />
+            </div>
+
+            {/* Boy with Backpack Illustration: Blends naturally into canvas without card or border */}
+            <img
+              src="/Story/incident-1.png"
+              alt="Young professional arriving in a new city"
+              className="relative z-10 w-full max-w-[340px] sm:max-w-[400px] object-contain mix-blend-multiply select-none"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          THE STORY (Handwritten Format)
+          ========================================================================= */}
+      <div id="story" className="relative max-w-5xl mx-auto px-6 sm:px-10 py-6">
+        {/* -----------------------------------------------------------------------
+            STORY BEAT 01: The Police Case Incident
+            ----------------------------------------------------------------------- */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-16">
+          {/* Left Text */}
+          <div className="md:col-span-6 space-y-5">
+            <span className="text-7xl sm:text-8xl font-handwriting text-[#831826] font-bold block leading-none">
+              01
+            </span>
+            <blockquote className="border-l-2 border-[#831826]/30 pl-6 py-1">
+              <p className="text-2xl sm:text-3xl font-handwriting text-[#3A3532] leading-relaxed">
+                {t(
+                  'landing.story01Quote',
+                  "“Within your first week, one night, you suddenly find yourself involved in a police case. You're confused, frightened, and don't know what to do next. You need a lawyer, but you don't know where to find one or whom to trust.”"
+                )}
+              </p>
+            </blockquote>
+          </div>
+
+          {/* Right Illustration: Boy speaking with police officers (no border!) */}
+          <div className="md:col-span-6 flex flex-col items-center">
+            <img
+              src="/Story/Incident-2.png"
+              alt="Police encounter late at night"
+              className="w-full max-w-[380px] object-contain mix-blend-multiply select-none"
+            />
+            <p className="text-xl font-handwriting text-[#736B65] text-center mt-3">
+              {t('landing.story01Caption', 'Within the first week, one night...')}
+            </p>
+          </div>
+        </section>
+
+        {/* Centered Narrative Bridge */}
+        <div className="text-center my-20">
+          <p className="text-3xl sm:text-4xl font-handwriting text-[#4A4440]">
+            {t('landing.story01Bridge', 'So you sit down, phone in hand, and wonder...')}
+          </p>
         </div>
 
-        <div className="relative max-w-5xl mx-auto text-center space-y-8 z-10">
-          {/* Presidential Top Badge */}
-          <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-luxury-gold/15 border border-luxury-gold/40 text-luxury-gold-light text-xs font-serif tracking-widest uppercase shadow-md">
-            <Sparkles className="w-3.5 h-3.5 text-luxury-gold" />
-            <span>Where Legal Eminence Meets Absolute Trust</span>
+        {/* -----------------------------------------------------------------------
+            STORY BEAT 02: Whom do I even call?
+            ----------------------------------------------------------------------- */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-10 items-center my-16">
+          {/* Left Illustrations: Boy on bench thinking + on the phone (no borders!) */}
+          <div className="md:col-span-6 space-y-10 flex flex-col items-center">
+            <div className="w-full max-w-[380px] flex flex-col items-center">
+              <img
+                src="/Story/Whom-to-call.png"
+                alt="Parents? A friend? A lawyer?"
+                className="w-full object-contain mix-blend-multiply select-none"
+              />
+              <p className="text-xl font-handwriting text-[#736B65] text-center mt-3">
+                {t('landing.story02Caption1', 'Parents? A friend? A lawyer?')}
+              </p>
+            </div>
+
+            <div className="w-full max-w-[320px] flex flex-col items-center">
+              <img
+                src="/Story/no-one-to-call.png"
+                alt="And no one to call"
+                className="w-full object-contain mix-blend-multiply select-none"
+              />
+              <p className="text-xl font-handwriting text-[#736B65] text-center mt-3">
+                {t('landing.story02Caption2', '...and no one to call.')}
+              </p>
+            </div>
           </div>
 
-          {/* Majestic Hero Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-black tracking-tight leading-[1.15] text-cream-50">
-            Navigating Critical Legal Waters with{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-luxury-gold-light via-luxury-gold to-luxury-gold-dark italic">
-              Legal Professional Experts.
+          {/* Right Text */}
+          <div className="md:col-span-6 space-y-6 md:pl-4">
+            <span className="text-7xl sm:text-8xl font-handwriting text-[#831826] font-bold block leading-none">
+              02
             </span>
-          </h1>
+            <h2 className="text-4xl sm:text-5xl font-handwriting text-[#2E2A29]">
+              {t('landing.story02Title', 'Whom do I even call?')}
+            </h2>
 
-          <p className="max-w-3xl mx-auto text-base sm:text-lg text-cream-200 font-sans font-light leading-relaxed">
-            When disputes arise, clarity is your strongest shield. Connect instantly with verified legal professional experts
-            via <strong className="font-semibold text-luxury-gold">Encrypted HD Video</strong> or reserve a private audience in their <strong className="font-semibold text-luxury-gold">Chambers</strong>.
-          </p>
-
-          {/* Interactive Mode Filter + Search Bar */}
-          <div className="max-w-3xl mx-auto space-y-3">
-            {/* Mode Switcher Tabs */}
-            <div className="flex justify-center space-x-3 text-xs font-serif tracking-wider uppercase">
-              <button
-                type="button"
-                onClick={() => setConsultationMode('ALL')}
-                className={`px-4 py-2 rounded-xl border transition ${
-                  consultationMode === 'ALL'
-                    ? 'bg-luxury-gold text-maroon-950 font-bold border-luxury-gold shadow-md'
-                    : 'bg-black/30 text-cream-200 border-luxury-gold/30 hover:bg-black/50'
-                }`}
-              >
-                All Consultations
-              </button>
-              <button
-                type="button"
-                onClick={() => setConsultationMode('ONLINE')}
-                className={`px-4 py-2 rounded-xl border flex items-center space-x-1.5 transition ${
-                  consultationMode === 'ONLINE'
-                    ? 'bg-luxury-gold text-maroon-950 font-bold border-luxury-gold shadow-md'
-                    : 'bg-black/30 text-cream-200 border-luxury-gold/30 hover:bg-black/50'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span>Online Video</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setConsultationMode('OFFLINE')}
-                className={`px-4 py-2 rounded-xl border flex items-center space-x-1.5 transition ${
-                  consultationMode === 'OFFLINE'
-                    ? 'bg-luxury-gold text-maroon-950 font-bold border-luxury-gold shadow-md'
-                    : 'bg-black/30 text-cream-200 border-luxury-gold/30 hover:bg-black/50'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>Chamber In-Person</span>
-              </button>
+            <div className="space-y-4 text-2xl sm:text-3xl font-handwriting text-[#4A4440] leading-relaxed">
+              <p>
+                {t(
+                  'landing.story02Line1',
+                  "My parents — but they're hundreds of kilometres away, and it's the middle of the night."
+                )}
+              </p>
+              <p>{t('landing.story02Line2', "A friend — but I've barely made any here yet.")}</p>
+              <p>
+                {t(
+                  'landing.story02Line3',
+                  "A lawyer — but I don't know a single one in this city, or whom I can trust."
+                )}
+              </p>
             </div>
+          </div>
+        </section>
 
-            {/* Smart Search Capsule */}
-            <form
-              onSubmit={handleSearch}
-              className="flex flex-col sm:flex-row gap-2.5 p-2.5 rounded-2xl bg-maroon-950/80 border border-luxury-gold/40 shadow-2xl backdrop-blur-xl"
-            >
-              <div className="flex-1 flex items-center px-4 py-3 bg-black/40 rounded-xl border border-luxury-gold/20">
-                <Search className="w-5 h-5 text-luxury-gold shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by advocate name, legal issue, city, or practice area..."
-                  className="w-full bg-transparent px-3 text-xs sm:text-sm text-cream-100 placeholder-cream-400/60 focus:outline-none"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-7 py-3 rounded-xl bg-gradient-to-r from-luxury-gold-dark via-luxury-gold to-luxury-gold-light hover:brightness-110 text-maroon-950 font-serif font-black text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-2 shrink-0"
-              >
-                <span>Find Advocates</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
+        {/* Centered Narrative Bridge */}
+        <div className="text-center my-20">
+          <p className="text-3xl sm:text-4xl font-handwriting text-[#4A4440]">
+            {t('landing.story02Bridge', 'But this was never just a story someone imagined...')}
+          </p>
+        </div>
+
+        {/* -----------------------------------------------------------------------
+            STORY BEAT 03: The Tech Engineer's Vision & Sketch
+            ----------------------------------------------------------------------- */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-16">
+          {/* Left Text */}
+          <div className="md:col-span-6 space-y-6">
+            <span className="text-7xl sm:text-8xl font-handwriting text-[#831826] font-bold block leading-none">
+              03
+            </span>
+            <p className="text-2xl sm:text-3xl font-handwriting text-[#4A4440] leading-relaxed">
+              {t(
+                'landing.story03Desc',
+                "This isn't just a situation someone might imagine. I experienced it myself. As a tech engineer, in that difficult moment, I kept thinking:"
+              )}
+            </p>
+            <blockquote className="border-l-2 border-[#831826]/40 pl-6 py-2">
+              <p className="text-2xl sm:text-3xl font-handwriting text-[#2E2A29] leading-relaxed">
+                {t(
+                  'landing.story03Quote',
+                  '“What if someone in this situation could find the right legal professional with just a few clicks — without depending on local contacts or struggling to find help?”'
+                )}
+              </p>
+            </blockquote>
           </div>
 
-          {/* Pillars of Integrity */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-luxury-gold/20 text-xs font-serif text-cream-300">
-            <div className="flex items-center justify-center space-x-2">
-              <ShieldCheck className="w-4 h-4 text-luxury-gold" />
-              <span>100% Bar Verified</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Lock className="w-4 h-4 text-luxury-gold" />
-              <span>Encrypted Video Rooms</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Building className="w-4 h-4 text-luxury-gold" />
-              <span>Chamber Consultations</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Award className="w-4 h-4 text-luxury-gold" />
-              <span>Transparent Fee Index</span>
-            </div>
+          {/* Right Illustration: Engineer sketching LawinoMeet (no border!) */}
+          <div className="md:col-span-6 flex flex-col items-center">
+            <img
+              src="/Story/foundation.png"
+              alt="The first sketch of LawinoMeet"
+              className="w-full max-w-[420px] object-contain mix-blend-multiply select-none"
+            />
+            <p className="text-xl font-handwriting text-[#736B65] text-center mt-3">
+              {t('landing.story03Caption', 'The first sketch of LawinoMeet')}
+            </p>
+          </div>
+        </section>
+
+        {/* Centered Narrative Bridge */}
+        <div className="text-center my-20">
+          <p className="text-3xl sm:text-4xl font-handwriting text-[#4A4440]">
+            {t('landing.story03Bridge', 'And slowly, that question became something real.')}
+          </p>
+        </div>
+
+        {/* -----------------------------------------------------------------------
+            STORY BEAT 04: The Bridge Between People & The Law
+            ----------------------------------------------------------------------- */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-16">
+          {/* Left Visual: Dawn Bridge (soft rounded, no white card border!) */}
+          <div className="md:col-span-6 flex flex-col items-center">
+            <img
+              src="/dawn-bridge.jpg"
+              alt="A bridge between people and the law"
+              className="w-full max-w-[440px] rounded-2xl shadow-sm object-cover select-none"
+            />
+            <p className="text-xl font-handwriting text-[#736B65] text-center mt-3">
+              {t('landing.story04Caption', 'A bridge between people and the law')}
+            </p>
+          </div>
+
+          {/* Right Text */}
+          <div className="md:col-span-6 space-y-6 md:pl-4">
+            <span className="text-7xl sm:text-8xl font-handwriting text-[#831826] font-bold block leading-none">
+              04
+            </span>
+            <p className="text-2xl sm:text-3xl font-handwriting text-[#3A3532] leading-relaxed">
+              {t(
+                'landing.story04Desc',
+                'That thought became the driving inspiration behind LawinoMeet. We set out to engineer an unbreakable bridge between citizens and verified legal professional experts across India.'
+              )}
+            </p>
+          </div>
+        </section>
+
+        {/* -----------------------------------------------------------------------
+            CORE CREED: Deep Maroon Card
+            ----------------------------------------------------------------------- */}
+        <div className="my-16 relative">
+          <div className="bg-[#480E17] text-white rounded-3xl p-10 sm:p-14 max-w-3xl mx-auto text-center shadow-2xl relative overflow-hidden">
+            {/* Subtle inner gold accent border */}
+            <div className="absolute inset-0 rounded-3xl border border-[#E5A952]/20 pointer-events-none" />
+
+            <span className="text-xs tracking-[0.25em] font-sans font-semibold uppercase text-[#E5A952] block mb-6">
+              {t('landing.creedEyebrow', 'OUR UNWAVERING CORE CREED')}
+            </span>
+
+            <blockquote className="text-2xl sm:text-3xl font-serif text-cream-50 leading-relaxed font-normal">
+              {t(
+                'landing.creedQuotePre',
+                "“No one should feel helpless just because they are new to a place and don't know where to find "
+              )}
+              <span className="italic text-[#E5A952] font-serif">
+                {t('landing.creedQuoteHighlight', 'legal help.”')}
+              </span>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          SERVICES SECTION: Where the footsteps lead
+          ========================================================================= */}
+      <section id="services" className="pt-8 pb-24 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+          <span className="text-xs tracking-[0.25em] font-sans font-semibold uppercase text-[#E5A952] block">
+            {t('landing.servicesEyebrow', 'WHERE THE FOOTSTEPS LEAD')}
+          </span>
+
+          <h2 className="text-4xl sm:text-5xl font-serif text-[#2E2A29] leading-[1.15]">
+            {t('landing.servicesHeadingPre', 'Help that reaches you, ')}
+            <span className="italic text-[#831826] font-serif font-normal block sm:inline">
+              {t('landing.servicesHeadingHighlight', 'wherever you land')}
+            </span>
+          </h2>
+
+          <p className="text-base sm:text-lg text-[#66605B] font-sans font-light leading-relaxed">
+            {t(
+              'landing.servicesDesc',
+              'Whatever brought you here — a frightening night or a simple question — LawinoMeet carries you to the right legal professional.'
+            )}
+          </p>
+        </div>
+
+        {/* 6-Grid Services Box (Enclosed Master Card with Interactive Navigation) */}
+        <div className="max-w-5xl mx-auto border border-[#E4DBD0] rounded-3xl bg-[#FAF5EC]/70 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E4DBD0]">
+            {/* Card 1: Emergency & Police Matters */}
+            <Link
+              to="/lawyers?category=CRIMINAL_DEFENSE"
+              className="p-8 sm:p-10 space-y-4 hover:bg-white/70 transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border border-[#831826]/30 group-hover:border-[#831826] group-hover:bg-[#831826]/5 flex items-center justify-center text-[#831826] transition">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv1Title', 'Emergency & Police Matters')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv1Desc',
+                  'Detained, summoned or caught in an FIR? Reach a criminal lawyer quickly — even late at night.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv1Link', 'Find Criminal Advocates')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
+
+            {/* Card 2: Online Consultation (Warm Highlighted Background) */}
+            <Link
+              to="/lawyers?mode=ONLINE"
+              className="p-8 sm:p-10 space-y-4 bg-[#F2ECE1] hover:bg-[#ede4d5] transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#831826] group-hover:scale-105 flex items-center justify-center text-white shadow-sm transition">
+                <Video className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv2Title', 'Online Consultation')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv2Desc',
+                  'Talk to a lawyer over chat, call or video in minutes, from wherever you are.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv2Link', 'Start Video Consultation')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
+
+            {/* Card 3: Verified Lawyers Across India */}
+            <Link
+              to="/lawyers?category=ALL"
+              className="p-8 sm:p-10 space-y-4 hover:bg-white/70 transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border border-[#831826]/30 group-hover:border-[#831826] group-hover:bg-[#831826]/5 flex items-center justify-center text-[#831826] transition">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv3Title', 'Verified Lawyers Across India')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv3Desc',
+                  'Every professional is verified, so you never have to guess whom to trust in a new city.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv3Link', 'Browse All Verified Advocates')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
+          </div>
+
+          {/* Divider between top row and bottom row */}
+          <div className="border-t border-[#E4DBD0] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E4DBD0]">
+            {/* Card 4: Document Review & Drafting */}
+            <Link
+              to="/lawyers?category=CORPORATE_LAW"
+              className="p-8 sm:p-10 space-y-4 hover:bg-white/70 transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border border-[#831826]/30 group-hover:border-[#831826] group-hover:bg-[#831826]/5 flex items-center justify-center text-[#831826] transition">
+                <FileText className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv4Title', 'Document Review & Drafting')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv4Desc',
+                  'Offer letters, rent agreements, legal notices — reviewed or drafted before you sign.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv4Link', 'Review Legal Documents')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
+
+            {/* Card 5: Tenancy & Property */}
+            <Link
+              to="/lawyers?category=CIVIL_LITIGATION"
+              className="p-8 sm:p-10 space-y-4 hover:bg-white/70 transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border border-[#831826]/30 group-hover:border-[#831826] group-hover:bg-[#831826]/5 flex items-center justify-center text-[#831826] transition">
+                <Home className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv5Title', 'Tenancy & Property')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv5Desc',
+                  'Deposit disputes, unfair eviction or landlord trouble, handled by people who know local law.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv5Link', 'Resolve Property Issues')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
+
+            {/* Card 6: Workplace & Employment */}
+            <Link
+              to="/lawyers?category=LABOUR_LAW"
+              className="p-8 sm:p-10 space-y-4 hover:bg-white/70 transition-all duration-300 block group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full border border-[#831826]/30 group-hover:border-[#831826] group-hover:bg-[#831826]/5 flex items-center justify-center text-[#831826] transition">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl text-[#2E2A29] group-hover:text-[#831826] transition">
+                {t('landing.srv6Title', 'Workplace & Employment')}
+              </h3>
+              <p className="text-sm sm:text-base text-[#66605B] leading-relaxed font-sans font-light">
+                {t(
+                  'landing.srv6Desc',
+                  'Unpaid salary, wrongful termination or harassment at work — know your rights and act.'
+                )}
+              </p>
+              <span className="inline-flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826] pt-1">
+                <span>{t('landing.srv6Link', 'Consult Employment Counsel')}</span>
+                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </span>
+            </Link>
           </div>
         </div>
 
         {/* =========================================================================
-            OCEAN WAVE TRANSITION 1 (Maroon to Cream)
+            THREE STEPS: From confusion to clarity, in three steps
             ========================================================================= */}
-        <div className="wave-container absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-          <svg
-            className="wave-svg relative block w-full h-16 sm:h-24"
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0,0 C150,90 350,-40 500,50 C650,140 900,10 1200,60 L1200,120 L0,120 Z"
-              fill="#FFFEFA"
-            ></path>
-          </svg>
-        </div>
-      </section>
+        <div className="mt-28 max-w-4xl mx-auto space-y-12">
+          <h3 className="text-3xl sm:text-4xl font-serif text-center text-[#2E2A29]">
+            {t('landing.stepsHeadingPre', 'From confusion to clarity, in ')}
+            <span className="italic text-[#831826] font-serif">
+              {t('landing.stepsHeadingHighlight', 'three steps')}
+            </span>
+          </h3>
 
-      {/* =========================================================================
-          THE GENESIS: Founder's Story (Clean Editorial Layout matching Sketch)
-          ========================================================================= */}
-      <section className="py-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto bg-white">
-        {/* Top Eyebrow & Master Title (Inspired by Eternal / Zomato Culture Reference) */}
-        <div className="text-center max-w-3xl mx-auto mb-28 space-y-4">
-          <p className="text-xs sm:text-sm font-sans font-medium text-stone-500 tracking-wide">
-            Our founding story at LawinoMeet
-          </p>
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-tight">
-            Where no stranger ever stands alone
-          </h2>
-        </div>
+          <div className="relative pt-6">
+            {/* Horizontal Timeline Connector Line */}
+            <div className="hidden md:block absolute top-12 left-16 right-16 h-[1px] bg-[#DCD1C2] -z-0" />
 
-        {/* Narrative Flow: Seamless Canvas-Blended Illustrations (No Circles / No Borders) */}
-        <div className="space-y-28">
-          {/* -------------------------------------------------------------
-              ROW 1: FADED ILLUSTRATION ON LEFT, STORY TEXT ON RIGHT
-              ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-            {/* Left Faded Illustration (Blends seamlessly into canvas) */}
-            <div className="lg:col-span-5 flex justify-center items-center">
-              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
-                <img
-                  src="/Story/incident-1.png"
-                  alt="Stranger in a new city"
-                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
-                />
-              </div>
-            </div>
-
-            {/* Right Story Text */}
-            <div className="lg:col-span-7 space-y-5">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                In a new city, it is terrifying...
-              </h3>
-
-              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-                <p>
-                  Imagine moving to a completely new city for your first job. You barely know the streets,
-                  have no relatives nearby, and don't know anyone who can guide you.
-                </p>
-                <p>
-                  Within your first week, one night, you suddenly find yourself involved in a police case.
-                  You're confused, frightened, and don't know what to do next.
-                </p>
-                <p className="font-medium text-slate-800">
-                  You need a lawyer, but you don't know where to find one or whom to trust.
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 relative z-10 text-center">
+              {/* Step I */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 rounded-full border border-[#DCD1C2] bg-[#FAF6EE] flex items-center justify-center font-serif text-sm font-semibold text-[#831826] shadow-sm">
+                  I
+                </div>
+                <h4 className="font-serif text-lg text-[#2E2A29] font-medium pt-1">
+                  {t('landing.step1Title', 'Tell us what happened')}
+                </h4>
+                <p className="text-sm text-[#66605B] max-w-xs font-sans font-light leading-relaxed">
+                  {t('landing.step1Desc', 'Share your situation in a few simple words.')}
                 </p>
               </div>
-            </div>
-          </div>
 
-          {/* -------------------------------------------------------------
-              ROW 2: STORY TEXT ON LEFT, FADED ILLUSTRATION ON RIGHT
-              ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-            {/* Left Story Text (on lg) */}
-            <div className="lg:col-span-7 space-y-5 order-2 lg:order-1">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                This isn't imagination. I experienced it myself.
-              </h3>
-
-              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-                <p>
-                  This isn't just a situation someone might imagine or read in a news article. I lived through that exact vulnerability.
-                </p>
-                <p>
-                  As a tech engineer, sitting in that confusion, I kept thinking: What if someone in this situation could find the right legal professional with just a few clicks?
-                </p>
-                <p className="font-medium text-slate-800">
-                  Without depending on local contacts, without desperately asking strangers, and without struggling alone in the dark.
+              {/* Step II */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 rounded-full border border-[#DCD1C2] bg-[#FAF6EE] flex items-center justify-center font-serif text-sm font-semibold text-[#831826] shadow-sm">
+                  II
+                </div>
+                <h4 className="font-serif text-lg text-[#2E2A29] font-medium pt-1">
+                  {t('landing.step2Title', 'Meet the right lawyer')}
+                </h4>
+                <p className="text-sm text-[#66605B] max-w-xs font-sans font-light leading-relaxed">
+                  {t('landing.step2Desc', 'We match you with a verified expert for your case and city.')}
                 </p>
               </div>
-            </div>
 
-            {/* Right Faded Illustration (Blends seamlessly into canvas) */}
-            <div className="lg:col-span-5 flex justify-center items-center order-1 lg:order-2">
-              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
-                <img
-                  src="/Story/Incident-2.png"
-                  alt="The Engineer's moment of clarity"
-                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* -------------------------------------------------------------
-              ROW 3: FADED ILLUSTRATION ON LEFT, STORY TEXT ON RIGHT
-              ------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-            {/* Left Faded Illustration (Blends seamlessly into canvas) */}
-            <div className="lg:col-span-5 flex justify-center items-center">
-              <div className="w-full max-w-sm sm:max-w-md flex items-center justify-center relative">
-                <img
-                  src="/Story/Incident-3.png"
-                  alt="LawinoMeet Legal Sanctuary"
-                  className="w-full h-auto max-h-[360px] object-contain mix-blend-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] select-none transition duration-700 hover:scale-[1.02]"
-                />
-              </div>
-            </div>
-
-            {/* Right Story Text */}
-            <div className="lg:col-span-7 space-y-5">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
-                At LawinoMeet, no one stands alone.
-              </h3>
-
-              <div className="space-y-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-                <p>
-                  That thought became the founding inspiration behind <strong className="text-slate-900 font-semibold">LawinoMeet</strong>.
-                </p>
-                <p className="text-xl sm:text-2xl font-serif italic text-maroon-900 py-1 font-semibold leading-relaxed">
-                  "We started with one simple belief: No one should feel helpless just because they are new to a place and don't know where to find legal help."
-                </p>
-                <p>
-                  Today, verified legal professional experts and legal chambers are accessible with just a few clicks — either through private encrypted video consultations or direct in-person chamber meetings.
+              {/* Step III */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 rounded-full border border-[#DCD1C2] bg-[#FAF6EE] flex items-center justify-center font-serif text-sm font-semibold text-[#831826] shadow-sm">
+                  III
+                </div>
+                <h4 className="font-serif text-lg text-[#2E2A29] font-medium pt-1">
+                  {t('landing.step3Title', 'Get clarity, fast')}
+                </h4>
+                <p className="text-sm text-[#66605B] max-w-xs font-sans font-light leading-relaxed">
+                  {t('landing.step3Desc', 'Consult in minutes and know exactly what to do next.')}
                 </p>
               </div>
             </div>
@@ -308,246 +545,150 @@ export const LandingPage = () => {
       </section>
 
       {/* =========================================================================
-          ACT II: The Dual Consultation Paradigm (Online vs. Chamber Workflow)
+          FOR LAWYERS: Every bridge needs strong pillars
           ========================================================================= */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <span className="text-xs font-serif font-bold tracking-[0.2em] text-maroon-700 uppercase">
-            Two Formats • One Standard of Excellence
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-serif font-black text-maroon-950">
-            Choose Your Counsel Format
-          </h2>
-          <p className="text-sm text-stone-600 font-sans leading-relaxed">
-            Whether you need urgent video counsel from anywhere in the world, or prefer an in-person conference
-            at an advocate's official chamber, Lawino Meet guarantees complete privacy and streamlined workflow.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Format 1: Virtual Consultation */}
-          <div className="p-8 rounded-3xl bg-white border border-cream-300 shadow-xl hover:shadow-2xl transition space-y-6 relative overflow-hidden group">
-            <div className="w-14 h-14 rounded-2xl bg-maroon-900 text-luxury-gold flex items-center justify-center shadow-lg group-hover:scale-105 transition">
-              <Video className="w-7 h-7" />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                  Instant Access
+      <section id="for-lawyers" className="bg-[#480E17] text-white py-24 px-6 sm:px-10 lg:px-16">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* Left Column */}
+          <div className="lg:col-span-7 space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-cream-50 leading-[1.12]">
+                {t('landing.lawyersHeadingPre', 'Every bridge needs ')}
+                <span className="italic text-[#E5A952] font-serif block">
+                  {t('landing.lawyersHeadingHighlight', 'strong pillars.')}
                 </span>
-                <span className="text-xs text-stone-400">Zero Travel Required</span>
-              </div>
-              <h3 className="text-2xl font-serif font-bold text-maroon-900">
-                Online Encrypted Video Consultation
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                Connect directly via peer-to-peer WebRTC video. Screen share case petitions, examine legal contracts in real-time,
-                and maintain full attorney-client privilege over encrypted SRTP protocols.
-              </p>
-            </div>
-
-            {/* Workflow steps */}
-            <div className="p-4 rounded-2xl bg-cream-100 border border-cream-300 space-y-3 text-xs">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-maroon-800 text-cream-100 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  1
-                </div>
-                <span className="text-maroon-950 font-medium">Pick open slot from advocate's live calendar</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-maroon-800 text-cream-100 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  2
-                </div>
-                <span className="text-maroon-950 font-medium">Pay securely & receive encrypted room link</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-maroon-800 text-cream-100 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  3
-                </div>
-                <span className="text-maroon-950 font-medium">1-click join video room on scheduled time</span>
-              </div>
-            </div>
-
-            <Link
-              to="/lawyers?mode=ONLINE"
-              className="inline-flex items-center space-x-2 text-xs font-serif font-bold text-maroon-800 hover:text-maroon-950 transition uppercase tracking-wider"
-            >
-              <span>Explore Online Advocates</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Format 2: Chamber Offline In-Person Consultation */}
-          <div className="p-8 rounded-3xl bg-maroon-950 text-cream-100 border border-luxury-gold/40 shadow-xl hover:shadow-2xl transition space-y-6 relative overflow-hidden group">
-            <div className="w-14 h-14 rounded-2xl bg-luxury-gold text-maroon-950 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
-              <Building className="w-7 h-7" />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-luxury-gold/20 text-luxury-gold-light border border-luxury-gold/40 text-[10px] font-bold uppercase tracking-wider">
-                  Chamber Privilege
-                </span>
-                <span className="text-xs text-cream-400">Legal Chamber Meet</span>
-              </div>
-              <h3 className="text-2xl font-serif font-bold text-cream-50">
-                Chamber In-Person Consultation
-              </h3>
-              <p className="text-xs sm:text-sm text-cream-300 leading-relaxed">
-                Meet the advocate in person at their official chamber. To protect client confidentiality and advocate's court schedule,
-                chamber details and payment gateway unlock <strong>only after the advocate reviews and accepts</strong> your matter.
-              </p>
-            </div>
-
-            {/* Workflow steps */}
-            <div className="p-4 rounded-2xl bg-black/40 border border-luxury-gold/30 space-y-3 text-xs text-cream-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-luxury-gold text-maroon-950 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  1
-                </div>
-                <span>Client requests Chamber Consultation with case notes</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-luxury-gold text-maroon-950 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  2
-                </div>
-                <span>Advocate reviews request & confirms court readiness</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full bg-luxury-gold text-maroon-950 font-bold flex items-center justify-center shrink-0 text-[11px]">
-                  3
-                </div>
-                <span className="text-luxury-gold font-semibold">
-                  Chamber address & payment details unlock for client!
-                </span>
-              </div>
-            </div>
-
-            <Link
-              to="/lawyers?mode=OFFLINE"
-              className="inline-flex items-center space-x-2 text-xs font-serif font-bold text-luxury-gold hover:text-luxury-gold-light transition uppercase tracking-wider"
-            >
-              <span>Request Chamber Meeting</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          ACT III: Practice Areas (The Domains of Law)
-          ========================================================================= */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-cream-100 border-t border-cream-300 relative">
-        <div className="max-w-7xl mx-auto space-y-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <span className="text-xs font-serif font-bold tracking-[0.2em] text-maroon-700 uppercase">
-                Specialized Jurisprudence
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-serif font-black text-maroon-950 mt-1">
-                Eminent Practice Areas
               </h2>
+              <p className="text-base sm:text-lg text-cream-200 font-sans font-light max-w-xl leading-relaxed">
+                {t(
+                  'landing.lawyersDesc',
+                  'Somewhere tonight, someone is new, alone and afraid. Join LawinoMeet and be the lawyer they find in a few clicks — not after days of searching.'
+                )}
+              </p>
             </div>
+
+            {/* 4 Pillars (2x2 Grid) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
+              {/* Feature 1 */}
+              <div className="space-y-2">
+                <div className="w-8 h-8 rounded-full border border-[#E5A952]/40 flex items-center justify-center text-[#E5A952]">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-lg text-cream-50">
+                  {t('landing.pillar1Title', 'Reach beyond your city')}
+                </h3>
+                <p className="text-sm text-cream-200/80 font-sans font-light leading-relaxed">
+                  {t('landing.pillar1Desc', 'Connect with people across India who need your expertise.')}
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="space-y-2">
+                <div className="w-8 h-8 rounded-full border border-[#E5A952]/40 flex items-center justify-center text-[#E5A952]">
+                  <Award className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-lg text-cream-50">
+                  {t('landing.pillar2Title', 'A verified profile')}
+                </h3>
+                <p className="text-sm text-cream-200/80 font-sans font-light leading-relaxed">
+                  {t('landing.pillar2Desc', 'Your credentials, presented with the trust they deserve.')}
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="space-y-2">
+                <div className="w-8 h-8 rounded-full border border-[#E5A952]/40 flex items-center justify-center text-[#E5A952]">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-lg text-cream-50">
+                  {t('landing.pillar3Title', 'Consult on your terms')}
+                </h3>
+                <p className="text-sm text-cream-200/80 font-sans font-light leading-relaxed">
+                  {t(
+                    'landing.pillar3Desc',
+                    'Choose your hours and the way you meet clients (video or chamber).'
+                  )}
+                </p>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="space-y-2">
+                <div className="w-8 h-8 rounded-full border border-[#E5A952]/40 flex items-center justify-center text-[#E5A952]">
+                  <HeartHandshake className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-lg text-cream-50">
+                  {t('landing.pillar4Title', "Be someone's first calm voice")}
+                </h3>
+                <p className="text-sm text-cream-200/80 font-sans font-light leading-relaxed">
+                  {t('landing.pillar4Desc', 'Help people at the moment they need it most.')}
+                </p>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <div className="pt-4">
+              <Link
+                to="/register?role=LAWYER"
+                className="inline-flex items-center space-x-2 bg-[#E5A952] hover:bg-[#d8993f] text-[#2C080E] font-medium text-sm sm:text-base px-8 py-3.5 rounded-full transition shadow-lg"
+              >
+                <span>{t('landing.joinLawyerBtn', 'Join as a lawyer →')}</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Quote Card */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/[0.04] p-8 sm:p-10 space-y-6 shadow-2xl relative backdrop-blur-sm">
+              <span className="text-4xl font-serif text-[#E5A952] block leading-none">“</span>
+              <p className="text-xl sm:text-2xl font-serif text-cream-50 leading-relaxed font-normal">
+                {t(
+                  'landing.promiseQuote',
+                  '“Every case begins with someone who is scared. Be the first calm voice they hear.”'
+                )}
+              </p>
+              <div className="border-t border-white/10 pt-4">
+                <span className="text-xs tracking-[0.25em] font-sans font-semibold uppercase text-[#E5A952] block">
+                  {t('landing.promiseEyebrow', 'THE LAWINOMEET PROMISE')}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          FINAL HERO BANNER: New to the city. Never alone with the law.
+          Using dawn-bridge.jpg with rich deep maroon gradient overlay
+          ========================================================================= */}
+      <section
+        className="relative py-32 sm:py-40 px-6 sm:px-10 lg:px-16 overflow-hidden bg-cover bg-center text-white"
+        style={{
+          backgroundImage: `linear-gradient(rgba(72, 14, 23, 0.88), rgba(48, 8, 14, 0.92)), url('/dawn-bridge.jpg')`,
+        }}
+      >
+        <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
+          <span className="text-xs tracking-[0.25em] font-sans font-semibold uppercase text-[#E5A952] block">
+            {t('landing.finalEyebrow', 'EVERY STEP LEADS HERE')}
+          </span>
+
+          <h2 className="text-4xl sm:text-6xl font-serif text-cream-50 leading-[1.12]">
+            {t('landing.finalHeadingPre', 'New to the city. ')}
+            <span className="italic text-[#E5A952] font-serif block">
+              {t('landing.finalHeadingHighlight', 'Never alone with the law.')}
+            </span>
+          </h2>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
               to="/lawyers"
-              className="text-xs font-serif font-bold uppercase tracking-wider text-maroon-800 hover:text-maroon-950 flex items-center space-x-1"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-[#E5A952] hover:bg-[#d8993f] text-[#2C080E] font-medium text-sm sm:text-base px-8 py-3.5 rounded-full transition shadow-lg"
             >
-              <span>Browse All Advocates</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>{t('landing.findLawyerNow', 'Find a lawyer now →')}</span>
             </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {practiceAreas.map((area) => (
-              <Link
-                key={area.code}
-                to={`/lawyers?specialization=${area.code}`}
-                className="group p-6 rounded-3xl bg-white border border-cream-300 hover:border-luxury-gold hover:shadow-xl transition flex flex-col justify-between space-y-4"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-2xl bg-cream-200 text-maroon-800 flex items-center justify-center group-hover:bg-maroon-900 group-hover:text-luxury-gold transition shadow-sm">
-                    <Scale className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-serif font-bold text-lg text-maroon-950 mt-4 group-hover:text-maroon-700 transition">
-                    {area.name}
-                  </h3>
-                  <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                    {area.desc}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-cream-200 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-luxury-gold-dark">{area.cases}</span>
-                  <span className="text-maroon-800 font-serif font-bold flex items-center space-x-1 group-hover:translate-x-1 transition">
-                    <span>View Advocates</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          ACT IV: The Wave Storytelling Carousel / Legal Confidence Banner
-          ========================================================================= */}
-      <section className="py-24 bg-gradient-to-br from-maroon-950 via-maroon-900 to-maroon-950 text-cream-100 relative overflow-hidden">
-        {/* Layered fluid wave background */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M0,50 Q25,20 50,50 T100,50 L100,100 L0,100 Z" fill="#C5A880" />
-          </svg>
-        </div>
-
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-12">
-          <div className="space-y-4 max-w-2xl mx-auto">
-            <span className="text-xs font-serif tracking-[0.25em] text-luxury-gold uppercase font-bold">
-              Uncompromising Standards
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-black leading-tight text-cream-50">
-              Your Legal Sanctuary in Every Crisis
-            </h2>
-            <p className="text-xs sm:text-sm text-cream-300 font-light leading-relaxed">
-              Every advocate on Lawino Meet is independently verified with their respective State Bar Council.
-              Zero solicitation, zero hidden retainers, 100% focused on legal merit.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-2xl bg-white/5 border border-luxury-gold/30 backdrop-blur space-y-3">
-              <Compass className="w-8 h-8 text-luxury-gold" />
-              <h4 className="font-serif font-bold text-cream-100 text-base">Direct Consultation</h4>
-              <p className="text-xs text-cream-300 leading-relaxed">
-                No middleman brokers or unverified paralegals. Speak directly to senior advocates with court practice.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white/5 border border-luxury-gold/30 backdrop-blur space-y-3">
-              <FileCheck className="w-8 h-8 text-luxury-gold" />
-              <h4 className="font-serif font-bold text-cream-100 text-base">Confidential Chambers</h4>
-              <p className="text-xs text-cream-300 leading-relaxed">
-                Verified advocate and legal consultant chambers accessible only on approved appointment schedules.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white/5 border border-luxury-gold/30 backdrop-blur space-y-3">
-              <CreditCard className="w-8 h-8 text-luxury-gold" />
-              <h4 className="font-serif font-bold text-cream-100 text-base">Atomic Retainer Holding</h4>
-              <p className="text-xs text-cream-300 leading-relaxed">
-                Payments are held transparently and unlocked only when the consultation takes place as scheduled.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-6">
             <Link
-              to="/register"
-              className="inline-flex items-center space-x-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-luxury-gold-dark via-luxury-gold to-luxury-gold-light hover:brightness-110 text-maroon-950 font-serif font-black text-xs uppercase tracking-widest shadow-2xl transition transform hover:scale-105"
+              to="/register?role=LAWYER"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 border border-white/40 hover:border-white text-white font-medium text-sm sm:text-base px-8 py-3.5 rounded-full transition hover:bg-white/10"
             >
-              <span>Schedule a Consultation</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>{t('landing.imALawyer', "I'm a lawyer")}</span>
             </Link>
           </div>
         </div>

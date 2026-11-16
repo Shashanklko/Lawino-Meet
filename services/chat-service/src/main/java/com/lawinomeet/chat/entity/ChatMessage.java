@@ -49,6 +49,22 @@ public class ChatMessage {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "attachment_url", length = 500)
+    private String attachmentUrl;
+
+    @Column(name = "attachment_name", length = 255)
+    private String attachmentName;
+
+    @Column(name = "attachment_type", length = 100)
+    private String attachmentType;
+
+    @Column(name = "attachment_size")
+    private Long attachmentSize;
+
+    @Column(name = "message_type", length = 20)
+    @Builder.Default
+    private String messageType = "TEXT";
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private boolean isRead = false;

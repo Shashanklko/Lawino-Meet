@@ -88,6 +88,15 @@ public class LawyerService {
     }
 
     @Transactional
+    public LawyerProfileDto updateProfilePhoto(String userPublicId, String photoUrl) {
+        LawyerProfile profile = lawyerProfileRepository.findByUserPublicId(userPublicId)
+                .orElseThrow(() -> new ApiException("Lawyer profile not found", HttpStatus.NOT_FOUND, "LAWYER_NOT_FOUND"));
+        profile.setProfileImageUrl(photoUrl);
+        LawyerProfile saved = lawyerProfileRepository.save(profile);
+        return enrichWithFirmInfo(saved);
+    }
+
+    @Transactional
     public boolean toggleMessaging(String userPublicId, boolean enabled) {
         LawyerProfile profile = lawyerProfileRepository.findByUserPublicId(userPublicId)
                 .orElseThrow(() -> new ApiException("Lawyer profile not found", HttpStatus.NOT_FOUND, "LAWYER_NOT_FOUND"));

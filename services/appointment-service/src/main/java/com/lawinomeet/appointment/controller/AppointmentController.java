@@ -39,7 +39,7 @@ public class AppointmentController {
         return ResponseEntity.ok(ApiResponse.ok("Appointment details retrieved successfully", response));
     }
 
-    @GetMapping("/my")
+    @GetMapping({"/my", "/me", "/client"})
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ApiResponse<List<AppointmentResponse>>> getMyAppointments(
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -47,7 +47,7 @@ public class AppointmentController {
         return ResponseEntity.ok(ApiResponse.ok("Client appointments retrieved successfully", list));
     }
 
-    @GetMapping("/lawyer")
+    @GetMapping({"/lawyer", "/lawyer/me"})
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<List<AppointmentResponse>>> getLawyerAppointments(
             @AuthenticationPrincipal UserPrincipal principal,
