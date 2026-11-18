@@ -10,11 +10,15 @@ export const notificationApi = {
     return res.data;
   },
   markAsRead: async (notificationPublicId) => {
-    const res = await apiClient.put(`/api/notifications/${notificationPublicId}/read`);
+    const res = await apiClient.patch(`/api/notifications/${notificationPublicId}/read`);
     return res.data;
   },
   markAllAsRead: async () => {
-    const res = await apiClient.put('/api/notifications/read-all');
+    const res = await apiClient.patch('/api/notifications/mark-all-read');
+    return res.data;
+  },
+  deleteNotification: async (notificationPublicId) => {
+    const res = await apiClient.delete(`/api/notifications/${notificationPublicId}`);
     return res.data;
   },
 };

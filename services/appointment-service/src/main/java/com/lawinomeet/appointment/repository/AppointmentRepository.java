@@ -27,6 +27,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByAppointmentStatusAndResponseDeadlineBefore(AppointmentStatus status, Instant deadline);
 
+    List<Appointment> findByAppointmentStatusAndAutoReleaseAtBefore(AppointmentStatus status, Instant autoReleaseDeadline);
+
     @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
            "WHERE a.lawyerUserPublicId = :lawyerId " +
            "AND a.appointmentStatus IN (com.lawinomeet.appointment.entity.AppointmentStatus.PENDING, " +

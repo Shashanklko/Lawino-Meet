@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/actuator/**",
                     "/api/meetings/ping",
+                    "/api/meetings/ice-servers",
                     "/ws-meeting/**"
                 ).permitAll()
                 .anyRequest().authenticated()

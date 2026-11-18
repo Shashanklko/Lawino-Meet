@@ -1,26 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiClient from '../api/client';
 import { ADMIN_SUB_ROLES } from '../utils/adminPermissions';
 
 const AdminAuthContext = createContext(null);
-
-const DEFAULT_ADMIN = {
-  publicId: 'admin-master-001',
-  fullName: 'Justice A. K. Sikri (Retd.)',
-  email: 'admin@lawinomeet.com',
-  role: 'PLATFORM_ADMIN',
-  subRole: 'SUPER_ADMIN',
-  designation: 'Supreme Platform Administrator',
-  avatar: 'A',
-  lastLogin: new Date().toISOString(),
-};
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const stored = localStorage.getItem('lawino_admin_user');
-      return stored ? JSON.parse(stored) : DEFAULT_ADMIN;
+      return stored ? JSON.parse(stored) : null;
     } catch {
-      return DEFAULT_ADMIN;
+      return null;
     }
   });
 
@@ -34,8 +24,21 @@ export const AdminAuthProvider = ({ children }) => {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('lawino_admin_token') || true; // Default logged in for immediate operations demo
+    const token = localStorage.getItem('lawino_admin_token');
+    return !!token && !token.startsWith('mock_admin_token_');
   });
+
+  useEffect(() => {
+    // Invalidate any legacy demo/mock tokens from previous testing
+    const token = localStorage.getItem('lawino_admin_token');
+    if (token && token.startsWith('mock_admin_token_')) {
+      localStorage.removeItem('lawino_admin_token');
+      localStorage.removeItem('lawino_admin_user');
+      localStorage.removeItem('lawino_admin_subrole');
+      setAdminUser(null);
+      setIsAuthenticated(false);
+    }
+  }, []);
 
   const setAdminSubRole = (newSubRole) => {
     setAdminSubRoleState(newSubRole);
@@ -47,43 +50,48 @@ export const AdminAuthProvider = ({ children }) => {
     }
   };
 
-  const loginAsDemoSubRole = (subRoleKey = 'SUPER_ADMIN') => {
-    const meta = ADMIN_SUB_ROLES[subRoleKey] || ADMIN_SUB_ROLES.SUPER_ADMIN;
-    const userObj = {
-      ...DEFAULT_ADMIN,
-      subRole: meta.key,
-      designation: meta.label,
-    };
-    const mockToken = `mock_admin_token_${meta.key.toLowerCase()}`;
-    localStorage.setItem('lawino_admin_token', mockToken);
-    localStorage.setItem('lawino_admin_user', JSON.stringify(userObj));
-    localStorage.setItem('lawino_admin_subrole', meta.key);
-    setAdminUser(userObj);
-    setAdminSubRoleState(meta.key);
-    setIsAuthenticated(true);
-    return userObj;
-  };
-
   const login = async ({ identifier, password }) => {
-    // Check demo identifier keywords
-    if (identifier?.includes('support')) {
-      return loginAsDemoSubRole('SUPPORT_ADMIN');
+    try {
+      const res = await apiClient.post('/api/auth/login', { identifier, password });
+      if (res.data && res.data.success && res.data.data) {
+        const { accessToken, user: userData } = res.data.data;
+        if (userData.role !== 'PLATFORM_ADMIN') {
+          throw new Error('Access denied: Account does not possess PLATFORM_ADMIN credentials.');
+        }
+
+        const userObj = {
+          publicId: userData.publicId || '55555555-5555-5555-5555-555555555555',
+          username: userData.username,
+          fullName: userData.fullName || 'Platform Super Administrator',
+          email: userData.email,
+          role: userData.role,
+          subRole: 'SUPER_ADMIN',
+          designation: 'Supreme Platform Administrator',
+          avatar: userData.username ? userData.username.charAt(0).toUpperCase() : 'A',
+          lastLogin: new Date().toISOString(),
+        };
+
+        localStorage.setItem('lawino_admin_token', accessToken);
+        localStorage.setItem('lawino_admin_user', JSON.stringify(userObj));
+        localStorage.setItem('lawino_admin_subrole', 'SUPER_ADMIN');
+        setAdminUser(userObj);
+        setAdminSubRoleState('SUPER_ADMIN');
+        setIsAuthenticated(true);
+        return userObj;
+      } else {
+        throw new Error(res.data?.message || 'Authentication failed.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Administrative verification failed.';
+      throw new Error(msg);
     }
-    if (identifier?.includes('verify') || identifier?.includes('compliance')) {
-      return loginAsDemoSubRole('VERIFICATION_ADMIN');
-    }
-    if (identifier?.includes('finance') || identifier?.includes('treasury')) {
-      return loginAsDemoSubRole('FINANCE_ADMIN');
-    }
-    if (identifier?.includes('ops') || identifier?.includes('operations')) {
-      return loginAsDemoSubRole('OPERATIONS_ADMIN');
-    }
-    return loginAsDemoSubRole('SUPER_ADMIN');
   };
 
   const logout = () => {
     localStorage.removeItem('lawino_admin_token');
     localStorage.removeItem('lawino_admin_user');
+    localStorage.removeItem('lawino_admin_subrole');
+    setAdminUser(null);
     setIsAuthenticated(false);
   };
 
@@ -95,7 +103,6 @@ export const AdminAuthProvider = ({ children }) => {
         setAdminSubRole,
         isAuthenticated,
         login,
-        loginAsDemoSubRole,
         logout,
       }}
     >

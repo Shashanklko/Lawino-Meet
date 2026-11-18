@@ -24,4 +24,17 @@ public class AppointmentExpirationScheduler {
             log.error("Error during appointment expiration job: {}", e.getMessage(), e);
         }
     }
+
+    // Run every minute to auto-confirm appointments in COMPLETION_REQUESTED whose 24-hour response window has passed
+    @Scheduled(fixedDelay = 60000)
+    public void processAutoSettlements() {
+        try {
+            int autoSettledCount = appointmentService.autoSettleOverdueAppointments();
+            if (autoSettledCount > 0) {
+                log.info("Auto-settled {} completed appointments after 24-hour client response window", autoSettledCount);
+            }
+        } catch (Exception e) {
+            log.error("Error during 24-hour auto-settlement job: {}", e.getMessage(), e);
+        }
+    }
 }

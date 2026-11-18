@@ -24,7 +24,8 @@ export const ThemeSelector = () => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg border border-stone-800 bg-stone-900/80 hover:bg-stone-800 text-xs text-stone-300 transition cursor-pointer"
+        className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg border text-xs text-stone-300 transition cursor-pointer"
+        style={{ backgroundColor: 'var(--admin-bg-base)', borderColor: 'var(--admin-border)' }}
         title="Administrative Console Palette"
       >
         <span
@@ -35,8 +36,14 @@ export const ThemeSelector = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#201B19] border border-stone-800 shadow-2xl z-50 p-2 space-y-1 text-xs">
-          <div className="px-2 py-1 text-[10px] font-mono text-stone-400 uppercase tracking-wider border-b border-stone-800">
+        <div
+          className="absolute right-0 mt-2 w-56 rounded-xl border shadow-2xl z-50 p-2 space-y-1 text-xs"
+          style={{ backgroundColor: 'var(--admin-bg-card)', borderColor: 'var(--admin-border)' }}
+        >
+          <div
+            className="px-2 py-1 text-[10px] font-mono text-stone-400 uppercase tracking-wider border-b"
+            style={{ borderColor: 'var(--admin-border)' }}
+          >
             Console Theme
           </div>
           {themes.map((t) => (
@@ -48,8 +55,14 @@ export const ThemeSelector = () => {
                 setIsOpen(false);
               }}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition cursor-pointer ${
-                t.id === theme ? 'bg-[#941B2B]/30 text-white font-medium border border-[#941B2B]/40' : 'text-stone-300 hover:bg-stone-800'
+                t.id === theme
+                  ? 'text-white font-medium border'
+                  : 'text-stone-300 hover:opacity-80'
               }`}
+              style={{
+                backgroundColor: t.id === theme ? `${t.accent}25` : 'transparent',
+                borderColor: t.id === theme ? `${t.accent}60` : 'transparent',
+              }}
             >
               <div className="flex items-center space-x-2">
                 <span className="w-3 h-3 rounded-full border border-stone-700" style={{ backgroundColor: t.accent }} />

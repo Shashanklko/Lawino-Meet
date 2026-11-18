@@ -30,6 +30,9 @@ import {
 export const AdminOverviewPage = () => {
   const { dateFilter, adminSubRole } = useOutletContext();
   const [stats, setStats] = useState(null);
+  const [advocates, setAdvocates] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [firms, setFirms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const role = adminSubRole || 'SUPER_ADMIN';
@@ -47,9 +50,23 @@ export const AdminOverviewPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
-      const res = await adminApi.getOverviewStats();
-      if (res.success) {
-        setStats(res.data);
+      const [resStats, resAdv, resAppts, resFirms] = await Promise.allSettled([
+        adminApi.getOverviewStats(),
+        adminApi.getAdvocates(),
+        adminApi.getAppointments(),
+        adminApi.getFirms(),
+      ]);
+      if (resStats.status === 'fulfilled' && resStats.value.success) {
+        setStats(resStats.value.data);
+      }
+      if (resAdv.status === 'fulfilled' && resAdv.value.success) {
+        setAdvocates(resAdv.value.data || []);
+      }
+      if (resAppts.status === 'fulfilled' && resAppts.value.success) {
+        setAppointments(resAppts.value.data || []);
+      }
+      if (resFirms.status === 'fulfilled' && resFirms.value.success) {
+        setFirms(resFirms.value.data || []);
       }
       setLoading(false);
     };
@@ -411,8 +428,16 @@ export const AdminOverviewPage = () => {
             {canAccessVerification ? (
               <div className="p-3 rounded-xl bg-stone-900/90 border border-stone-800 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-cream-100">Adv. Suresh K. Nair (Verification)</p>
-                  <p className="text-[10px] text-stone-400">Submitted Karnataka Bar Council card &amp; AIBE slip.</p>
+                  <p className="font-semibold text-cream-100">
+                    {advocates.length > 0
+                      ? `${advocates.find((a) => a.verificationStatus === 'PENDING')?.fullName || advocates[0]?.fullName} (Live Bar Audit)`
+                      : 'Advocate Verification Queue'}
+                  </p>
+                  <p className="text-[10px] text-stone-400">
+                    {advocates.length > 0
+                      ? `Enrolled Bar: ${advocates[0]?.barCouncilNumber || 'Bar Council Enrolled'} • ${advocates[0]?.city || 'India'}`
+                      : 'All registered advocate credentials audited.'}
+                  </p>
                 </div>
                 <Link
                   to="/admin/advocates"
@@ -440,11 +465,19 @@ export const AdminOverviewPage = () => {
             {canAccessSupport || canAccessFinance ? (
               <div className="p-3 rounded-xl bg-stone-900/90 border border-stone-800 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-rose-300">TKT-2026-401 (Dispute &amp; Refund)</p>
-                  <p className="text-[10px] text-stone-400">Client Vikram Patel claimed ₹1,650 consultation refund.</p>
+                  <p className="font-semibold text-rose-300">
+                    {appointments.length > 0
+                      ? `${appointments.find((a) => a.status === 'DISPUTED')?.appointmentId || appointments[0]?.appointmentId} (Status: ${appointments[0]?.status})`
+                      : 'Platform Escrow Queue'}
+                  </p>
+                  <p className="text-[10px] text-stone-400">
+                    {appointments.length > 0
+                      ? `Client: ${appointments[0]?.client?.fullName || appointments[0]?.clientUsername} • ₹${(appointments[0]?.fee || 1500).toLocaleString('en-IN')}`
+                      : '0 escalated disputes.'}
+                  </p>
                 </div>
                 <Link
-                  to="/admin/support"
+                  to="/admin/appointments"
                   className="px-2.5 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800/80 text-rose-200 text-[11px] font-mono border border-rose-700/60"
                 >
                   Inspect &rarr;
@@ -469,8 +502,16 @@ export const AdminOverviewPage = () => {
             {canAccessVerification ? (
               <div className="p-3 rounded-xl bg-stone-900/90 border border-stone-800 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-cream-100">Apex Horizon Legal Partners (Firm LLP)</p>
-                  <p className="text-[10px] text-stone-400">LLP-KAR-2026-104 pending MCA registrar match.</p>
+                  <p className="font-semibold text-cream-100">
+                    {firms.length > 0
+                      ? `${firms[0]?.firmName} (${firms[0]?.verificationStatus || 'VERIFIED'})`
+                      : 'Firm LLP Registration Queue'}
+                  </p>
+                  <p className="text-[10px] text-stone-400">
+                    {firms.length > 0
+                      ? `${firms[0]?.city}, ${firms[0]?.state} • MCA verified LLP records`
+                      : 'All firm partnerships verified.'}
+                  </p>
                 </div>
                 <Link
                   to="/admin/firms"

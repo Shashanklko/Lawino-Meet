@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_ENTERPRISE_FIRM } from '../data/mockData';
 import { AdvocateProfileModule } from '../components/profile/AdvocateProfileModule';
 import { FirmProfileModule } from '../components/profile/FirmProfileModule';
 import { ClientProfileModule } from '../components/profile/ClientProfileModule';
@@ -43,7 +42,7 @@ export const ProfileSettingsPage = () => {
       )}
 
       {isFirm && (
-        <FirmProfileModule firmData={MOCK_ENTERPRISE_FIRM} onSaveToast={handleToast} />
+        <FirmProfileModule firmData={user?.firmMembership || {}} onSaveToast={handleToast} />
       )}
 
       {!isLawyer && !isFirm && (

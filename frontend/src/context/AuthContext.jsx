@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../api/authApi';
-import { MOCK_DEMO_USERS } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
@@ -16,8 +15,13 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem('lawino_token');
       if (storedToken) {
-        // If it's a demo token, keep existing mock user
+        // Clear any old legacy mock tokens
         if (storedToken.startsWith('mock_demo_token_')) {
+          localStorage.removeItem('lawino_token');
+          localStorage.removeItem('lawino_refresh_token');
+          localStorage.removeItem('lawino_user');
+          setToken(null);
+          setUser(null);
           setLoading(false);
           return;
         }
@@ -28,8 +32,12 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('lawino_user', JSON.stringify(res.data));
           }
         } catch (err) {
-          console.warn('Session initialization failed:', err);
-          // Token will be refreshed by interceptor if still valid, or cleared on 401
+          console.warn('Session verification failed, logging out:', err);
+          localStorage.removeItem('lawino_token');
+          localStorage.removeItem('lawino_refresh_token');
+          localStorage.removeItem('lawino_user');
+          setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
@@ -38,30 +46,7 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const loginAsDemo = (roleKey = 'client') => {
-    const targetUser = MOCK_DEMO_USERS[roleKey] || MOCK_DEMO_USERS.client;
-    const mockToken = `mock_demo_token_${targetUser.role.toLowerCase()}`;
-    localStorage.setItem('lawino_token', mockToken);
-    localStorage.setItem('lawino_refresh_token', `${mockToken}_refresh`);
-    localStorage.setItem('lawino_user', JSON.stringify(targetUser));
-    setToken(mockToken);
-    setUser(targetUser);
-    return targetUser;
-  };
-
   const login = async (credentials) => {
-    const id = (credentials.identifier || '').toLowerCase().trim();
-    // Check if demo user login is requested directly
-    if (id.includes('client') || id.includes('rohit')) {
-      return loginAsDemo('client');
-    }
-    if (id.includes('advocate') || id.includes('lawyer') || id.includes('raghavan')) {
-      return loginAsDemo('lawyer');
-    }
-    if (id.includes('firm') || id.includes('singhania')) {
-      return loginAsDemo('firmAdmin');
-    }
-
     try {
       const res = await authApi.login(credentials);
       if (res.success && res.data) {
@@ -75,10 +60,11 @@ export const AuthProvider = ({ children }) => {
       }
       throw new Error(res.message || 'Login failed');
     } catch (apiErr) {
-      // Fallback for frontend UI testing if backend is offline
-      console.warn('Backend login unavailable, activating mock demo session:', apiErr);
-      const fallbackRole = id.includes('law') || id.includes('adv') ? 'lawyer' : 'client';
-      return loginAsDemo(fallbackRole);
+      const msg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Authentication failed. Please verify your credentials.';
+      throw new Error(msg);
     }
   };
 
@@ -96,29 +82,17 @@ export const AuthProvider = ({ children }) => {
       }
       throw new Error(res.message || 'Registration failed');
     } catch (apiErr) {
-      // Fallback for frontend UI testing
-      console.warn('Backend register unavailable, creating mock local user for UI test:', apiErr);
-      const mockUser = {
-        publicId: `user-local-${Date.now()}`,
-        username: data.username,
-        email: data.email,
-        fullName: data.fullName,
-        role: data.role || 'CLIENT',
-        createdAt: new Date().toISOString(),
-      };
-      const mockToken = `mock_demo_token_${mockUser.role.toLowerCase()}`;
-      localStorage.setItem('lawino_token', mockToken);
-      localStorage.setItem('lawino_refresh_token', `${mockToken}_refresh`);
-      localStorage.setItem('lawino_user', JSON.stringify(mockUser));
-      setToken(mockToken);
-      setUser(mockUser);
-      return mockUser;
+      const msg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Registration failed. Please check your details.';
+      throw new Error(msg);
     }
   };
 
   const logout = async () => {
     try {
-      if (token && !token.startsWith('mock_demo_token_')) {
+      if (token) {
         await authApi.logout();
       }
     } catch {
@@ -140,7 +114,6 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!token && !!user,
         loading,
         login,
-        loginAsDemo,
         register,
         logout,
       }}

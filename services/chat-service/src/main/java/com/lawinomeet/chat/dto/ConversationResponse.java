@@ -15,6 +15,7 @@ import java.time.Instant;
 public class ConversationResponse {
 
     private String publicId;
+    private String appointmentPublicId;
     private String otherParticipantPublicId;
     private String otherParticipantUsername;
     private String lastMessageContent;
@@ -27,6 +28,7 @@ public class ConversationResponse {
         }
         return ConversationResponse.builder()
                 .publicId(conv.getPublicId())
+                .appointmentPublicId(conv.getAppointmentPublicId())
                 .otherParticipantPublicId(conv.getOtherParticipantPublicId(currentUserId))
                 .otherParticipantUsername(conv.getOtherParticipantUsername(currentUserId))
                 .lastMessageContent(conv.getLastMessageContent())

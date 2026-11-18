@@ -45,8 +45,12 @@ export const userApi = {
       const res = await apiClient.get('/api/search/lawyers', { params });
       return res.data;
     } catch {
-      const res = await apiClient.get('/api/lawyers/search', { params });
-      return res.data;
+      try {
+        const res = await apiClient.get('/api/lawyers', { params });
+        return res.data;
+      } catch {
+        return { success: false, data: [] };
+      }
     }
   },
 

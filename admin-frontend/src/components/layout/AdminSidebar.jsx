@@ -159,9 +159,15 @@ export const AdminSidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-[#1C1816] border-r border-stone-800 text-stone-300 flex flex-col h-full shrink-0 select-none">
+    <aside
+      className="w-64 border-r text-stone-300 flex flex-col h-full shrink-0 select-none transition-colors duration-200"
+      style={{ backgroundColor: 'var(--admin-bg-sidebar)', borderColor: 'var(--admin-border)' }}
+    >
       {/* Brand & Authority Header */}
-      <div className="h-14 px-4 border-b border-stone-800 flex items-center justify-between bg-[#171412]">
+      <div
+        className="h-14 px-4 border-b flex items-center justify-between transition-colors duration-200"
+        style={{ backgroundColor: 'var(--admin-bg-base)', borderColor: 'var(--admin-border)' }}
+      >
         <div className="flex items-center space-x-2.5">
           <img
             src="/logo.jpg"

@@ -62,14 +62,20 @@ export const FloatingChatWidget = () => {
   };
 
   const handleLaunchMeeting = () => {
-    navigate('/meeting/room-chamber-001');
+    const roomId = activeConversation?.publicId
+      ? `chamber_${activeConversation.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+      : 'chamber_consultation';
+    navigate(`/meeting/${roomId}`);
     setIsOpen(false);
   };
 
   if (!isAuthenticated || user?.role === 'FIRM_ADMIN') return null;
 
-  // When dismissed or closed, completely remove the widget (no floating circular ring remains)
+  // When dismissed or closed, completely remove the widget
   if (isDismissed) return null;
+
+  // Initially remove floating chat unless any new unread message appears or user opened it
+  if (!isOpen && unreadTotal === 0) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">

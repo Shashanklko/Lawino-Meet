@@ -68,7 +68,10 @@ export const AdminHeader = ({ selectedDateFilter, onDateFilterChange }) => {
   const subRoleMeta = ADMIN_SUB_ROLES[adminSubRole] || ADMIN_SUB_ROLES.SUPER_ADMIN;
 
   return (
-    <header className="h-14 px-4 sm:px-6 bg-[#241E1C] border-b border-stone-800 text-stone-200 flex items-center justify-between shrink-0 select-none z-30 shadow-sm">
+    <header
+      className="h-14 px-4 sm:px-6 border-b text-stone-200 flex items-center justify-between shrink-0 select-none z-30 shadow-sm transition-colors duration-200"
+      style={{ backgroundColor: 'var(--admin-bg-header)', borderColor: 'var(--admin-border)' }}
+    >
       {/* Left: Breadcrumbs and Title */}
       <div className="flex items-center space-x-3 overflow-hidden">
         <div className="flex items-center space-x-2 text-xs font-mono text-stone-400">
@@ -83,7 +86,7 @@ export const AdminHeader = ({ selectedDateFilter, onDateFilterChange }) => {
         </h1>
       </div>
 
-      {/* Right: Sub-Role Switcher, Date Filter, Theme, Public Site Link, Profile */}
+      {/* Right: Date Filter, Authority Badge, Theme, Public Site Link, Profile */}
       <div className="flex items-center space-x-2 sm:space-x-3">
         {/* Date Filter Selector */}
         <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-stone-900/80 border border-stone-800 text-xs">
@@ -100,57 +103,15 @@ export const AdminHeader = ({ selectedDateFilter, onDateFilterChange }) => {
           </select>
         </div>
 
-        {/* Dynamic Admin Sub-Role Switcher Dropdown */}
-        <div className="relative" ref={roleRef}>
-          <button
-            type="button"
-            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-            className="flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-stone-900/80 hover:bg-stone-800 border border-stone-800 text-xs transition cursor-pointer"
-            title="Operational Sub-Role Clearance"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <div className="text-left hidden lg:block">
-              <div className="text-[10px] font-mono text-stone-400 leading-tight">Authority Role</div>
-              <div className="font-serif font-bold text-[11px] text-amber-300 leading-tight">
-                {subRoleMeta.label}
-              </div>
+        {/* Operational Authority Badge */}
+        <div className="flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-stone-900/80 border border-stone-800 text-xs">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <div className="text-left hidden lg:block">
+            <div className="text-[10px] font-mono text-stone-400 leading-tight">Authority Role</div>
+            <div className="font-serif font-bold text-[11px] text-amber-300 leading-tight">
+              {subRoleMeta.label}
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-stone-400" />
-          </button>
-
-          {roleMenuOpen && (
-            <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-[#1C1816] border border-stone-700 shadow-2xl z-50 p-2 space-y-1 text-xs animate-in fade-in zoom-in-95">
-              <div className="px-3 py-2 border-b border-stone-800 text-[10px] font-mono uppercase tracking-wider text-stone-400">
-                Switch Operational Sub-Role
-              </div>
-              {Object.values(ADMIN_SUB_ROLES).map((sub) => {
-                const isActive = sub.key === adminSubRole;
-                return (
-                  <button
-                    key={sub.key}
-                    type="button"
-                    onClick={() => {
-                      setAdminSubRole(sub.key);
-                      setRoleMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-2.5 rounded-xl transition cursor-pointer space-y-0.5 ${
-                      isActive
-                        ? 'bg-[#941B2B]/30 border border-[#941B2B]/60 text-white'
-                        : 'hover:bg-stone-800/80 text-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-serif font-bold text-xs">{sub.label}</span>
-                      {isActive && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
-                    </div>
-                    <p className="text-[10px] text-stone-400 leading-relaxed font-sans">
-                      {sub.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Public Website External Link */}

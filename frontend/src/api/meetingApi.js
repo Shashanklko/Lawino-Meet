@@ -1,8 +1,14 @@
 import apiClient from './client';
 
 export const meetingApi = {
-  createMeetingRoom: async (appointmentPublicId) => {
-    const res = await apiClient.post('/api/meetings/rooms', { appointmentPublicId });
+  createMeetingRoom: async (appointmentPublicId, clientUserPublicId, clientUsername, lawyerUserPublicId, lawyerUsername) => {
+    const res = await apiClient.post('/api/meetings/rooms', {
+      appointmentPublicId,
+      clientUserPublicId,
+      clientUsername,
+      lawyerUserPublicId,
+      lawyerUsername,
+    });
     return res.data;
   },
   getMeetingRoom: async (roomPublicId) => {
@@ -10,7 +16,7 @@ export const meetingApi = {
     return res.data;
   },
   getRoomByAppointment: async (appointmentPublicId) => {
-    const res = await apiClient.get(`/api/meetings/rooms/appointment/${appointmentPublicId}`);
+    const res = await apiClient.get(`/api/meetings/appointments/${appointmentPublicId}/room`);
     return res.data;
   },
   joinMeeting: async (roomPublicId) => {
@@ -22,11 +28,11 @@ export const meetingApi = {
     return res.data;
   },
   endMeeting: async (roomPublicId) => {
-    const res = await apiClient.post(`/api/meetings/rooms/${roomPublicId}/end`);
+    const res = await apiClient.patch(`/api/meetings/rooms/${roomPublicId}/end`);
     return res.data;
   },
-  getIceServers: async (roomPublicId) => {
-    const res = await apiClient.get(`/api/meetings/rooms/${roomPublicId}/ice-servers`);
+  getIceServers: async () => {
+    const res = await apiClient.get('/api/meetings/ice-servers');
     return res.data;
   },
 };

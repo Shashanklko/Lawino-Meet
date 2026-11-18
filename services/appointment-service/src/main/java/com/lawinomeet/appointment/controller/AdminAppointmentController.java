@@ -1,6 +1,7 @@
 package com.lawinomeet.appointment.controller;
 
 import com.lawinomeet.appointment.dto.ApiResponse;
+import com.lawinomeet.appointment.dto.AppointmentResponse;
 import com.lawinomeet.appointment.entity.Appointment;
 import com.lawinomeet.appointment.entity.AppointmentStatus;
 import com.lawinomeet.appointment.repository.AppointmentRepository;
@@ -24,10 +25,10 @@ public class AdminAppointmentController {
     private final AppointmentRepository appointmentRepository;
 
     /**
-     * Platform-wide Appointment Listing
+     * Platform-wide Appointment Listing DTO
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Appointment>>> getAllAppointments(
+    public ResponseEntity<ApiResponse<List<AppointmentResponse>>> getAllAppointments(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String bookingChannel) {
         List<Appointment> all = appointmentRepository.findAll();
@@ -38,7 +39,11 @@ public class AdminAppointmentController {
                     .toList();
         }
 
-        return ResponseEntity.ok(ApiResponse.ok("Platform appointments retrieved successfully", all));
+        List<AppointmentResponse> dtoList = all.stream()
+                .map(AppointmentResponse::fromEntity)
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.ok("Platform appointments retrieved successfully", dtoList));
     }
 
     /**
@@ -79,6 +84,6 @@ public class AdminAppointmentController {
         res.put("reason", reason);
         res.put("auditTimestamp", System.currentTimeMillis());
 
-        return ResponseEntity.ok(ApiResponse.ok("Appointment marked for priority escalation", res));
+        return ResponseEntity.ok(ApiResponse.ok("Appointment escalated successfully", res));
     }
 }

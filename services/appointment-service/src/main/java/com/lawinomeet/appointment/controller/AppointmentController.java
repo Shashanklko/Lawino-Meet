@@ -68,9 +68,47 @@ public class AppointmentController {
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> acceptAppointment(
             @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId,
+            @Valid @RequestBody(required = false) AcceptAppointmentRequest request) {
+        AppointmentResponse response = appointmentService.acceptAppointment(principal, appointmentPublicId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Appointment accepted. Client notified to complete retainer payment.", response));
+    }
+
+    @PatchMapping("/{appointmentPublicId}/chamber-address")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> updateChamberAddress(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId,
+            @Valid @RequestBody AcceptAppointmentRequest request) {
+        AppointmentResponse response = appointmentService.updateChamberAddress(principal, appointmentPublicId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Chamber address updated successfully.", response));
+    }
+
+    @PatchMapping("/{appointmentPublicId}/reschedule")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> rescheduleAppointment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId,
+            @Valid @RequestBody AcceptAppointmentRequest request) {
+        AppointmentResponse response = appointmentService.rescheduleAppointment(principal, appointmentPublicId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Appointment rescheduled successfully.", response));
+    }
+
+    @PostMapping("/{appointmentPublicId}/pay")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> payAppointment(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String appointmentPublicId) {
-        AppointmentResponse response = appointmentService.acceptAppointment(principal, appointmentPublicId);
-        return ResponseEntity.ok(ApiResponse.ok("Appointment confirmed successfully", response));
+        AppointmentResponse response = appointmentService.payAppointment(principal, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Retainer payment verified from wallet. Consultation confirmed.", response));
+    }
+
+    @PatchMapping("/{appointmentPublicId}/pay")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> payAppointmentPatch(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId) {
+        AppointmentResponse response = appointmentService.payAppointment(principal, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Retainer payment verified from wallet. Consultation confirmed.", response));
     }
 
     @PatchMapping("/{appointmentPublicId}/reject")
@@ -92,12 +130,30 @@ public class AppointmentController {
         return ResponseEntity.ok(ApiResponse.ok("Appointment cancelled successfully", response));
     }
 
+    @PatchMapping("/{appointmentPublicId}/request-completion")
+    @PreAuthorize("hasRole('LAWYER')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> requestCompletion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId) {
+        AppointmentResponse response = appointmentService.requestCompletion(principal, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Consultation marked completed. Client notified to confirm delivery within 24 hours.", response));
+    }
+
     @PatchMapping("/{appointmentPublicId}/complete")
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> completeAppointment(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String appointmentPublicId) {
         AppointmentResponse response = appointmentService.completeAppointment(principal, appointmentPublicId);
-        return ResponseEntity.ok(ApiResponse.ok("Appointment marked as completed", response));
+        return ResponseEntity.ok(ApiResponse.ok("Consultation marked completed. Client notified to confirm delivery.", response));
+    }
+
+    @PatchMapping("/{appointmentPublicId}/confirm-completion")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> confirmCompletion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId) {
+        AppointmentResponse response = appointmentService.confirmCompletion(principal, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Consultation completion confirmed. Retainer fee released and settled to counsel.", response));
     }
 }

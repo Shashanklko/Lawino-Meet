@@ -25,6 +25,7 @@ import {
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { appointmentApi } from '../api/appointmentApi';
 
 export const MessagesPage = () => {
   const { user } = useAuth();
@@ -122,6 +123,74 @@ export const MessagesPage = () => {
   };
 
   const isLawyer = user?.role === 'LAWYER';
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchApts = async () => {
+      try {
+        const res = isLawyer
+          ? await appointmentApi.getLawyerAppointments()
+          : await appointmentApi.getMyAppointments();
+        const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+        if (active) setAppointments(list);
+      } catch (err) {
+        if (active) setAppointments([]);
+      }
+    };
+    fetchApts();
+    const interval = setInterval(fetchApts, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isLawyer]);
+
+  const targetId = activeConversation?.targetUser?.publicId;
+  const targetUsername = activeConversation?.targetUser?.username;
+  const relatedAppointment = appointments.find((a) => {
+    const aptOtherId = isLawyer ? (a.clientUserPublicId || a.client?.publicId) : (a.lawyerUserPublicId || a.lawyer?.publicId);
+    const aptOtherUser = isLawyer ? (a.clientUsername || a.client?.username) : (a.lawyerUsername || a.lawyer?.username);
+    return (targetId && aptOtherId === targetId) || (targetUsername && aptOtherUser === targetUsername);
+  });
+
+  const resolveConvTarget = (conv) => {
+    if (!conv) {
+      return {
+        name: isLawyer ? 'Rohit Verma' : 'Adv. Raghavan Nambiar',
+        role: isLawyer ? 'CLIENT' : 'LAWYER',
+        roleLabel: isLawyer ? 'Client' : 'Advocate',
+        img: null,
+      };
+    }
+    let name = conv.targetUser?.fullName;
+    let role = conv.targetUser?.role || (isLawyer ? 'CLIENT' : 'LAWYER');
+    let img = conv.targetUser?.profileImageUrl;
+
+    const cId = conv.targetUser?.publicId || conv.otherParticipantPublicId;
+    const cUser = conv.targetUser?.username || conv.otherParticipantUsername;
+    const matchApt = appointments.find((a) => {
+      const aptOtherId = isLawyer ? (a.clientUserPublicId || a.client?.publicId) : (a.lawyerUserPublicId || a.lawyer?.publicId);
+      const aptOtherUser = isLawyer ? (a.clientUsername || a.client?.username) : (a.lawyerUsername || a.lawyer?.username);
+      return (cId && aptOtherId === cId) || (cUser && aptOtherUser === cUser);
+    });
+
+    if (matchApt) {
+      if (isLawyer) {
+        name = matchApt.client?.fullName || matchApt.clientFullName || (name && name !== 'Contact' && name !== 'Legal Contact' ? name : 'Rohit Verma');
+        role = 'CLIENT';
+      } else {
+        name = matchApt.lawyer?.fullName || matchApt.lawyerFullName || (name && name !== 'Contact' && name !== 'Legal Contact' ? name : 'Adv. Raghavan Nambiar');
+        role = 'LAWYER';
+      }
+    } else if (!name || name === 'Contact' || name === 'Legal Contact' || name === 'Advocate') {
+      name = isLawyer ? 'Rohit Verma' : 'Adv. Raghavan Nambiar';
+      role = isLawyer ? 'CLIENT' : 'LAWYER';
+    }
+
+    const roleLabel = role === 'LAWYER' ? 'Advocate' : 'Client';
+    return { name, role, roleLabel, img };
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -135,14 +204,27 @@ export const MessagesPage = () => {
   };
 
   const filteredConversations = conversations.filter((c) => {
-    const name = c.targetUser?.fullName || '';
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
+    const target = resolveConvTarget(c);
+    return target.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const isChatLocked = activeConversation?.isLocked;
 
   const handleLaunchMeeting = () => {
-    navigate('/meeting/room-chamber-001');
+    if (relatedAppointment?.publicId) {
+      const roomId = `chamber_${relatedAppointment.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      navigate(`/meeting/${roomId}`);
+      return;
+    }
+    if (appointments[0]?.publicId) {
+      const roomId = `chamber_${appointments[0].publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      navigate(`/meeting/${roomId}`);
+      return;
+    }
+    const roomId = activeConversation?.publicId
+      ? `chamber_${activeConversation.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+      : 'chamber_consultation';
+    navigate(`/meeting/${roomId}`);
   };
 
   return (
@@ -190,8 +272,10 @@ export const MessagesPage = () => {
             ) : (
               filteredConversations.map((conv) => {
                 const isSelected = activeConversation?.publicId === conv.publicId;
-                const targetName = conv.targetUser?.fullName || 'Contact';
-                const roleLabel = conv.targetUser?.role === 'LAWYER' ? 'Advocate' : 'Client';
+                const targetInfo = resolveConvTarget(conv);
+                const targetName = targetInfo.name;
+                const roleLabel = targetInfo.roleLabel;
+                const profileImg = targetInfo.img || conv.targetUser?.profileImageUrl;
                 const locked = conv.isLocked;
 
                 return (
@@ -208,9 +292,17 @@ export const MessagesPage = () => {
                     }`}
                   >
                     <div className="relative shrink-0 mt-0.5">
-                      <div className="w-10 h-10 rounded-full bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-sm shadow-xs">
-                        {targetName[0]?.toUpperCase() || 'U'}
-                      </div>
+                      {profileImg ? (
+                        <img
+                          src={profileImg}
+                          alt={targetName}
+                          className="w-10 h-10 rounded-full object-cover shadow-xs border border-stone-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-sm shadow-xs">
+                          {targetName[0]?.toUpperCase() || 'U'}
+                        </div>
+                      )}
                       {!locked ? (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                       ) : (
@@ -277,30 +369,57 @@ export const MessagesPage = () => {
                   </button>
 
                   <div className="relative shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-xs sm:text-sm shadow-xs">
-                      {activeConversation.targetUser?.fullName?.[0] || 'U'}
-                    </div>
+                    {(() => {
+                      const activeInfo = resolveConvTarget(activeConversation);
+                      const img = activeInfo.img || activeConversation.targetUser?.profileImageUrl;
+                      return img ? (
+                        <img
+                          src={img}
+                          alt={activeInfo.name}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-xs border border-stone-200"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-xs sm:text-sm shadow-xs">
+                          {activeInfo.name?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                      );
+                    })()}
                     {!isChatLocked && (
                       <span className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-1.5">
-                      <h3 className="text-xs sm:text-sm font-serif font-bold text-[#1F1C1B] truncate max-w-[110px] sm:max-w-none">
-                        {activeConversation.targetUser?.fullName || 'Legal Contact'}
-                      </h3>
-                      {!isChatLocked && (
-                        <span className="hidden md:inline text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full font-medium shrink-0">
-                          Active Matter
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] sm:text-[11px] text-stone-500 font-sans flex items-center space-x-1 truncate">
-                      <span>{activeConversation.targetUser?.role === 'LAWYER' ? 'Advocate' : 'Client'}</span>
-                      <span>•</span>
-                      <span className="text-emerald-700 font-medium">Encrypted</span>
-                    </p>
+                    {(() => {
+                      const activeInfo = resolveConvTarget(activeConversation);
+                      return (
+                        <>
+                          <div className="flex items-center space-x-1.5">
+                            <h3 className="text-xs sm:text-sm font-serif font-bold text-[#1F1C1B] truncate max-w-[140px] sm:max-w-none">
+                              {activeInfo.name}
+                            </h3>
+                            {!isChatLocked && (
+                              <span className="hidden md:inline text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full font-medium shrink-0">
+                                Active Matter
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] sm:text-[11px] text-stone-500 font-sans flex items-center space-x-1 truncate">
+                            <span className="font-semibold text-stone-700">
+                              {activeInfo.roleLabel}
+                            </span>
+                            {activeConversation.targetUser?.firmName && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate">{activeConversation.targetUser.firmName}</span>
+                              </>
+                            )}
+                            <span>•</span>
+                            <span className="text-emerald-700 font-medium">Encrypted</span>
+                          </p>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -328,25 +447,34 @@ export const MessagesPage = () => {
 
                       {!activeConversation.isClosed && (
                         <>
-                          {activeConversation.consultationMode === 'CHAT' ? (
+                          {relatedAppointment?.status === 'AWAITING_PAYMENT' ? (
+                            !isLawyer ? (
+                              <Link
+                                to="/client/appointments"
+                                className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] sm:text-xs font-semibold tracking-wider transition shadow-xs flex items-center space-x-1 cursor-pointer shrink-0 whitespace-nowrap"
+                                title="Advocate has accepted. Complete payment to activate consultation chamber."
+                              >
+                                <CreditCard className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+                                <span>Pay Retainer &amp; Unlock</span>
+                              </Link>
+                            ) : (
+                              <span
+                                className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
+                                title="Waiting for client to complete retainer payment before room unlocks."
+                              >
+                                <Clock className="w-3 h-3 text-amber-700 shrink-0" />
+                                <span>Awaiting Client Payment</span>
+                              </span>
+                            )
+                          ) : relatedAppointment?.status === 'COMPLETED' ? (
                             <span
-                              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-stone-100 border border-stone-200 text-stone-600 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
-                              title="This matter was booked for text chat advisory."
+                              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
+                              title="Consultation session successfully completed."
                             >
-                              <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />
-                              <span className="hidden md:inline">Legal Chat Advisory</span>
-                              <span className="md:hidden text-[10px]">Chat</span>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>Session Concluded</span>
                             </span>
-                          ) : activeConversation.consultationMode === 'CHAMBER' ? (
-                            <span
-                              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-stone-100 border border-stone-200 text-stone-700 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
-                              title="In-person Chamber consultation."
-                            >
-                              <Building className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-stone-500 shrink-0" />
-                              <span className="hidden md:inline">Chamber Briefing</span>
-                              <span className="md:hidden text-[10px]">Chamber</span>
-                            </span>
-                          ) : (
+                          ) : (relatedAppointment && (relatedAppointment.status === 'CONFIRMED' || relatedAppointment.appointmentStatus === 'CONFIRMED') && relatedAppointment.isOnline && !relatedAppointment.isChatOnly && !relatedAppointment.isInPerson) ? (
                             <button
                               type="button"
                               onClick={handleLaunchMeeting}
@@ -355,7 +483,22 @@ export const MessagesPage = () => {
                               <Video className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                               <span className="hidden sm:inline">Join Room</span>
                             </button>
-                          )}
+                          ) : (relatedAppointment && (relatedAppointment.status === 'CONFIRMED' || relatedAppointment.appointmentStatus === 'CONFIRMED') && relatedAppointment.isInPerson) ? (
+                            <span
+                              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
+                              title={relatedAppointment.chamberAddress || 'In-Chamber Office Consultation'}
+                            >
+                              <Building className="w-3 h-3 text-amber-700 shrink-0" />
+                              <span>In-Chamber Active</span>
+                            </span>
+                          ) : (relatedAppointment && (relatedAppointment.status === 'CONFIRMED' || relatedAppointment.appointmentStatus === 'CONFIRMED') && relatedAppointment.isChatOnly) ? (
+                            <span
+                              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-[10px] sm:text-[11px] font-medium flex items-center space-x-1 select-none shrink-0 whitespace-nowrap"
+                            >
+                              <MessageSquare className="w-3 h-3 text-purple-700 shrink-0" />
+                              <span>Chat Advisory Active</span>
+                            </span>
+                          ) : null}
                         </>
                       )}
                     </>
@@ -395,6 +538,61 @@ export const MessagesPage = () => {
                     <span className="text-[10px] uppercase font-bold text-stone-400 block">Privacy Standard</span>
                     <span className="text-emerald-700 font-semibold">100% Confidential Client Privilege</span>
                   </div>
+                  {relatedAppointment?.isInPerson && (
+                    <div className="sm:col-span-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-stone-800 space-y-1.5 mt-1">
+                      {relatedAppointment.status === 'CONFIRMED' ||
+                      relatedAppointment.status === 'IN_PROGRESS' ||
+                      relatedAppointment.status === 'COMPLETION_REQUESTED' ||
+                      relatedAppointment.status === 'COMPLETED' ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1.5 font-bold text-amber-900 text-xs">
+                              <Building className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <span>Confirmed In-Chamber Office Address:</span>
+                            </div>
+                            <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                              ✓ Retainer Verified
+                            </span>
+                          </div>
+                          <p className="font-semibold text-xs text-stone-900">
+                            {relatedAppointment.chamberAddress || 'Advocate Chambers, High Court Complex, New Delhi - 110001'}
+                          </p>
+                          {relatedAppointment.directionsInstructions && (
+                            <p className="text-[10px] text-stone-600 italic">
+                              Directions: {relatedAppointment.directionsInstructions}
+                            </p>
+                          )}
+                          <div>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                relatedAppointment.chamberAddress || 'Advocate Chambers, High Court Complex, New Delhi'
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center space-x-1 text-[10px] font-semibold text-[#831826] hover:underline"
+                            >
+                              <span>Navigate via Google Maps &rarr;</span>
+                            </a>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1.5 font-bold text-stone-800 text-xs">
+                              <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Chamber Office Address Concealed</span>
+                            </div>
+                            <span className="text-[9px] font-mono text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded font-bold">
+                              LOCKED
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-600 leading-tight">
+                            Chamber office room number, building security gate instructions, and Google Maps pin will unlock immediately upon retainer payment verification.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -445,8 +643,12 @@ export const MessagesPage = () => {
                   {messages.map((m) => {
                     const isMe =
                       m.senderPublicId === user?.publicId ||
-                      m.senderName === user?.fullName ||
-                      m.senderName === 'Rohit Verma';
+                      m.senderUserPublicId === user?.publicId ||
+                      m.senderUsername === user?.username ||
+                      (user?.fullName && m.senderName === user.fullName);
+                    const senderDisplayName = isMe
+                      ? (user?.fullName || 'You')
+                      : (activeConversation?.targetUser?.fullName || m.senderName || m.senderUsername || 'Counsel');
 
                     return (
                       <div

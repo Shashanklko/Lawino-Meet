@@ -2,5 +2,6 @@ package com.lawinomeet.user.entity;
 
 public enum ConsultationType {
     ONLINE,
-    IN_PERSON
+    IN_PERSON,
+    CHAT
 }

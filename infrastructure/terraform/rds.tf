@@ -11,11 +11,11 @@ resource "aws_security_group" "rds_sg" {
   description = "Allow inbound MySQL traffic from backend services"
 
   ingress {
-    description = "MySQL database traffic"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Can be restricted to EC2 instance IP or VPC CIDR
+    description     = "MySQL database traffic from EC2 backend host"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ec2_sg.id]
   }
 
   egress {

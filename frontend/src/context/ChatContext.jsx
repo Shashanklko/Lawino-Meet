@@ -3,50 +3,212 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from './AuthContext';
 import { chatApi } from '../api/chatApi';
-import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '../data/mockData';
 
 const ChatContext = createContext(null);
 
+const KNOWN_USERS = {
+  adv_raghavan: {
+    fullName: 'Adv. Raghavan Nambiar',
+    role: 'LAWYER',
+    profileImageUrl: null,
+    designation: 'Senior Partner',
+    firmName: 'Lex Veritas Legal LLP',
+  },
+  adv_meera: {
+    fullName: 'Adv. Meera Deshmukh',
+    role: 'LAWYER',
+    profileImageUrl: null,
+    designation: 'Criminal Defense Counsel',
+    firmName: 'Independent High Court Chambers',
+  },
+  adv_ananya: {
+    fullName: 'Adv. Ananya Sengupta',
+    role: 'LAWYER',
+    profileImageUrl: null,
+    designation: 'Corporate & Tech Specialist',
+    firmName: 'Startup Legal Desks',
+  },
+  adv_vikram: {
+    fullName: 'Adv. Vikramaditya Rathore',
+    role: 'LAWYER',
+    profileImageUrl: null,
+    designation: 'Family & Matrimonial Litigator',
+    firmName: 'Delhi High Court Complex',
+  },
+  adv_rohan: {
+    fullName: 'Adv. Rohan Kulkarni',
+    role: 'LAWYER',
+    profileImageUrl: null,
+    designation: 'Cybercrime & IT Counsel',
+    firmName: 'Digital Forensics Desk',
+  },
+  rohit_client: {
+    fullName: 'Rohit Verma',
+    role: 'CLIENT',
+    profileImageUrl: null,
+  },
+  priya_client: {
+    fullName: 'Priya Sharma',
+    role: 'CLIENT',
+    profileImageUrl: null,
+  },
+  amit_client: {
+    fullName: 'Amit Patel',
+    role: 'CLIENT',
+    profileImageUrl: null,
+  },
+  vikas_client: {
+    fullName: 'Vikas Verma',
+    role: 'CLIENT',
+    profileImageUrl: null,
+  },
+  sunita_client: {
+    fullName: 'Sunita Rao',
+    role: 'CLIENT',
+    profileImageUrl: null,
+  },
+  // Mappings by publicId
+  '33333333-3333-3333-3333-333333333333': {
+    fullName: 'Adv. Raghavan Nambiar',
+    role: 'LAWYER',
+    username: 'adv_raghavan',
+    profileImageUrl: null,
+    designation: 'Senior Partner',
+    firmName: 'Lex Veritas Legal LLP',
+  },
+  '22222222-2222-2222-2222-222222222222': {
+    fullName: 'Adv. Meera Deshmukh',
+    role: 'LAWYER',
+    username: 'adv_meera',
+    profileImageUrl: null,
+    designation: 'Criminal Defense Counsel',
+    firmName: 'Independent High Court Chambers',
+  },
+  '11111111-1111-1111-1111-111111111111': {
+    fullName: 'Rohit Verma',
+    role: 'CLIENT',
+    username: 'rohit_client',
+    profileImageUrl: null,
+  },
+};
+
+export const resolveUserIdentity = (username, publicId) => {
+  if (publicId && KNOWN_USERS[publicId]) {
+    return { ...KNOWN_USERS[publicId], publicId };
+  }
+  if (username && KNOWN_USERS[username]) {
+    return { ...KNOWN_USERS[username], username, publicId };
+  }
+  if (!username) {
+    if (publicId) {
+      return { fullName: `User (${publicId.slice(0, 8)})`, role: 'CLIENT', username: `user_${publicId.slice(0, 8)}`, publicId, profileImageUrl: null };
+    }
+    return { fullName: 'Legal Contact', role: 'CLIENT', username: 'contact', publicId, profileImageUrl: null };
+  }
+  if (username.startsWith('adv_')) {
+    const raw = username.replace(/^adv_/, '').replace(/_/g, ' ');
+    const formatted = raw
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return { fullName: `Adv. ${formatted}`, role: 'LAWYER', username, publicId, profileImageUrl: null };
+  }
+  if (username.endsWith('_client')) {
+    const raw = username.replace(/_client$/, '').replace(/_/g, ' ');
+    const formatted = raw
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return { fullName: formatted, role: 'CLIENT', username, publicId, profileImageUrl: null };
+  }
+  const formatted = username
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  return { fullName: formatted, role: 'CLIENT', username, publicId, profileImageUrl: null };
+};
+
+export const normalizeConversation = (c) => {
+  const targetUsername = c.otherParticipantUsername || c.targetUser?.username;
+  const targetPublicId = c.otherParticipantPublicId || c.targetUser?.publicId;
+  const resolved = resolveUserIdentity(targetUsername, targetPublicId);
+  const unreadCount = Number(c.unreadMessagesCount ?? c.unreadCount ?? 0);
+
+  let finalFullName = resolved.fullName;
+  if (c.targetUser?.fullName && c.targetUser.fullName !== 'Legal Contact') {
+    finalFullName = c.targetUser.fullName;
+  } else if (c.otherParticipantFullName) {
+    finalFullName = c.otherParticipantFullName;
+  }
+
+  return {
+    ...c,
+    publicId: c.publicId,
+    lastMessage: c.lastMessageContent || c.lastMessage || '',
+    lastMessageAt: c.lastMessageAt || null,
+    unreadCount,
+    unreadMessagesCount: unreadCount,
+    targetUser: {
+      publicId: targetPublicId,
+      username: targetUsername,
+      fullName: finalFullName,
+      profileImageUrl: c.targetUser?.profileImageUrl || resolved.profileImageUrl,
+      role: c.targetUser?.role || resolved.role,
+      firmName: resolved.firmName || c.targetUser?.firmName,
+      designation: resolved.designation || c.targetUser?.designation,
+    },
+  };
+};
+
 export const ChatProvider = ({ children }) => {
   const { user, token, isAuthenticated } = useAuth();
-  const [conversations, setConversations] = useState(MOCK_CONVERSATIONS);
-  const [activeConversation, setActiveConversation] = useState(MOCK_CONVERSATIONS[0]);
-  const [messages, setMessages] = useState(MOCK_MESSAGES['conv-001'] || []);
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
-  const [unreadTotal, setUnreadTotal] = useState(1);
+  const [unreadTotal, setUnreadTotal] = useState(0);
   const stompClientRef = useRef(null);
 
   const fetchConversations = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       const res = await chatApi.getMyConversations();
-      if (res.success && res.data && res.data.length > 0) {
-        setConversations(res.data);
-        const unread = res.data.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-        setUnreadTotal(unread);
-      } else {
-        setConversations(MOCK_CONVERSATIONS);
-      }
+      const rawList = res?.data || [];
+      const normalizedList = rawList.map(normalizeConversation);
+      setConversations(normalizedList);
+      const totalUnread = normalizedList.reduce(
+        (acc, c) => acc + (c.unreadCount || c.unreadMessagesCount || 0),
+        0
+      );
+      setUnreadTotal(totalUnread);
+
+      // If active conversation is open, update its reference
+      setActiveConversation((prev) => {
+        if (!prev) return normalizedList[0] || null;
+        const matching = normalizedList.find((c) => c.publicId === prev.publicId);
+        return matching ? { ...prev, ...matching } : prev;
+      });
     } catch {
-      setConversations(MOCK_CONVERSATIONS);
+      setConversations([]);
     }
   }, [isAuthenticated]);
 
   const loadConversationMessages = useCallback(async (conversationPublicId) => {
     try {
       const res = await chatApi.getMessages(conversationPublicId, 0, 50);
-      if (res.success && res.data && res.data.content?.length) {
-        setMessages(res.data.content || []);
-      } else {
-        setMessages(MOCK_MESSAGES[conversationPublicId] || MOCK_MESSAGES['conv-001'] || []);
-      }
+      const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+      setMessages(list);
       await chatApi.markConversationAsRead(conversationPublicId);
       setConversations((prev) =>
-        prev.map((c) => (c.publicId === conversationPublicId ? { ...c, unreadCount: 0 } : c))
+        prev.map((c) =>
+          c.publicId === conversationPublicId ? { ...c, unreadCount: 0, unreadMessagesCount: 0 } : c
+        )
       );
+      setUnreadTotal((prev) => Math.max(0, prev - 1));
     } catch {
-      setMessages(MOCK_MESSAGES[conversationPublicId] || MOCK_MESSAGES['conv-001'] || []);
+      setMessages([]);
     }
   }, []);
 
@@ -60,12 +222,24 @@ export const ChatProvider = ({ children }) => {
       return;
     }
 
-    // Skip websocket connection if using demo token
     if (token.startsWith('mock_demo_token_')) {
       return;
     }
 
     let client = null;
+    const handleIncomingChatMessage = (message) => {
+      try {
+        const chatMsg = JSON.parse(message.body);
+        setMessages((prev) => {
+          if (prev.some((m) => m.publicId === chatMsg.publicId)) return prev;
+          return [...prev, chatMsg];
+        });
+        fetchConversations();
+      } catch (err) {
+        console.error('Error handling incoming STOMP message:', err);
+      }
+    };
+
     try {
       client = new Client({
         webSocketFactory: () => new SockJS('/ws-chat'),
@@ -73,32 +247,29 @@ export const ChatProvider = ({ children }) => {
           Authorization: `Bearer ${token}`,
         },
         debug: () => {},
-        reconnectDelay: 5000,
+        reconnectDelay: 3000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
         onConnect: () => {
-          client.subscribe('/user/queue/messages', (message) => {
-            try {
-              const chatMsg = JSON.parse(message.body);
-              setMessages((prev) => {
-                if (prev.some((m) => m.publicId === chatMsg.publicId)) return prev;
-                return [...prev, chatMsg];
-              });
-              fetchConversations();
-            } catch (err) {
-              console.error('Error handling incoming STOMP message:', err);
-            }
-          });
+          // Subscribe to private incoming queue
+          client.subscribe('/user/queue/messages', handleIncomingChatMessage);
+          // Subscribe to public user topics for reliable cross-browser delivery
+          if (user?.publicId) {
+            client.subscribe(`/topic/users/${user.publicId}/messages`, handleIncomingChatMessage);
+          }
+          if (user?.username) {
+            client.subscribe(`/topic/users/${user.username}/messages`, handleIncomingChatMessage);
+          }
         },
         onStompError: (frame) => {
-          console.warn('STOMP broker error:', frame.headers['message']);
+          console.warn('STOMP broker error:', frame.headers?.['message']);
         },
       });
 
       client.activate();
       stompClientRef.current = client;
     } catch {
-      // Ignore websocket connection error in test mode
+      // WebSocket initialization error
     }
 
     fetchConversations();
@@ -110,45 +281,102 @@ export const ChatProvider = ({ children }) => {
     };
   }, [isAuthenticated, token, user, fetchConversations]);
 
+  // Subscribe to the active conversation's public broadcast topic
+  useEffect(() => {
+    if (!stompClientRef.current || !stompClientRef.current.connected || !activeConversation?.publicId) return;
+    let subscription = null;
+    try {
+      subscription = stompClientRef.current.subscribe(
+        `/topic/conversations/${activeConversation.publicId}`,
+        (msg) => {
+          try {
+            const chatMsg = JSON.parse(msg.body);
+            setMessages((prev) => {
+              if (prev.some((m) => m.publicId === chatMsg.publicId)) return prev;
+              return [...prev, chatMsg];
+            });
+          } catch (e) {}
+        }
+      );
+    } catch (e) {}
+
+    return () => {
+      try {
+        if (subscription) subscription.unsubscribe();
+      } catch (e) {}
+    };
+  }, [activeConversation?.publicId]);
+
+  // 3.5-second background polling fallback to guarantee real-time updates even without manual clicks or page reloads
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(async () => {
+      fetchConversations();
+      if (activeConversation?.publicId) {
+        try {
+          const res = await chatApi.getMessages(activeConversation.publicId, 0, 50);
+          const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+          if (list.length > 0) {
+            setMessages((prev) => {
+              if (prev.length !== list.length || (list[list.length - 1]?.publicId !== prev[prev.length - 1]?.publicId)) {
+                return list;
+              }
+              return prev;
+            });
+          }
+        } catch {}
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, activeConversation?.publicId, fetchConversations]);
+
   const sendMessage = async (content) => {
     if (!activeConversation || !content.trim()) return;
 
+    const trimmed = content.trim();
+    const localPublicId = `msg-local-${Date.now()}`;
     const newMsg = {
-      publicId: `msg-local-${Date.now()}`,
-      senderPublicId: user?.publicId || 'user-me',
-      senderName: user?.fullName || 'Me',
-      content: content.trim(),
+      publicId: localPublicId,
+      conversationPublicId: activeConversation.publicId,
+      senderUserPublicId: user?.publicId || 'user-me',
+      senderUsername: user?.username || 'me',
+      recipientUserPublicId: activeConversation.targetUser?.publicId,
+      recipientUsername: activeConversation.targetUser?.username,
+      content: trimmed,
       createdAt: new Date().toISOString(),
+      isRead: false,
     };
 
     setMessages((prev) => [...prev, newMsg]);
 
-    const payload = {
-      conversationPublicId: activeConversation.publicId,
-      content: content.trim(),
-    };
-
     try {
+      // Call backend REST endpoint
+      const res = await chatApi.sendMessage(activeConversation.publicId, trimmed);
+      if (res?.data) {
+        // Replace local optimistic message with persisted entity
+        setMessages((prev) =>
+          prev.map((m) => (m.publicId === localPublicId ? res.data : m))
+        );
+      }
+
+      // Also publish to STOMP if connected
       if (stompClientRef.current && stompClientRef.current.connected) {
         stompClientRef.current.publish({
           destination: '/app/chat.send',
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            conversationPublicId: activeConversation.publicId,
+            content: trimmed,
+            senderPublicId: user?.publicId,
+            senderUsername: user?.username,
+            recipientUserPublicId: activeConversation.targetUser?.publicId,
+          }),
         });
-      } else {
-        await chatApi.sendMessage(activeConversation.publicId, content);
       }
-    } catch {
-      // Backend not running, simulate automatic legal reply for UI test
-      setTimeout(() => {
-        const replyMsg = {
-          publicId: `msg-reply-${Date.now()}`,
-          senderPublicId: activeConversation.targetUser?.publicId || 'adv-reply',
-          senderName: activeConversation.targetUser?.fullName || 'Advocate',
-          content: 'Noted. I have updated the consultation matter notes accordingly.',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, replyMsg]);
-      }, 1000);
+
+      fetchConversations();
+    } catch (err) {
+      console.warn('Chat send encountered an issue, preserving optimistic state:', err);
     }
   };
 
@@ -158,14 +386,15 @@ export const ChatProvider = ({ children }) => {
       const res = await chatApi.uploadAttachment(activeConversation.publicId, file, caption);
       if (res.success && res.data) {
         setMessages((prev) => [...prev, res.data]);
+        fetchConversations();
         return res.data;
       }
     } catch (err) {
-      console.warn('Backend upload not available, showing local preview:', err);
+      console.warn('Backend upload not available, showing preview:', err);
       const localMsg = {
         publicId: `msg-doc-${Date.now()}`,
-        senderPublicId: user?.publicId || 'client',
-        senderName: user?.fullName || user?.username || 'Me',
+        senderUserPublicId: user?.publicId || 'client',
+        senderUsername: user?.username || 'me',
         content: caption || `[Document: ${file.name}]`,
         attachmentUrl: URL.createObjectURL(file),
         attachmentName: file.name,
@@ -178,37 +407,57 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const openChatWithUser = async (recipientPublicId, recipientName) => {
+  const openChatWithUser = async (recipient, recipientName, appointmentPublicId = null) => {
+    const recipientPublicId = typeof recipient === 'object'
+      ? (recipient.publicId || recipient.userPublicId || recipient.id)
+      : recipient;
+    const effectiveName = typeof recipient === 'object'
+      ? (recipient.fullName || recipient.name || recipient.username)
+      : recipientName;
+    const effectiveUsername = typeof recipient === 'object' ? recipient.username : null;
+    const effectiveRole = typeof recipient === 'object'
+      ? (recipient.role || (recipient.barCouncilNumber ? 'LAWYER' : 'CLIENT'))
+      : null;
+    const effectiveImage = typeof recipient === 'object' ? recipient.profileImageUrl : null;
+
     try {
-      const res = await chatApi.getOrCreateConversation(recipientPublicId);
-      if (res.success && res.data) {
-        const conv = res.data;
+      const res = await chatApi.getOrCreateConversation(recipientPublicId, effectiveUsername, appointmentPublicId);
+      if (res?.data) {
+        const conv = normalizeConversation(res.data);
+        if (effectiveName && (!conv.targetUser?.fullName || conv.targetUser.fullName === 'Legal Contact')) {
+          conv.targetUser.fullName = effectiveName;
+        }
+        if (effectiveRole) conv.targetUser.role = effectiveRole;
+        if (effectiveImage) conv.targetUser.profileImageUrl = effectiveImage;
+
         setActiveConversation(conv);
         setIsDrawerOpen(true);
         await loadConversationMessages(conv.publicId);
+        fetchConversations();
         return;
       }
     } catch {
       // Fallback
     }
 
-    // Mock conversation fallback
+    const resolved = resolveUserIdentity(null, recipientPublicId);
     const targetConv =
       conversations.find((c) => c.targetUser?.publicId === recipientPublicId) || {
         publicId: `conv-${recipientPublicId}`,
         targetUser: {
           publicId: recipientPublicId,
-          fullName: recipientName || 'Advocate',
-          role: 'LAWYER',
+          fullName: effectiveName || resolved.fullName,
+          role: effectiveRole || resolved.role,
+          profileImageUrl: effectiveImage || resolved.profileImageUrl,
         },
-        lastMessage: 'Let us connect on your legal matter.',
+        lastMessage: '',
         lastMessageAt: new Date().toISOString(),
         unreadCount: 0,
       };
 
     setActiveConversation(targetConv);
     setIsDrawerOpen(true);
-    setMessages(MOCK_MESSAGES['conv-001'] || []);
+    setMessages([]);
   };
 
   const unlockConversation = (conversationPublicId, consultationMode = 'ONLINE', amount = 1500) => {
@@ -218,7 +467,7 @@ export const ChatProvider = ({ children }) => {
           return {
             ...c,
             isLocked: false,
-            consultationMode: consultationMode,
+            consultationMode,
             matterTitle:
               consultationMode === 'ONLINE'
                 ? 'Online-Video Consultation (WebRTC)'
@@ -236,7 +485,7 @@ export const ChatProvider = ({ children }) => {
       return {
         ...prev,
         isLocked: false,
-        consultationMode: consultationMode,
+        consultationMode,
         matterTitle:
           consultationMode === 'ONLINE'
             ? 'Online-Video Consultation (WebRTC)'
@@ -248,8 +497,8 @@ export const ChatProvider = ({ children }) => {
 
     const unlockNotice = {
       publicId: `msg-sys-${Date.now()}`,
-      senderPublicId: 'system',
-      senderName: 'LawinoMeet Escrow',
+      senderUserPublicId: 'system',
+      senderUsername: 'LawinoMeet Escrow',
       content: `Retainer fee of ₹${amount.toLocaleString('en-IN')} held securely in platform escrow. ${
         consultationMode === 'ONLINE'
           ? 'Online-Video Conferencing room and privileged messaging are now active.'
@@ -273,8 +522,8 @@ export const ChatProvider = ({ children }) => {
     });
     const closeNotice = {
       publicId: `msg-sys-${Date.now()}`,
-      senderPublicId: 'system',
-      senderName: 'LawinoMeet Legal Registry',
+      senderUserPublicId: 'system',
+      senderUsername: 'LawinoMeet Legal Registry',
       content:
         '⚖️ Consultation Concluded: Presiding counsel marked this legal advisory session completed. This chat room is now closed and preserved under Section 126 statutory privilege.',
       createdAt: new Date().toISOString(),
@@ -284,9 +533,10 @@ export const ChatProvider = ({ children }) => {
   };
 
   const selectConversation = (conv) => {
-    setActiveConversation(conv);
+    const normalized = normalizeConversation(conv);
+    setActiveConversation(normalized);
     setMobileThreadOpen(true);
-    loadConversationMessages(conv.publicId);
+    loadConversationMessages(normalized.publicId);
   };
 
   return (

@@ -7,13 +7,14 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 
 @Getter
 @AllArgsConstructor
 @Builder
-public class UserPrincipal implements UserDetails {
+public class UserPrincipal implements UserDetails, Principal {
 
     private final String publicId;
     private final String username;
@@ -30,6 +31,11 @@ public class UserPrincipal implements UserDetails {
                 .role(role)
                 .authorities(Collections.singletonList(authority))
                 .build();
+    }
+
+    @Override
+    public String getName() {
+        return publicId != null ? publicId : username;
     }
 
     @Override

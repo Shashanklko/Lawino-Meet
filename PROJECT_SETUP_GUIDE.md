@@ -155,7 +155,7 @@ npm run dev
 
 ## Step 3: 1-Click Local Orchestration (Docker Compose)
 
-To run the complete production-like platform (10 containers: MySQL, 6 Spring Boot services, 2 React frontends, and Nginx Gateway):
+To run the complete production-like platform (12 containers: MySQL, RabbitMQ, Eureka Server, 6 Spring Boot services, 2 React frontends, and Nginx Gateway Load Balancer):
 
 ### 3.1 Start the Stack
 From the project root:
@@ -165,7 +165,7 @@ docker compose up -d --build
 ```
 
 ### 3.2 Verify Container Health
-Check that all 10 containers are running:
+Check that all 12 containers are running:
 
 ```bash
 docker compose ps
@@ -173,23 +173,27 @@ docker compose ps
 
 Expected output:
 ```text
-NAME                         IMAGE                        STATUS                   PORTS
-lawino-mysql                 mysql:8.3                    Up (healthy)             0.0.0.0:3306->3306/tcp
-lawino-auth-service          lawino-meet/auth-service     Up (healthy)             0.0.0.0:8081->8081/tcp
-lawino-user-service          lawino-meet/user-service     Up (healthy)             0.0.0.0:8082->8082/tcp
-lawino-appointment-service   lawino-meet/appointment      Up (healthy)             0.0.0.0:8083->8083/tcp
-lawino-meeting-service       lawino-meet/meeting-service  Up (healthy)             0.0.0.0:8084->8084/tcp
-lawino-notification-service  lawino-meet/notification     Up (healthy)             0.0.0.0:8085->8085/tcp
-lawino-chat-service          lawino-meet/chat-service     Up (healthy)             0.0.0.0:8086->8086/tcp
-lawino-frontend              lawino-meet/frontend         Up                       0.0.0.0:3000->80/tcp
-lawino-admin-frontend        lawino-meet/admin-frontend   Up                       0.0.0.0:3002->80/tcp
-lawino-gateway               nginx:1.25-alpine            Up                       0.0.0.0:80->80/tcp, 0.0.0.0:3001->3001/tcp
+NAME                         IMAGE                            STATUS                   PORTS
+lawino-mysql                 mysql:8.3                        Up (healthy)             0.0.0.0:3306->3306/tcp
+lawino-rabbitmq              rabbitmq:3.13-management-alpine  Up (healthy)             0.0.0.0:5672->5672/tcp, 0.0.0.0:15672->15672/tcp
+lawino-eureka-server         springcloud/eureka:latest        Up (healthy)             0.0.0.0:8761->8761/tcp
+lawino-auth-service          lawino-meet/auth-service         Up (healthy)             8081/tcp
+lawino-user-service          lawino-meet/user-service         Up (healthy)             8082/tcp
+lawino-appointment-service   lawino-meet/appointment          Up (healthy)             8083/tcp
+lawino-meeting-service       lawino-meet/meeting-service      Up (healthy)             8084/tcp
+lawino-notification-service  lawino-meet/notification         Up (healthy)             8085/tcp
+lawino-chat-service          lawino-meet/chat-service         Up (healthy)             8086/tcp
+lawino-frontend              lawino-meet/frontend             Up                       0.0.0.0:3000->80/tcp
+lawino-admin-frontend        lawino-meet/admin-frontend       Up                       0.0.0.0:3002->80/tcp
+lawino-gateway               nginx:1.25-alpine                Up                       0.0.0.0:80->80/tcp, 0.0.0.0:3001->3001/tcp
 ```
 
 ### 3.3 Access Your Platform
-- **Main Website & Advocate Chamber Console:** Open [http://localhost:80](http://localhost:80)
-- **Law Firm & Admin Portal:** Open [http://localhost:3002](http://localhost:3002)
-- **API Gateway Direct Test:** [http://localhost:80/api/specializations](http://localhost:80/api/specializations)
+- **Main Website & Advocate Chamber Console:** Open [http://localhost:80](http://localhost:80) (or [http://localhost:3000](http://localhost:3000))
+- **Law Firm & Admin Portal:** Open [http://localhost:3002](http://localhost:3002) (Gateway admin API on [http://localhost:3001](http://localhost:3001))
+- **RabbitMQ Management Dashboard:** [http://localhost:15672](http://localhost:15672) (or proxied at [http://localhost:80/rabbitmq/](http://localhost:80/rabbitmq/)) &mdash; User: `lawino_mq`, Pass: `lawino_mq_secret`
+- **Eureka Service Registry Dashboard:** [http://localhost:8761](http://localhost:8761) (or proxied at [http://localhost:80/eureka](http://localhost:80/eureka))
+- **API Gateway Health Test:** [http://localhost:80/api/specializations](http://localhost:80/api/specializations)
 
 ### 3.4 Instant Login with Seeded Test Accounts
 The database automatically seeds with 5 ready-to-test accounts representing each platform persona.

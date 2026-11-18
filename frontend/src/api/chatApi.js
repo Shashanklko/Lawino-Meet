@@ -1,8 +1,16 @@
 import apiClient from './client';
 
 export const chatApi = {
-  getOrCreateConversation: async (recipientPublicId) => {
-    const res = await apiClient.post('/api/chat/conversations', { recipientPublicId });
+  getOrCreateConversation: async (recipientPublicId, recipientUsername = null, appointmentPublicId = null) => {
+    const res = await apiClient.post('/api/chat/conversations', {
+      recipientPublicId,
+      recipientUsername,
+      appointmentPublicId,
+    });
+    return res.data;
+  },
+  getAppointmentConversation: async (appointmentPublicId) => {
+    const res = await apiClient.get(`/api/chat/appointment/${appointmentPublicId}`);
     return res.data;
   },
   getMyConversations: async () => {
@@ -29,7 +37,11 @@ export const chatApi = {
     return res.data;
   },
   markConversationAsRead: async (conversationPublicId) => {
-    const res = await apiClient.put(`/api/chat/conversations/${conversationPublicId}/read`);
+    const res = await apiClient.patch(`/api/chat/conversations/${conversationPublicId}/read`);
+    return res.data;
+  },
+  getUnreadCount: async () => {
+    const res = await apiClient.get('/api/chat/unread-count');
     return res.data;
   },
 };

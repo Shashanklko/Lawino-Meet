@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { walletApi } from '../api/walletApi';
 import {
   DollarSign,
   TrendingUp,
@@ -26,10 +27,43 @@ import {
   Check,
   Sparkles,
 } from 'lucide-react';
-import { MOCK_FUNDS_DATA, MOCK_CLIENT_WALLET_DATA } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { PageHeader } from '../components/dashboard/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
+
+const INITIAL_FUNDS_DATA = {
+  totalEarned: 0,
+  withdrawableBalance: 0,
+  nonWithdrawableEscrow: 0,
+  upcomingPayouts: 0,
+  totalWithdrawn: 0,
+  bankDetails: {
+    bankName: 'HDFC Bank Ltd',
+    accountHolder: 'Advocate Chamber Account',
+    accountNumber: '•••• •••• 4892',
+    ifsc: 'HDFC0000281',
+    branch: 'Commercial Branch',
+    upiId: 'legal@okhdfcbank',
+  },
+  escrowPolicyNote: 'As per platform integrity & client assurance rules, consultation fees remain in Non-Withdrawable Escrow until the scheduled consultation is completed.',
+  transactions: [],
+};
+
+const INITIAL_CLIENT_WALLET = {
+  walletBalance: 0,
+  nonWithdrawableEscrow: 0,
+  totalDeposited: 0,
+  totalSpent: 0,
+  refundMethod: {
+    type: 'UPI',
+    upiId: '',
+    bankName: 'State Bank of India',
+    accountNumber: '•••• •••• 9104',
+    ifsc: 'SBIN0001428',
+    accountHolder: '',
+  },
+  transactions: [],
+};
 
 export const FundsBillingPage = () => {
   const { user } = useAuth();
@@ -39,10 +73,10 @@ export const FundsBillingPage = () => {
   const navigate = useNavigate();
 
   // Lawyer / Firm Funds Data
-  const [fundsData, setFundsData] = useState(MOCK_FUNDS_DATA);
+  const [fundsData, setFundsData] = useState(INITIAL_FUNDS_DATA);
 
   // Client Wallet Data
-  const [clientWallet, setClientWallet] = useState(MOCK_CLIENT_WALLET_DATA);
+  const [clientWallet, setClientWallet] = useState(INITIAL_CLIENT_WALLET);
 
   // Switchable View for Lawyer/Firm: 'REVENUE' | 'WALLET'
   const [financeView, setFinanceView] = useState('REVENUE');
@@ -133,8 +167,56 @@ export const FundsBillingPage = () => {
     return true;
   });
 
+  const fetchWalletData = async () => {
+    try {
+      const res = await walletApi.getWallet();
+      if (res?.data) {
+        const bal = Number(res.data.balance || 0);
+        const escrow = Number(res.data.escrowBalance || 0);
+        const rawTxs = res.data.recentTransactions || [];
+        const txs = rawTxs.map((t, idx) => ({
+          id: t.publicId || `TXN-${idx + 101}`,
+          type: t.type === 'DEPOSIT' ? 'DEPOSIT' : t.type === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'ESCROW_HOLD',
+          description: t.description || 'Wallet transaction',
+          date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : 'Today',
+          amount: Math.abs(Number(t.amount || 0)),
+          status: t.status || 'COMPLETED',
+          balanceAfter: Number(t.balanceAfter || bal),
+          clientName: 'Direct Transfer',
+          serviceType: t.description || 'Consultation Payout',
+          grossAmount: Math.abs(Number(t.amount || 0)),
+          netAmount: Math.abs(Number(t.amount || 0)),
+          platformFee: 0,
+        }));
+
+        setClientWallet((prev) => ({
+          ...prev,
+          walletBalance: bal,
+          nonWithdrawableEscrow: escrow,
+          totalDeposited: txs.filter((t) => t.type === 'DEPOSIT').reduce((s, t) => s + t.amount, 0),
+          totalSpent: txs.filter((t) => t.type === 'ESCROW_HOLD').reduce((s, t) => s + t.amount, 0),
+          transactions: txs,
+        }));
+
+        setFundsData((prev) => ({
+          ...prev,
+          withdrawableBalance: bal,
+          nonWithdrawableEscrow: escrow,
+          totalEarned: bal + escrow,
+          transactions: txs,
+        }));
+      }
+    } catch (err) {
+      console.warn('Error fetching wallet data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchWalletData();
+  }, []);
+
   // Handle Lawyer/Firm Withdrawal
-  const handleWithdraw = (e) => {
+  const handleWithdraw = async (e) => {
     e.preventDefault();
     const amount = Number(withdrawAmount);
     if (!amount || amount <= 0 || amount > fundsData.withdrawableBalance) {
@@ -143,39 +225,16 @@ export const FundsBillingPage = () => {
     }
 
     setWithdrawLoading(true);
-
-    setTimeout(() => {
-      const newTxn = {
-        id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
-        date: 'Just now',
-        clientName: `Payout Transfer (${withdrawMethod === 'BANK' ? `${fundsData.bankDetails.bankName} •••• 4892` : fundsData.bankDetails.upiId})`,
-        serviceType: 'Bank Account Transfer',
-        consultationId: `WD-${Math.floor(1000 + Math.random() * 9000)}`,
-        grossAmount: amount,
-        platformFee: 0,
-        netAmount: amount,
-        status: 'PROCESSING',
-        releaseDate: 'Processing direct IMPS transfer',
-        notes: 'Withdrawal requested to verified account.',
-      };
-
-      const newPayout = {
-        payoutId: `PO-${Math.floor(8000 + Math.random() * 1000)}`,
-        date: 'Just now',
-        amount: amount,
-        method: withdrawMethod === 'BANK' ? `${fundsData.bankDetails.bankName} •••• 4892` : fundsData.bankDetails.upiId,
-        status: 'PROCESSING',
-        referenceId: `IMPS-${Date.now().toString().slice(-11)}`,
-      };
-
-      setFundsData((prev) => ({
-        ...prev,
-        withdrawableBalance: prev.withdrawableBalance - amount,
-        upcomingPayouts: prev.upcomingPayouts + amount,
-        transactions: [newTxn, ...prev.transactions],
-        payoutHistory: [newPayout, ...prev.payoutHistory],
-      }));
-
+    try {
+      await walletApi.withdraw({
+        amount,
+        payoutMethod: withdrawMethod,
+        accountHolder: fundsData.bankDetails?.accountHolder,
+        accountNumber: fundsData.bankDetails?.accountNumber,
+        ifsc: fundsData.bankDetails?.ifsc,
+        upiId: fundsData.bankDetails?.upiId,
+      });
+      await fetchWalletData();
       setWithdrawLoading(false);
       setWithdrawSuccess(true);
       setTimeout(() => {
@@ -183,7 +242,10 @@ export const FundsBillingPage = () => {
         setIsWithdrawModalOpen(false);
         setWithdrawAmount('');
       }, 1500);
-    }, 1000);
+    } catch (err) {
+      setWithdrawLoading(false);
+      alert(err?.response?.data?.message || err?.message || 'Withdrawal failed');
+    }
   };
 
   // Handle Update Payout / Settlement Method (Lawyer & Firm)
@@ -223,7 +285,7 @@ export const FundsBillingPage = () => {
   };
 
   // Handle Client Withdraw Remaining Amount
-  const handleClientWithdraw = (e) => {
+  const handleClientWithdraw = async (e) => {
     e.preventDefault();
     const amount = Number(clientWithdrawAmount);
     if (!amount || amount <= 0 || amount > clientWallet.walletBalance) {
@@ -232,23 +294,16 @@ export const FundsBillingPage = () => {
     }
 
     setClientWithdrawLoading(true);
-
-    setTimeout(() => {
-      const newTxn = {
-        id: `CW-${Math.floor(800 + Math.random() * 200)}`,
-        date: 'Just now',
-        type: 'WITHDRAWAL',
-        description: `Remaining Balance Refund to ${clientWithdrawMethod === 'UPI' ? `UPI: ${clientWallet.refundMethod.upiId}` : `${clientWallet.refundMethod.bankName} •••• 9104`}`,
-        amount: -amount,
-        status: 'PROCESSED',
-      };
-
-      setClientWallet((prev) => ({
-        ...prev,
-        walletBalance: prev.walletBalance - amount,
-        transactions: [newTxn, ...prev.transactions],
-      }));
-
+    try {
+      await walletApi.withdraw({
+        amount,
+        payoutMethod: clientWithdrawMethod,
+        accountHolder: clientPayoutForm.accountHolder,
+        accountNumber: clientPayoutForm.accountNumber,
+        ifsc: clientPayoutForm.ifsc,
+        upiId: clientPayoutForm.upiId,
+      });
+      await fetchWalletData();
       setClientWithdrawLoading(false);
       setClientWithdrawSuccess(true);
       setTimeout(() => {
@@ -256,7 +311,10 @@ export const FundsBillingPage = () => {
         setIsClientWithdrawModalOpen(false);
         setClientWithdrawAmount('');
       }, 1500);
-    }, 1000);
+    } catch (err) {
+      setClientWithdrawLoading(false);
+      alert(err?.response?.data?.message || err?.message || 'Withdrawal failed');
+    }
   };
 
   // Launch Razorpay Payment Flow
@@ -321,31 +379,25 @@ export const FundsBillingPage = () => {
   };
 
   // Complete Razorpay Payment
-  const handleCompleteRazorpayPayment = () => {
+  const handleCompleteRazorpayPayment = async () => {
     setRazorpayProcessing(true);
-    setTimeout(() => {
-      const amount = Number(addFundsAmount);
-      const paymentId = `pay_rzp_${Math.floor(100000 + Math.random() * 900000)}`;
-      const newTxn = {
-        id: `CW-${Math.floor(800 + Math.random() * 200)}`,
-        date: 'Just now',
-        type: 'DEPOSIT',
-        description: `Top-up via Razorpay Secure Gateway (Payment ID: ${paymentId})`,
-        amount: amount,
-        status: 'SUCCESS',
-      };
+    const amount = Number(addFundsAmount);
+    const paymentId = `pay_rzp_${Math.floor(100000 + Math.random() * 900000)}`;
 
-      setClientWallet((prev) => ({
-        ...prev,
-        walletBalance: prev.walletBalance + amount,
-        totalDeposited: prev.totalDeposited + amount,
-        transactions: [newTxn, ...prev.transactions],
-      }));
-
+    try {
+      await walletApi.addFunds({
+        amount,
+        paymentMethod: 'RAZORPAY',
+        transactionReference: paymentId,
+      });
+      await fetchWalletData();
       setRazorpayProcessing(false);
       setIsRazorpayModalOpen(false);
       setAddFundsAmount('2500');
-    }, 1200);
+    } catch (err) {
+      setRazorpayProcessing(false);
+      alert(err?.response?.data?.message || err?.message || 'Deposit failed');
+    }
   };
 
   // Handle Save Client Withdrawal Destination (Bank / UPI)

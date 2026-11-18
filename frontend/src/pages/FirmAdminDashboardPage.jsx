@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Shield,
@@ -36,12 +36,8 @@ import {
   Check,
 } from 'lucide-react';
 import { StatusBadge } from '../components/common/StatusBadge';
-import {
-  MOCK_ENTERPRISE_FIRM,
-  MOCK_FIRM_REQUESTS,
-  MOCK_ALL_LEGAL_SERVICES,
-  MOCK_LAWYERS,
-} from '../data/mockData';
+import { userApi } from '../api/userApi';
+import { appointmentApi } from '../api/appointmentApi';
 import { PageHeader } from '../components/dashboard/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { StatusTabs } from '../components/dashboard/StatusTabs';
@@ -68,11 +64,110 @@ export const FirmAdminDashboardPage = () => {
     !isServicesView &&
     !isFinanceView;
 
-  const [firmData, setFirmData] = useState(MOCK_ENTERPRISE_FIRM);
-  const [firmRequests, setFirmRequests] = useState(MOCK_FIRM_REQUESTS);
-  const [legalServices, setLegalServices] = useState(MOCK_ALL_LEGAL_SERVICES);
+  const [firmData, setFirmData] = useState({
+    firmId: 'firm-001-lex-veritas',
+    name: 'Lex Veritas Legal LLP',
+    slug: 'lex-veritas-legal-llp',
+    registrationNumber: 'LLP-IN-2014-08912',
+    panTaxId: 'AAACL9821K',
+    gstNumber: '27AAACL9821K1ZM',
+    barCouncilRegistration: 'BCI/CORP/MUM/2014/991',
+    foundedYear: 2014,
+    description: 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    address: 'Chamber 412, High Court Commercial Wing, Fort, Mumbai - 400001',
+    phone: '+91 22 6677 8899',
+    email: 'admin@lexveritas.com',
+    verificationStatus: 'VERIFIED',
+    members: [
+      {
+        id: 'mem-001',
+        userPublicId: '33333333-3333-3333-3333-333333333333',
+        fullName: 'Adv. Raghavan Nambiar',
+        username: 'adv_raghavan',
+        designation: 'Managing Partner',
+        department: 'Corporate Litigation & Arbitrations',
+        permission: 'FIRM_AND_INDEPENDENT',
+        status: 'ACTIVE',
+        hourlyRate: '₹8,500 / hr',
+        revenueShare: '75% Counsel / 25% Firm Treasury',
+        avatar: 'R',
+      },
+    ],
+    subAdmins: [],
+  });
+  const [firmRequests, setFirmRequests] = useState([]);
+  const [legalServices, setLegalServices] = useState([
+    {
+      id: 'srv-001',
+      title: 'High Court Commercial Division Representation',
+      category: 'COMMERCIAL_LITIGATION',
+      baseFee: 15000,
+      turnaroundDays: 3,
+      mode: 'HYBRID',
+      status: 'ACTIVE',
+      assignedBench: 'High Court of Bombay & Delhi',
+    },
+    {
+      id: 'srv-002',
+      title: 'Cross-Border M&A and Retainer Structuring',
+      category: 'CORPORATE',
+      baseFee: 25000,
+      turnaroundDays: 5,
+      mode: 'ONLINE',
+      status: 'ACTIVE',
+      assignedBench: 'National Company Law Tribunal (NCLT)',
+    },
+  ]);
+  const [registeredAdvocatesList, setRegisteredAdvocatesList] = useState([]);
   const [requestTab, setRequestTab] = useState('ALL'); // 'ALL' | 'UNASSIGNED' | 'AWAITING' | 'REASSIGNMENT'
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const loadFirmData = async () => {
+      try {
+        const [firmsRes, lawyersRes] = await Promise.allSettled([
+          userApi.getFirms(),
+          userApi.searchLawyers(),
+        ]);
+
+        if (firmsRes.status === 'fulfilled' && firmsRes.value?.data) {
+          const list = firmsRes.value.data.content || (Array.isArray(firmsRes.value.data) ? firmsRes.value.data : []);
+          if (list.length > 0) {
+            const f = list[0];
+            setFirmData((prev) => ({
+              ...prev,
+              firmId: f.publicId || prev.firmId,
+              name: f.firmName || prev.name,
+              description: f.description || prev.description,
+              email: f.contactEmail || prev.email,
+              phone: f.contactPhone || prev.phone,
+              city: f.city || prev.city,
+            }));
+          }
+        }
+
+        if (lawyersRes.status === 'fulfilled' && lawyersRes.value?.data) {
+          const raw = lawyersRes.value.data.content || (Array.isArray(lawyersRes.value.data) ? lawyersRes.value.data : []);
+          const mapped = raw.map((adv) => ({
+            ...adv,
+            fullName: adv.fullName || adv.username,
+            username: adv.username,
+            email: adv.email || `${adv.username}@lawinomeet.com`,
+            barCouncilNumber: adv.barCouncilNumber || 'Bar Council Enrolled',
+            specialization: adv.specialization || 'Corporate Law',
+            city: adv.city || 'Delhi NCR',
+            hourlyRate: Number(adv.hourlyRate) || 1500,
+          }));
+          setRegisteredAdvocatesList(mapped);
+        }
+      } catch (err) {
+        console.warn('Could not load backend firm data:', err);
+      }
+    };
+    loadFirmData();
+  }, []);
 
   // Advocate Roster Search & Invitation States
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -172,7 +267,7 @@ export const FirmAdminDashboardPage = () => {
   const reassignmentCount = firmRequests.filter((r) => r.status === 'REASSIGNMENT_REQUIRED').length;
 
   // Normalized registered advocates for firm search
-  const registeredAdvocates = MOCK_LAWYERS.map((adv) => {
+  const registeredAdvocates = registeredAdvocatesList.map((adv) => {
     const handle =
       adv.username ||
       adv.fullName

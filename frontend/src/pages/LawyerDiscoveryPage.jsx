@@ -69,201 +69,32 @@ const EXPERIENCE_OPTIONS = [
   { id: 15, label: '15+ Years' },
 ];
 
-// Verified Realistic Advocates Dataset
-const VERIFIED_ADVOCATES = [
-  {
-    publicId: 'adv-001',
-    userPublicId: 'user-adv-001',
-    fullName: 'Adv. Raghavan Nambiar',
-    barCouncilNumber: 'D/1482/2009',
-    specialization: 'CRIMINAL_DEFENSE',
-    hourlyRate: 1800,
-    yearsOfExperience: 15,
-    city: 'Delhi NCR',
-    bio: 'Senior criminal defense counsel specializing in emergency anticipatory bail, CBI matters, FIR quashing, and High Court writ litigation.',
-    availableOnline: true,
+const normalizeLawyer = (adv) => {
+  const hourlyRate = Number(adv.hourlyRate) || (adv.services?.[0]?.consultationFee) || 1500;
+  const experienceYears = Number(adv.experienceYears || adv.yearsOfExperience) || 10;
+  const bio = adv.biography || adv.bio || 'Advocate practicing before High Courts and tribunals.';
+  const specialization = adv.specialization || (adv.specializations?.[0]?.code) || 'CIVIL_LITIGATION';
+  const barCouncilNumber = adv.barCouncilNumber || adv.qualification || 'Bar Council Enrolled';
+  const publicId = adv.slug || adv.userPublicId || adv.publicId;
+
+  return {
+    ...adv,
+    publicId,
+    userPublicId: adv.userPublicId || adv.publicId,
+    fullName: adv.fullName || adv.username,
+    barCouncilNumber,
+    specialization,
+    hourlyRate,
+    yearsOfExperience: experienceYears,
+    city: adv.city || 'Delhi NCR',
+    bio,
+    availableOnline: adv.messagingEnabled !== false,
     availableOffline: true,
-    rating: 4.9,
-    consultationsCount: 340,
-    badge: 'Senior Counsel',
-  },
-  {
-    publicId: 'adv-002',
-    userPublicId: 'user-adv-002',
-    fullName: 'Adv. Ananya Sengupta',
-    barCouncilNumber: 'KAR/3920/2014',
-    specialization: 'CORPORATE_LAW',
-    hourlyRate: 2200,
-    yearsOfExperience: 10,
-    city: 'Bengaluru',
-    bio: 'Technology contracts specialist, startup cross-border incorporation, SaaS agreements, employee equity vesting, and venture seed financing.',
-    availableOnline: true,
-    availableOffline: false,
-    rating: 4.8,
-    consultationsCount: 280,
-    badge: 'Tech & Startups',
-  },
-  {
-    publicId: 'adv-003',
-    userPublicId: 'user-adv-003',
-    fullName: 'Adv. Vikramaditya Rathore',
-    barCouncilNumber: 'MAH/2104/2011',
-    specialization: 'CIVIL_LITIGATION',
-    hourlyRate: 2500,
-    yearsOfExperience: 13,
-    city: 'Mumbai',
-    bio: 'Property partition disputes, builder delay litigation, commercial tenancy evictions, title verification, and RERA tribunal defense.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.9,
-    consultationsCount: 410,
-    badge: 'Property & RERA',
-  },
-  {
-    publicId: 'adv-004',
-    userPublicId: 'user-adv-004',
-    fullName: 'Adv. Priya Deshmukh',
-    barCouncilNumber: 'PUN/8921/2016',
-    specialization: 'LABOUR_LAW',
-    hourlyRate: 950,
-    yearsOfExperience: 8,
-    city: 'Pune',
-    bio: 'Wrongful termination, unpaid wages & severance advisory, POSH committee representation, and executive employment agreement structuring.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.7,
-    consultationsCount: 195,
-    badge: 'Employment Rights',
-  },
-  {
-    publicId: 'adv-005',
-    userPublicId: 'user-adv-005',
-    fullName: 'Adv. Farhan Qureshi',
-    barCouncilNumber: 'TS/4820/2013',
-    specialization: 'CYBER_LAW',
-    hourlyRate: 3200,
-    yearsOfExperience: 11,
-    city: 'Hyderabad',
-    bio: 'Cybercrime investigation defense, financial bank fraud, digital privacy enforcement, IT Act Section 66 cases, and crypto compliance advisory.',
-    availableOnline: true,
-    availableOffline: false,
-    rating: 4.8,
-    consultationsCount: 220,
-    badge: 'Cyber & FinTech',
-  },
-  {
-    publicId: 'adv-006',
-    userPublicId: 'user-adv-006',
-    fullName: 'Adv. Meenakshi Sundaram',
-    barCouncilNumber: 'TN/1109/2006',
-    specialization: 'FAMILY_LAW',
-    hourlyRate: 1500,
-    yearsOfExperience: 18,
-    city: 'Chennai',
-    bio: 'Mutual consent divorce, international child custody mediation, domestic violence protection orders, and marital estate settlements.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.9,
-    consultationsCount: 520,
-    badge: 'Mediation Expert',
-  },
-  {
-    publicId: 'adv-007',
-    userPublicId: 'user-adv-007',
-    fullName: 'Adv. Harshvardhan Shekhawat',
-    barCouncilNumber: 'RAJ/5521/2015',
-    specialization: 'CRIMINAL_DEFENSE',
-    hourlyRate: 850,
-    yearsOfExperience: 9,
-    city: 'Jaipur',
-    bio: 'Trial court representation, 24/7 late night police lockup access, urgent summons defense, and private criminal complaint litigation.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.6,
-    consultationsCount: 160,
-    badge: '24/7 Bail Counsel',
-  },
-  {
-    publicId: 'adv-008',
-    userPublicId: 'user-adv-008',
-    fullName: 'Adv. Rohini Bhasin',
-    barCouncilNumber: 'P&H/2201/2010',
-    specialization: 'INTELLECTUAL_PROPERTY',
-    hourlyRate: 4000,
-    yearsOfExperience: 14,
-    city: 'Chandigarh',
-    bio: 'Trademark infringement prosecution, patent claims drafting, software licensing disputes, and media copyright anti-piracy enforcement.',
-    availableOnline: true,
-    availableOffline: false,
-    rating: 4.9,
-    consultationsCount: 310,
-    badge: 'Patent & Trademark',
-  },
-  {
-    publicId: 'adv-009',
-    userPublicId: 'user-adv-009',
-    fullName: 'Adv. Arvind Subramaniam',
-    barCouncilNumber: 'MAH/5820/2008',
-    specialization: 'TAXATION_LAW',
-    hourlyRate: 5500,
-    yearsOfExperience: 16,
-    city: 'Mumbai',
-    bio: 'Corporate direct tax scrutiny, GST appellate tribunal appeals, cross-border transfer pricing, and search & seizure legal representation.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.9,
-    consultationsCount: 380,
-    badge: 'Tax & GST Counsel',
-  },
-  {
-    publicId: 'adv-010',
-    userPublicId: 'user-adv-010',
-    fullName: 'Adv. Siddharth Kothari',
-    barCouncilNumber: 'D/6102/2012',
-    specialization: 'CORPORATE_LAW',
-    hourlyRate: 3500,
-    yearsOfExperience: 12,
-    city: 'Delhi NCR',
-    bio: 'Commercial joint ventures, shareholder dispute arbitration, private equity term sheets, and NCLT insolvency proceedings representation.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.8,
-    consultationsCount: 290,
-    badge: 'M&A & NCLT',
-  },
-  {
-    publicId: 'adv-011',
-    userPublicId: 'user-adv-011',
-    fullName: 'Adv. Rajeshwar Tyagi',
-    barCouncilNumber: 'UP/3190/2007',
-    specialization: 'CIVIL_LITIGATION',
-    hourlyRate: 1400,
-    yearsOfExperience: 17,
-    city: 'Delhi NCR',
-    bio: 'Ancestral land partition trials, rent agreement drafting, illegal trespass injunctions, and recovery suits before civil courts.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.7,
-    consultationsCount: 460,
-    badge: 'Land & Property',
-  },
-  {
-    publicId: 'adv-012',
-    userPublicId: 'user-adv-012',
-    fullName: 'Adv. Shalini Menon',
-    barCouncilNumber: 'KAR/7104/2015',
-    specialization: 'LABOUR_LAW',
-    hourlyRate: 1200,
-    yearsOfExperience: 9,
-    city: 'Bengaluru',
-    bio: 'Employment contract review, non-compete enforcement defense, severance package negotiations, and IT workplace dispute resolution.',
-    availableOnline: true,
-    availableOffline: true,
-    rating: 4.8,
-    consultationsCount: 230,
-    badge: 'Workplace Rights',
-  },
-];
+    rating: adv.rating || 4.9,
+    consultationsCount: adv.consultationsCount || 120,
+    badge: adv.associatedFirmName || 'Verified Advocate',
+  };
+};
 
 export const LawyerDiscoveryPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -329,12 +160,9 @@ export const LawyerDiscoveryPage = () => {
     fetchLawyers();
   }, [selectedCategory, selectedCity]);
 
-  // Merge live API data with verified advocates dataset
+  // Direct live API data from database
   const allAdvocates = useMemo(() => {
-    if (rawApiLawyers && rawApiLawyers.length > 0) {
-      return rawApiLawyers;
-    }
-    return VERIFIED_ADVOCATES;
+    return (rawApiLawyers || []).map(normalizeLawyer);
   }, [rawApiLawyers]);
 
   // Filter & Sort Pipeline
@@ -425,13 +253,12 @@ export const LawyerDiscoveryPage = () => {
     searchQuery.trim() !== '';
 
   return (
-    <div className="bg-[#FAF7F2] min-h-screen text-[#2E2A29] selection:bg-[#831826]/15 selection:text-[#831826]">
+    <div className="text-[#2E2A29] selection:bg-[#831826]/15 selection:text-[#831826] space-y-6">
       {/* =========================================================================
-          TOP SAAS NAVBAR HEADER & SEARCH BAR
+          TOP SEARCH BAR & CONTROLS CARD
           ========================================================================= */}
-      <div className="border-b border-[#E8E2D8] bg-white sticky top-16 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="border border-[#E8E2D8] bg-white rounded-2xl shadow-xs p-4 sm:p-5">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             {/* Search Input with Shortcut Icon */}
             <div className="relative flex-1 max-w-2xl">
               <Search className="w-4 h-4 text-[#8C847E] absolute left-3.5 top-3" />
@@ -577,18 +404,17 @@ export const LawyerDiscoveryPage = () => {
             </div>
           )}
         </div>
-      </div>
 
       {/* =========================================================================
-          MAIN 2-COLUMN SAAS LAYOUT (Sticky Filter Sidebar + Results Stream)
+          MAIN 2-COLUMN SAAS LAYOUT (Filter Sidebar + Results Stream)
           ========================================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           {/* =====================================================================
-              LEFT SIDEBAR: Engineered Filters Panel (Desktop Sticky / Mobile Sheet)
+              LEFT SIDEBAR: Engineered Filters Panel (Desktop Sidebar / Mobile Sheet)
               ===================================================================== */}
           <aside
-            className={`md:col-span-4 lg:col-span-3 space-y-6 md:sticky md:top-36 bg-white border border-[#E8E2D8] rounded-2xl p-5 shadow-xs ${
+            className={`md:col-span-4 lg:col-span-3 space-y-6 bg-white border border-[#E8E2D8] rounded-2xl p-5 shadow-xs ${
               mobileFilterOpen ? 'block' : 'hidden md:block'
             }`}
           >
@@ -783,13 +609,15 @@ export const LawyerDiscoveryPage = () => {
               </div>
             </div>
 
-            {/* Loading Spinner */}
-            {loading ? (
-              <div className="bg-white rounded-2xl border border-[#E8E2D8] py-24 text-center space-y-3">
-                <div className="w-8 h-8 border-3 border-[#831826] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs font-mono text-[#831826]">Loading advocate registry...</p>
+            {/* Subtle live sync status */}
+            {loading && (
+              <div className="flex items-center space-x-2 text-xs text-[#831826] bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+                <div className="w-3.5 h-3.5 border-2 border-[#831826] border-t-transparent rounded-full animate-spin shrink-0" />
+                <span>Checking live advocate registry...</span>
               </div>
-            ) : filteredAndSortedLawyers.length === 0 ? (
+            )}
+
+            {filteredAndSortedLawyers.length === 0 ? (
               /* Clean SaaS Empty State */
               <div className="bg-white rounded-2xl border border-[#E8E2D8] p-16 text-center space-y-4">
                 <div className="w-12 h-12 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center mx-auto text-[#8C847E]">

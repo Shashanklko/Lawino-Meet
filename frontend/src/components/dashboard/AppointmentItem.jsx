@@ -36,13 +36,14 @@ export const AppointmentItem = ({
   onReportDispute,
   onViewDetails,
   onOpenChat,
+  onModifyTime,
 }) => {
   const isLawyer = role === 'LAWYER';
   const isFirmAdmin = role === 'FIRM_ADMIN';
   const isClient = role === 'CLIENT';
   const { t } = useLanguage();
 
-  const statusUpper = (appointment.status || '').toUpperCase();
+  const statusUpper = (appointment.status || appointment.appointmentStatus || '').toUpperCase();
   const isConfirmed = statusUpper === 'CONFIRMED';
   const isPending = statusUpper === 'PENDING';
   const isAwaitingPayment = statusUpper === 'AWAITING_PAYMENT';
@@ -57,23 +58,16 @@ export const AppointmentItem = ({
   const isChatActive = isConfirmed && !isCompleted && !isCompletionRequested && !isDisputed && !isCancelled && !isRejected && !isExpired;
 
   const isFirm = appointment.practiceType === 'FIRM';
-  const isOnline =
-    appointment.consultationType === 'ONLINE' ||
-    (appointment.clientNotes && appointment.clientNotes.includes('[ONLINE]')) ||
-    appointment.service?.mode === 'ONLINE';
-
-  const isOffline =
-    appointment.consultationType === 'OFFLINE' ||
-    (appointment.clientNotes && appointment.clientNotes.includes('[OFFLINE]')) ||
-    appointment.service?.mode === 'OFFLINE';
+  const isOnline = Boolean(appointment.isOnline && !appointment.isChatOnly && !appointment.isInPerson);
+  const isOffline = Boolean(appointment.isInPerson);
 
   const partyName = isClient
-    ? appointment.lawyer?.fullName || 'Advocate'
-    : appointment.client?.fullName || 'Client';
+    ? appointment.lawyer?.fullName || appointment.lawyerUsername || 'Advocate'
+    : appointment.client?.fullName || appointment.clientUsername || 'Client';
 
   const partySub = isClient
-    ? appointment.lawyer?.barCouncilNumber || appointment.lawyer?.specialization?.replace('_', ' ')
-    : appointment.client?.email || appointment.client?.phone;
+    ? appointment.lawyer?.barCouncilNumber || appointment.lawyer?.specialization?.replace('_', ' ') || 'Bar Council Enrolled'
+    : appointment.client?.email || appointment.client?.phone || appointment.clientUsername;
 
   const startDate = appointment.slot?.startTime ? new Date(appointment.slot.startTime) : null;
   const endDate = appointment.slot?.endTime ? new Date(appointment.slot.endTime) : null;
@@ -91,6 +85,17 @@ export const AppointmentItem = ({
     ? `${startDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
     : 'TBD Time';
 
+  let preferredSlots = [];
+  if (appointment.preferredSlotsJson) {
+    try {
+      preferredSlots = typeof appointment.preferredSlotsJson === 'string'
+        ? JSON.parse(appointment.preferredSlotsJson)
+        : appointment.preferredSlotsJson;
+    } catch {
+      preferredSlots = [];
+    }
+  }
+
   // Practice Badge
   const practiceBadge = isFirm ? (
     <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
@@ -105,20 +110,20 @@ export const AppointmentItem = ({
   );
 
   // Mode Badge
-  const modeBadge = isOnline ? (
-    <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-      <Video className="w-2.5 h-2.5" />
-      <span>Encrypted WebRTC</span>
-    </span>
-  ) : isOffline ? (
-    <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
-      <Building className="w-2.5 h-2.5" />
-      <span>High Court Chamber</span>
-    </span>
-  ) : (
+  const modeBadge = appointment.isChatOnly ? (
     <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
       <MessageSquare className="w-2.5 h-2.5" />
-      <span>Statutory Advisory</span>
+      <span>Chat-Only Advisory</span>
+    </span>
+  ) : appointment.isInPerson ? (
+    <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+      <Building className="w-2.5 h-2.5" />
+      <span>In-Chamber Office</span>
+    </span>
+  ) : (
+    <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+      <Video className="w-2.5 h-2.5" />
+      <span>Encrypted 1:1 Video</span>
     </span>
   );
 
@@ -245,7 +250,28 @@ export const AppointmentItem = ({
                 Pay ₹{Math.round((appointment.service?.price || 500) * 1.1).toLocaleString('en-IN')}
               </button>
             )}
-            {isPending && isLawyer && onAccept && (
+            {isPending && isLawyer && onAccept && preferredSlots.length >= 2 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onAccept(appointment.publicId, { chosenSlotOption: 1 })}
+                  className="px-2 py-1 rounded-lg bg-emerald-700 text-white font-medium hover:bg-emerald-800 transition flex items-center space-x-1 cursor-pointer text-[11px]"
+                  title="Agree to Option 1 (Primary - 1 hr)"
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Opt 1</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAccept(appointment.publicId, { chosenSlotOption: 2 })}
+                  className="px-2 py-1 rounded-lg bg-blue-700 text-white font-medium hover:bg-blue-800 transition flex items-center space-x-1 cursor-pointer text-[11px]"
+                  title="Agree to Option 2 (Alternative - 1 hr)"
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Opt 2</span>
+                </button>
+              </>
+            ) : isPending && isLawyer && onAccept ? (
               <button
                 type="button"
                 onClick={() => onAccept(appointment.publicId)}
@@ -253,6 +279,17 @@ export const AppointmentItem = ({
               >
                 <CheckCircle2 className="w-3 h-3" />
                 <span>Accept</span>
+              </button>
+            ) : null}
+            {isPending && isLawyer && onModifyTime && (
+              <button
+                type="button"
+                onClick={() => onModifyTime(appointment)}
+                className="px-2.5 py-1 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 transition flex items-center space-x-1 cursor-pointer text-xs"
+                title="Propose custom 1-hour time"
+              >
+                <Clock className="w-3 h-3 text-stone-500" />
+                <span>Custom</span>
               </button>
             )}
             {isPending && isLawyer && onReject && (
@@ -437,23 +474,129 @@ export const AppointmentItem = ({
           </div>
         )}
 
-        {/* Date & Time */}
-        <div className="flex items-center space-x-2 text-[11px] text-stone-500 pt-2 border-t border-stone-100 mt-2.5">
-          <span className="flex items-center space-x-1">
-            <Calendar className="w-3 h-3 text-stone-400" />
-            <span>{dateStr}</span>
-          </span>
-          <span className="text-stone-300">•</span>
-          <span className="flex items-center space-x-1 font-mono">
-            <Clock className="w-3 h-3 text-stone-400" />
-            <span>{timeStr}</span>
-          </span>
-        </div>
+        {/* Date & Time / Dual Schedule Proposals */}
+        {preferredSlots.length >= 2 && isPending ? (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-semibold text-stone-700 uppercase tracking-wider flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-stone-500" />
+                <span>2 Schedule Options (Strictly 1-Hr)</span>
+              </span>
+              <span className="text-[9px] font-mono text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-bold">
+                Client Proposal
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200 flex items-center justify-between text-[11px]">
+                <span className="font-medium text-emerald-950">
+                  <strong className="text-emerald-800">① Option 1:</strong> {preferredSlots[0].formatted || `${new Date(preferredSlots[0].startTime).toLocaleDateString()} ${new Date(preferredSlots[0].startTime).toLocaleTimeString()}`}
+                </span>
+                <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">Primary</span>
+              </div>
+              <div className="p-2 rounded-lg bg-blue-50/70 border border-blue-200 flex items-center justify-between text-[11px]">
+                <span className="font-medium text-blue-950">
+                  <strong className="text-blue-800">② Option 2:</strong> {preferredSlots[1].formatted || `${new Date(preferredSlots[1].startTime).toLocaleDateString()} ${new Date(preferredSlots[1].startTime).toLocaleTimeString()}`}
+                </span>
+                <span className="text-[9px] font-mono text-blue-800 bg-blue-100 px-1.5 py-0.2 rounded font-bold">Alternative</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2 text-[11px] text-stone-500 pt-2 border-t border-stone-100 mt-2.5">
+            <span className="flex items-center space-x-1">
+              <Calendar className="w-3 h-3 text-stone-400" />
+              <span>{dateStr}</span>
+            </span>
+            <span className="text-stone-300">•</span>
+            <span className="flex items-center space-x-1 font-mono">
+              <Clock className="w-3 h-3 text-stone-400" />
+              <span>{timeStr}</span>
+            </span>
+          </div>
+        )}
 
-        {isOffline && appointment.lawyer?.chamberAddress && (
-          <div className="flex items-start space-x-1 text-[11px] text-stone-500 pt-1">
-            <MapPin className="w-3 h-3 text-stone-400 shrink-0 mt-0.5" />
-            <span className="truncate">{appointment.lawyer.chamberAddress}</span>
+        {/* In-Chamber Consultation Address Revealing Mechanism */}
+        {appointment.isInPerson && (
+          <div className="mt-2.5">
+            {isConfirmed || isCompletionRequested || isCompleted ? (
+              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5 text-xs font-semibold text-amber-900">
+                    <Building className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Confirmed In-Chamber Office Address</span>
+                  </span>
+                  {isLawyer ? (
+                    <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                      🔓 Revealed to Client
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-mono text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                      ✓ Retainer Verified
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-start space-x-1.5 text-[11px] text-stone-800">
+                  <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                  <span className="font-medium">
+                    {appointment.chamberAddress || appointment.lawyer?.chamberAddress || 'Advocate Chambers, High Court Complex, New Delhi - 110001'}
+                  </span>
+                </div>
+                {appointment.directionsInstructions && (
+                  <p className="text-[10px] text-stone-600 pl-5 leading-tight italic">
+                    Note: {appointment.directionsInstructions}
+                  </p>
+                )}
+                <div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      appointment.chamberAddress || 'Advocate Chambers, High Court Complex, New Delhi'
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-1 text-[10px] font-semibold text-[#831826] hover:underline pl-5 pt-0.5"
+                  >
+                    <span>Navigate with Google Maps &rarr;</span>
+                  </a>
+                </div>
+              </div>
+            ) : isLawyer ? (
+              <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-stone-800 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5 text-xs font-semibold text-amber-900">
+                    <Building className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Your Chamber Address</span>
+                  </span>
+                  <span className="text-[9px] font-mono text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded font-medium">
+                    🔒 Concealed Until Paid
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-800 font-medium pl-5">
+                  {appointment.chamberAddress && !appointment.chamberAddress.includes('revealed upon payment')
+                    ? appointment.chamberAddress
+                    : 'Chamber 402, Lawyers Chambers Block, High Court Complex, New Delhi - 110003'}
+                </p>
+                {appointment.directionsInstructions && !appointment.directionsInstructions.includes('locked until retainer') && (
+                  <p className="text-[10px] text-stone-600 pl-5 leading-tight italic">
+                    Instructions: {appointment.directionsInstructions}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-stone-700 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5 text-xs font-semibold text-stone-800">
+                    <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Chamber Office Address Concealed</span>
+                  </span>
+                  <span className="text-[9px] font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold">
+                    LOCKED
+                  </span>
+                </div>
+                <p className="text-[10px] text-stone-500 leading-tight">
+                  Chamber office room number, gate pass instructions, and Google Maps pin will unlock immediately once your retainer payment is completed.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -545,8 +688,29 @@ export const AppointmentItem = ({
             </button>
           )}
 
-          {/* Lawyer Accept/Reject */}
-          {isPending && isLawyer && onAccept && (
+          {/* Lawyer Accept/Reject/Modify */}
+          {isPending && isLawyer && onAccept && preferredSlots.length >= 2 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onAccept(appointment.publicId, { chosenSlotOption: 1 })}
+                className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-[11px] flex items-center space-x-1 cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
+                title="Agree to Option 1 (Primary - 1 hr)"
+              >
+                <CheckCircle2 className="w-3 h-3 shrink-0" />
+                <span>Agree Option 1</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onAccept(appointment.publicId, { chosenSlotOption: 2 })}
+                className="px-2.5 py-1 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-medium text-[11px] flex items-center space-x-1 cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
+                title="Agree to Option 2 (Alternative - 1 hr)"
+              >
+                <CheckCircle2 className="w-3 h-3 shrink-0" />
+                <span>Agree Option 2</span>
+              </button>
+            </>
+          ) : isPending && isLawyer && onAccept ? (
             <button
               type="button"
               onClick={() => onAccept(appointment.publicId)}
@@ -554,6 +718,18 @@ export const AppointmentItem = ({
             >
               <CheckCircle2 className="w-3 h-3 shrink-0" />
               <span>{t('action.accept', 'Accept')}</span>
+            </button>
+          ) : null}
+
+          {isPending && isLawyer && onModifyTime && (
+            <button
+              type="button"
+              onClick={() => onModifyTime(appointment)}
+              className="px-2 py-1 rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 text-[11px] font-medium flex items-center space-x-1 transition cursor-pointer whitespace-nowrap shrink-0"
+              title="Propose custom 1-hour time"
+            >
+              <Clock className="w-3 h-3 text-stone-500 shrink-0" />
+              <span>Custom Time</span>
             </button>
           )}
 
@@ -564,6 +740,23 @@ export const AppointmentItem = ({
               className="px-2 py-1 rounded-lg border border-stone-200 text-stone-600 hover:bg-rose-50 hover:text-rose-700 text-[11px] transition cursor-pointer whitespace-nowrap shrink-0"
             >
               <span>{t('action.decline', 'Decline')}</span>
+            </button>
+          )}
+
+          {/* Client Pending Status / Cancel Request */}
+          {isPending && isClient && (
+            <span className="text-[10px] font-mono text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg flex items-center space-x-1 whitespace-nowrap shrink-0">
+              <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+              <span>Awaiting Counsel Acceptance</span>
+            </span>
+          )}
+          {isPending && isClient && onCancel && (
+            <button
+              type="button"
+              onClick={() => onCancel(appointment)}
+              className="px-2 py-1 rounded-lg border border-stone-200 text-stone-500 hover:text-rose-700 hover:bg-rose-50 text-[10px] font-mono transition cursor-pointer"
+            >
+              Cancel Request
             </button>
           )}
 

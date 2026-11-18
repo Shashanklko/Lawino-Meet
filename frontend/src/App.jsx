@@ -53,6 +53,8 @@ function App() {
                     <Route path="/settings" element={<ProfileSettingsPage />} />
                     <Route path="/dashboard/settings" element={<ProfileSettingsPage />} />
                     <Route path="/dashboard/funds" element={<FundsBillingPage />} />
+                    <Route path="/funds" element={<FundsBillingPage />} />
+                    <Route path="/funds-billing" element={<FundsBillingPage />} />
                     <Route path="/dashboard/earnings" element={<FundsBillingPage />} />
                     <Route path="/support" element={<HelpSupportPage />} />
                     <Route path="/dashboard/support" element={<HelpSupportPage />} />
@@ -103,7 +105,7 @@ function App() {
                     <Route path="/dashboard/firm/funds" element={<Navigate to="/firm/finance" replace />} />
                   </Route>
 
-                  {/* Full-screen Meeting Route (Accessible directly via Share Link for all participants) */}
+                  {/* Full-screen 1:1 Consultation Meeting Route */}
                   <Route path="/meeting/:roomPublicId" element={<VideoMeetingPage />} />
                 </Route>
 

@@ -41,9 +41,14 @@ public class ChatService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_MESSAGING", "You cannot send messages to yourself.");
         }
 
-        Conversation conversation = getOrCreateConversation(
-                sender.getPublicId(), sender.getUsername(),
-                request.getRecipientUserPublicId(), request.getRecipientUsername());
+        Conversation conversation = (request.getAppointmentPublicId() != null && !request.getAppointmentPublicId().isBlank())
+                ? getOrCreateConversationForAppointment(
+                        sender.getPublicId(), sender.getUsername(),
+                        request.getRecipientUserPublicId(), request.getRecipientUsername(),
+                        request.getAppointmentPublicId())
+                : getOrCreateConversation(
+                        sender.getPublicId(), sender.getUsername(),
+                        request.getRecipientUserPublicId(), request.getRecipientUsername());
 
         Instant now = Instant.now();
         String snippet = request.getContent().length() > 450 ?
@@ -66,19 +71,75 @@ public class ChatService {
         ChatMessage saved = messageRepository.save(message);
         ChatMessageResponse response = ChatMessageResponse.fromEntity(saved);
 
-        // Real-time WebSocket dispatch to recipient's private user queue
+        // Real-time WebSocket dispatch to recipient's private user queue and shared topics
         try {
             messagingTemplate.convertAndSendToUser(
                     request.getRecipientUserPublicId(),
                     "/queue/messages",
                     response
             );
-            log.info("Dispatched WebSocket message {} to user {}", saved.getPublicId(), request.getRecipientUserPublicId());
+            // Public topic broadcasts for reliable real-time updates across browsers
+            messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getPublicId(), response);
+            messagingTemplate.convertAndSend("/topic/users/" + request.getRecipientUserPublicId() + "/messages", response);
+            messagingTemplate.convertAndSend("/topic/users/" + sender.getPublicId() + "/messages", response);
+            log.info("Dispatched WebSocket message {} to conversation {} and users", saved.getPublicId(), conversation.getPublicId());
         } catch (Exception e) {
             log.warn("WebSocket dispatch failed (client will fetch via REST): {}", e.getMessage());
         }
 
         return response;
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessageToConversation(UserPrincipal sender, String conversationPublicId, String content) {
+        Conversation conversation = conversationRepository.findByPublicId(conversationPublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation not found."));
+
+        if (!conversation.isParticipant(sender.getPublicId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                    "You are not a participant in this conversation.");
+        }
+
+        String recipientPublicId = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
+                ? conversation.getParticipantTwoPublicId()
+                : conversation.getParticipantOnePublicId();
+
+        String recipientUsername = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
+                ? conversation.getParticipantTwoUsername()
+                : conversation.getParticipantOneUsername();
+
+        SendMessageRequest request = SendMessageRequest.builder()
+                .recipientUserPublicId(recipientPublicId)
+                .recipientUsername(recipientUsername)
+                .content(content)
+                .build();
+
+        return sendMessage(sender, request);
+    }
+
+    @Transactional
+    public ConversationResponse getOrCreateConversationResponse(UserPrincipal sender, String recipientPublicId) {
+        return getOrCreateConversationForAppointmentResponse(sender, recipientPublicId, null, null);
+    }
+
+    public ConversationResponse getOrCreateConversationForAppointmentResponse(
+            UserPrincipal sender, String recipientPublicId, String recipientUsername, String appointmentPublicId) {
+        Conversation conv = (appointmentPublicId != null && !appointmentPublicId.isBlank())
+                ? getOrCreateConversationForAppointment(sender.getPublicId(), sender.getUsername(), recipientPublicId, recipientUsername, appointmentPublicId)
+                : getOrCreateConversation(sender.getPublicId(), sender.getUsername(), recipientPublicId, recipientUsername);
+        long unreadCount = messageRepository.countByConversationIdAndRecipientUserPublicIdAndIsReadFalse(conv.getId(), sender.getPublicId());
+        return ConversationResponse.fromEntity(conv, sender.getPublicId(), unreadCount);
+    }
+
+    public ConversationResponse getConversationByAppointmentResponse(UserPrincipal principal, String appointmentPublicId) {
+        Conversation conv = conversationRepository.findByAppointmentPublicId(appointmentPublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND",
+                        "No conversation found for appointment " + appointmentPublicId));
+        if (!conv.isParticipant(principal.getPublicId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "You are not a participant in this conversation.");
+        }
+        long unreadCount = messageRepository.countByConversationIdAndRecipientUserPublicIdAndIsReadFalse(conv.getId(), principal.getPublicId());
+        return ConversationResponse.fromEntity(conv, principal.getPublicId(), unreadCount);
     }
 
     @Transactional
@@ -137,7 +198,10 @@ public class ChatService {
                     "/queue/messages",
                     response
             );
-            log.info("Dispatched WebSocket document message {} to user {}", saved.getPublicId(), recipientPublicId);
+            messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getPublicId(), response);
+            messagingTemplate.convertAndSend("/topic/users/" + recipientPublicId + "/messages", response);
+            messagingTemplate.convertAndSend("/topic/users/" + sender.getPublicId() + "/messages", response);
+            log.info("Dispatched WebSocket document message {} to user {} and conversation {}", saved.getPublicId(), recipientPublicId, conversation.getPublicId());
         } catch (Exception e) {
             log.warn("WebSocket dispatch failed for document: {}", e.getMessage());
         }
@@ -202,6 +266,33 @@ public class ChatService {
     public UnreadChatCountResponse getTotalUnreadCount(String userPublicId) {
         long count = messageRepository.countByRecipientUserPublicIdAndIsReadFalse(userPublicId);
         return UnreadChatCountResponse.builder().totalUnreadCount(count).build();
+    }
+
+    private Conversation getOrCreateConversationForAppointment(
+            String user1Id, String user1Name, String user2Id, String user2Name, String appointmentPublicId) {
+        return conversationRepository.findByAppointmentPublicId(appointmentPublicId)
+                .orElseGet(() -> {
+                    boolean isOrder = user1Id.compareTo(user2Id) < 0;
+                    String p1Id = isOrder ? user1Id : user2Id;
+                    String p1Name = isOrder ? user1Name : user2Name;
+                    String p2Id = isOrder ? user2Id : user1Id;
+                    String p2Name = isOrder ? user2Name : user1Name;
+
+                    Conversation conv = Conversation.builder()
+                            .publicId(UUID.randomUUID().toString())
+                            .appointmentPublicId(appointmentPublicId)
+                            .participantOnePublicId(p1Id)
+                            .participantOneUsername(p1Name)
+                            .participantTwoPublicId(p2Id)
+                            .participantTwoUsername(p2Name)
+                            .lastMessageAt(Instant.now())
+                            .build();
+
+                    Conversation saved = conversationRepository.save(conv);
+                    log.info("Created new isolated chat conversation {} for appointment {} between {} and {}",
+                            saved.getPublicId(), appointmentPublicId, p1Id, p2Id);
+                    return saved;
+                });
     }
 
     private Conversation getOrCreateConversation(String user1Id, String user1Name, String user2Id, String user2Name) {

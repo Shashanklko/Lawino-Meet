@@ -15,6 +15,71 @@
 
 ---
 
+## 🏛️ System Architecture & Subsystem Specification
+
+> **Full Production Specification Document:** [docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md](file:///d:/Lawino-Meet/docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md)  
+> The LawinoMeet platform is engineered around **Domain-Driven Design (DDD)** and **Microservices Architecture (SOA)**, organized into **9 Named Enterprise Subsystems**:
+
+### The 9 Core Enterprise Subsystems:
+1. **Zero-Trust Identity & Access Authority (`auth-service`)**: Dual-ID JWT token lifecycle management, RBAC enforcement (`ROLE_CLIENT`, `ROLE_LAWYER`, `ROLE_FIRM_ADMIN`, `ROLE_PLATFORM_ADMIN`), BCrypt credentials hashing, and session refresh rotation.
+2. **Advocate Registry & Multi-Firm Tenancy Management System (`user-service`)**: Practitioner enrollment auditing, Bar Council credential verification, law firm multi-bench roster management, and practice arrangement enforcement (`INDEPENDENT`, `FIRM_EXCLUSIVE`, `FIRM_AND_INDEPENDENT`).
+3. **Legal Consultation Reservation & Slot Concurrency Engine (`appointment-service`)**: Availability calendar scheduling, time-bounded consultation requests, and optimistic locking mechanisms to mathematically prevent concurrent double-booking of lawyer slots.
+4. **WebRTC Video Chamber & Ephemeral Media Signaling Engine (`meeting-service`)**: SDP offer/answer exchange, ICE candidate routing, dynamic WebRTC room generation, and consultation access pass enforcement.
+5. **Privileged In-Consultation STOMP Real-Time Messaging Broker (`chat-service`)**: WebSocket STOMP messaging engine, active consultation state validation, document exchange, and unread badge counters.
+6. **Event-Driven Audit & Escalation Notification Dispatcher (`notification-service`)**: Cross-service operational alerts, escalation events, email notifications, and in-app bell notification feeds.
+7. **Reverse Proxy Gateway & Edge Load Balancer (`nginx`)**: SSL termination, edge rate limiting, WebSocket upgrade tunneling (`/ws-chat`, `/ws-meeting`), and path routing across microservices and twin frontend SPAs.
+8. **Multi-Database Decoupled Storage Cluster (`MySQL 8.3 / AWS RDS`)**: Database-per-service isolation (`auth_db`, `user_db`, `appointment_db`, `meeting_db`, `chat_db`, `notification_db`) guaranteeing zero cross-domain table joins and complete failure domain isolation.
+9. **Container Orchestration & Ingress Overlay Mesh (`Docker Swarm / AWS ECS`)**: Multi-node overlay network (`lawino-overlay`), automatic health check restarts, service replica scaling, and seamless blue-green zero-downtime rolling deployments.
+
+### High-Level Architectural Topology:
+
+```text
+                                 [ End-User Traffic / HTTPS (443) ]
+                                                │
+                                                ▼
+                        ┌───────────────────────────────────────────────┐
+                        │      Edge API Gateway & Reverse Proxy         │
+                        │    (Nginx 1.25 / SSL / Rate-Limiting / WS)    │
+                        └───────┬───────────────────────────────┬───────┘
+                                │                               │
+             ┌──────────────────┴───────────────┐               │
+             ▼                                  ▼               ▼
+ ┌───────────────────────┐          ┌───────────────────────┐  [ WebSocket Upgrades ]
+ │ Client & Lawyer Portal│          │ Platform Master Admin │  ┌────────────────────┐
+ │ (React Vite SPA)      │          │ (React Vite Console)  │  │ /ws-chat           │
+ │ [Port 3000 / :80]     │          │ [Port 3002 / :80]     │  │ /ws-meeting        │
+ └───────────┬───────────┘          └───────────┬───────────┘  └─────────┬──────────┘
+             │                                  │                        │
+             └──────────────────┬───────────────┴────────────────────────┘
+                                │
+             ┌──────────────────┼───────────────────────────────┐
+             │                  │                               │
+             ▼                  ▼                               ▼
+ ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+ │  Identity & RBAC     │ │ Advocate Registry &  │ │ Consultation Booking │
+ │  Authority           │ │ Multi-Firm Engine    │ │ Concurrency Engine   │
+ │  (auth-service:8081) │ │ (user-service:8082)  │ │ (appointment-service)│
+ └──────────┬───────────┘ └──────────┬───────────┘ └──────────┬───────────┘
+            │                        │                        │
+            ▼                        ▼                        ▼
+ ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+ │ WebRTC Video Meeting │ │ STOMP Real-Time      │ │ Event-Driven Audit & │
+ │ Signaling Engine     │ │ Messaging Broker     │ │ Notification Service │
+ │(meeting-service:8084)│ │ (chat-service:8086)  │ │(notification-service)│
+ └──────────┬───────────┘ └──────────┬───────────┘ └──────────┬───────────┘
+            │                        │                        │
+            └────────────────────────┼────────────────────────┘
+                                     ▼
+                      ┌─────────────────────────────┐
+                      │ Decoupled Database Cluster  │
+                      │ (MySQL 8.3 / AWS RDS Multi) │
+                      │ [auth_db, user_db, appt_db, │
+                      │  meet_db, chat_db, notif_db]│
+                      └─────────────────────────────┘
+```
+
+---
+
 # TABLE OF CONTENTS
 
 1. Project Overview

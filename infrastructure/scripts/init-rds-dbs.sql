@@ -134,7 +134,9 @@ CREATE TABLE IF NOT EXISTS `law_firms` (
 
 INSERT INTO `law_firms` (`public_id`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`)
 VALUES
-('firm-001-lex-veritas', '44444444-4444-4444-4444-444444444444', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED')
+('firm-001-lex-veritas', '44444444-4444-4444-4444-444444444444', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED'),
+('firm-002-shardul-partners', '44444444-4444-4444-4444-444444444444', 'Shardul & Chambers Legal LLP', 'shardul-chambers-legal-llp', 'Boutique dispute resolution and appellate practice firm specializing in Supreme Court litigation and NCLT matters.', 'contact@shardullegal.com', '+91 11 2338 9911', 'Barakhamba Road, Connaught Place', 'New Delhi', 'Delhi', 'VERIFIED'),
+('firm-003-crest-law-partners', '44444444-4444-4444-4444-444444444444', 'Crestline Law Partners LLP', 'crestline-law-partners-llp', 'Technology, IPR, venture capital structuring and corporate compliance counsel across India.', 'advisory@crestlinelegal.com', '+91 80 4120 7700', 'MG Road, Central Business District', 'Bengaluru', 'Karnataka', 'VERIFIED')
 ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`);
 
 CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
@@ -172,7 +174,8 @@ CREATE TABLE IF NOT EXISTS `firm_members` (
     `firm_role` VARCHAR(30) NOT NULL DEFAULT 'PARTNER',
     `status` VARCHAR(30) NOT NULL DEFAULT 'ACCEPTED',
     `invited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `firm_role`, `status`)
@@ -188,7 +191,8 @@ CREATE TABLE IF NOT EXISTS `legal_services` (
     `mode` VARCHAR(30) NOT NULL,
     `duration_minutes` INT NOT NULL DEFAULT 30,
     `price` DECIMAL(10, 2) NOT NULL,
-    `is_active` BOOLEAN DEFAULT 1
+    `is_active` BOOLEAN DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `title`, `description`, `mode`, `duration_minutes`, `price`, `is_active`)

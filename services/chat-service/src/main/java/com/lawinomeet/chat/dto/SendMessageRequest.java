@@ -18,6 +18,8 @@ public class SendMessageRequest {
 
     private String recipientUsername;
 
+    private String appointmentPublicId;
+
     @NotBlank(message = "Message content cannot be blank")
     @Size(max = 2000, message = "Message content cannot exceed 2000 characters")
     private String content;

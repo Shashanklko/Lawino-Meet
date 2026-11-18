@@ -21,10 +21,75 @@ import {
   Check,
   Layers,
   ArrowDownLeft,
+  Activity,
 } from 'lucide-react';
 import { ADMIN_SUB_ROLES } from '../utils/adminPermissions';
 import { getStoredAdminRoster, saveAdminRoster } from '../utils/adminRoster';
 import { useAdminAuth } from '../context/AdminAuthContext';
+
+const SUB_ROLE_OPTIONS = [
+  {
+    key: 'SUPER_ADMIN',
+    label: 'Super Admin',
+    badge: 'Supreme',
+    badgeColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
+    desc: 'Full Platform Authority',
+    icon: ShieldCheck,
+    iconColor: 'text-purple-400',
+    borderActive: 'border-purple-500 bg-purple-950/40 ring-1 ring-purple-500/50',
+  },
+  {
+    key: 'FINANCE_ADMIN',
+    label: 'Finance Director',
+    badge: '10% Fee',
+    badgeColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    desc: 'Payouts & Treasury',
+    icon: DollarSign,
+    iconColor: 'text-emerald-400',
+    borderActive: 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-500/50',
+  },
+  {
+    key: 'VERIFICATION_ADMIN',
+    label: 'Verification Officer',
+    badge: 'Bar Council',
+    badgeColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+    desc: 'Advocate & Firm Audits',
+    icon: Scale,
+    iconColor: 'text-blue-400',
+    borderActive: 'border-blue-500 bg-blue-950/40 ring-1 ring-blue-500/50',
+  },
+  {
+    key: 'SUPPORT_ADMIN',
+    label: 'Support Lead',
+    badge: 'Disputes',
+    badgeColor: 'text-rose-400 border-rose-500/30 bg-rose-500/10',
+    desc: 'Client & Lawyer Tickets',
+    icon: LifeBuoy,
+    iconColor: 'text-rose-400',
+    borderActive: 'border-rose-500 bg-rose-950/40 ring-1 ring-rose-500/50',
+  },
+  {
+    key: 'OPERATIONS_ADMIN',
+    label: 'Ops Coordinator',
+    badge: 'Hearings',
+    badgeColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+    desc: 'Escalations & Telemetry',
+    icon: Activity,
+    iconColor: 'text-cyan-400',
+    borderActive: 'border-cyan-500 bg-cyan-950/40 ring-1 ring-cyan-500/50',
+  },
+];
+
+const getRoleIcon = (roleKey) => {
+  switch (roleKey) {
+    case 'SUPER_ADMIN': return ShieldCheck;
+    case 'FINANCE_ADMIN': return DollarSign;
+    case 'VERIFICATION_ADMIN': return Scale;
+    case 'SUPPORT_ADMIN': return LifeBuoy;
+    case 'OPERATIONS_ADMIN': return Activity;
+    default: return ShieldCheck;
+  }
+};
 
 export const AdminManagementPage = () => {
   const { adminSubRole } = useAdminAuth();
@@ -313,9 +378,15 @@ export const AdminManagementPage = () => {
 
                     {/* Role Badge */}
                     <td className="py-3.5 px-4">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${roleMeta.badgeClass}`}>
-                        {roleMeta.label}
-                      </span>
+                      {(() => {
+                        const RoleIcon = getRoleIcon(admin.subRole);
+                        return (
+                          <span className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${roleMeta.badgeClass}`}>
+                            <RoleIcon className="w-3 h-3" />
+                            <span>{roleMeta.label}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* Department */}
@@ -435,7 +506,7 @@ export const AdminManagementPage = () => {
           ========================================================================= */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#171412] border border-stone-800 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-xs text-stone-200 animate-in zoom-in-95 duration-150">
+          <div className="bg-[#171412] border border-stone-800 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl text-xs text-stone-200 animate-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between pb-3 border-b border-stone-800">
               <div>
                 <h3 className="font-serif font-bold text-base text-stone-100 flex items-center space-x-2">
@@ -486,39 +557,54 @@ export const AdminManagementPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-300 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
-                  >
-                    <option value="Executive Legal Governance">Executive Legal Governance</option>
-                    <option value="Treasury & Settlements">Treasury & Settlements</option>
-                    <option value="Bar Council Compliance">Bar Council Compliance</option>
-                    <option value="Client Grievance Redressal">Client Grievance Redressal</option>
-                    <option value="Hearing Monitoring & Ops">Hearing Monitoring & Ops</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-300 mb-1">
+                  Department
+                </label>
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
+                >
+                  <option value="Executive Legal Governance">Executive Legal Governance</option>
+                  <option value="Treasury & Settlements">Treasury & Settlements</option>
+                  <option value="Bar Council Compliance">Bar Council Compliance</option>
+                  <option value="Client Grievance Redressal">Client Grievance Redressal</option>
+                  <option value="Hearing Monitoring & Ops">Hearing Monitoring & Ops</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-300 mb-1">
-                    Administrative Sub-Role
-                  </label>
-                  <select
-                    value={formData.subRole}
-                    onChange={(e) => handleRoleChangeInForm(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
-                  >
-                    <option value="SUPPORT_ADMIN">Customer Support Lead</option>
-                    <option value="VERIFICATION_ADMIN">Verification Officer</option>
-                    <option value="FINANCE_ADMIN">Finance & Settlement Director</option>
-                    <option value="OPERATIONS_ADMIN">Operations Coordinator</option>
-                    <option value="SUPER_ADMIN">Super Admin (Full Access)</option>
-                  </select>
+              {/* Administrative Sub-Role Cards with Visual Symbols */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-stone-300">
+                  Select Administrative Sub-Role &amp; Clearance Tier *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {SUB_ROLE_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = formData.subRole === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => handleRoleChangeInForm(opt.key)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer relative ${
+                          isSelected
+                            ? opt.borderActive
+                            : 'border-stone-800 bg-[#1F1B19] hover:border-stone-700 hover:bg-[#251E1C]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <Icon className={`w-3.5 h-3.5 ${opt.iconColor}`} />
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${opt.badgeColor}`}>
+                            {opt.badge}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-stone-100">{opt.label}</div>
+                        <div className="text-[9px] text-stone-400 truncate">{opt.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -688,7 +774,7 @@ export const AdminManagementPage = () => {
           ========================================================================= */}
       {editingAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#171412] border border-stone-800 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-xs text-stone-200 animate-in zoom-in-95 duration-150">
+          <div className="bg-[#171412] border border-stone-800 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl text-xs text-stone-200 animate-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between pb-3 border-b border-stone-800">
               <div>
                 <h3 className="font-serif font-bold text-base text-stone-100 flex items-center space-x-2">
@@ -709,40 +795,55 @@ export const AdminManagementPage = () => {
             </div>
 
             <form onSubmit={handleEditSave} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-300 mb-1">
-                    Administrative Sub-Role
-                  </label>
-                  <select
-                    value={editingAdmin.subRole}
-                    onChange={(e) =>
-                      setEditingAdmin({
-                        ...editingAdmin,
-                        subRole: e.target.value,
-                        designation: ADMIN_SUB_ROLES[e.target.value]?.label || editingAdmin.designation,
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
-                  >
-                    <option value="SUPER_ADMIN">Super Admin (Supreme Authority)</option>
-                    <option value="FINANCE_ADMIN">Finance & Settlement Director</option>
-                    <option value="VERIFICATION_ADMIN">Verification Officer</option>
-                    <option value="SUPPORT_ADMIN">Customer Support Lead</option>
-                    <option value="OPERATIONS_ADMIN">Operations Coordinator</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-300 mb-1">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={editingAdmin.department}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, department: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-300 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    value={editingAdmin.department}
-                    onChange={(e) => setEditingAdmin({ ...editingAdmin, department: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-stone-800 bg-[#1F1B19] text-stone-100 text-xs focus:outline-none focus:border-purple-500"
-                  />
+              {/* Administrative Sub-Role Cards with Visual Symbols */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-stone-300">
+                  Select Administrative Sub-Role &amp; Clearance Tier
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {SUB_ROLE_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = editingAdmin.subRole === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() =>
+                          setEditingAdmin({
+                            ...editingAdmin,
+                            subRole: opt.key,
+                            designation: ADMIN_SUB_ROLES[opt.key]?.label || editingAdmin.designation,
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer relative ${
+                          isSelected
+                            ? opt.borderActive
+                            : 'border-stone-800 bg-[#1F1B19] hover:border-stone-700 hover:bg-[#251E1C]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <Icon className={`w-3.5 h-3.5 ${opt.iconColor}`} />
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${opt.badgeColor}`}>
+                            {opt.badge}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-stone-100">{opt.label}</div>
+                        <div className="text-[9px] text-stone-400 truncate">{opt.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

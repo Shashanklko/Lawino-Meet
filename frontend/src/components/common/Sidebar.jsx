@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ThemeSelector } from './ThemeSelector';
 import { LanguageSelector } from './LanguageSelector';
@@ -37,6 +38,7 @@ import { LanguageSelector } from './LanguageSelector';
 export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
   const { user } = useAuth();
   const { unreadTotal } = useChat();
+  const { unreadCount } = useNotifications();
   const { t } = useLanguage();
   const role = user?.role || 'CLIENT';
   const hasFirm = !!user?.firmMembership;
@@ -83,7 +85,7 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
 
       links.push(
         { name: t('nav.settings', 'My Profile & Chamber'), path: '/settings', icon: Settings },
-        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell },
+        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell, badge: unreadCount },
         { name: t('nav.support', 'Help & Support'), path: '/support', icon: LifeBuoy }
       );
       return links;
@@ -93,7 +95,7 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
       return [
         { name: t('nav.overview', 'Overview'), path: '/admin', icon: Layers, exact: true },
         { name: t('nav.messages', 'Messages & Briefs'), path: '/messages', icon: MessageSquare, badge: unreadTotal },
-        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell },
+        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell, badge: unreadCount },
         { name: t('nav.settings', 'Platform Settings'), path: '/settings', icon: Settings },
       ];
     }
@@ -109,7 +111,7 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
         { name: t('nav.services', 'Legal Services'), path: '/firm/services', icon: FileSpreadsheet },
         { name: t('nav.finance', 'Firm Finance'), path: '/firm/finance', icon: DollarSign },
         { name: t('nav.settings', 'Firm Settings'), path: '/settings', icon: Settings },
-        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell },
+        { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell, badge: unreadCount },
         { name: t('nav.support', 'Help & Support'), path: '/support', icon: LifeBuoy },
       ];
     }
@@ -122,7 +124,7 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
       { name: t('nav.appointments', 'My Appointments'), path: '/client/appointments', icon: Calendar },
       { name: t('nav.finance', 'Wallet & Payments'), path: '/client/finance', icon: Wallet },
       { name: t('nav.messages', 'Messages & Chat'), path: '/messages', icon: MessageSquare, badge: unreadTotal },
-      { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell },
+      { name: t('nav.notifications', 'Notifications'), path: '/notifications', icon: Bell, badge: unreadCount },
       { name: t('nav.settings', 'My Profile & Settings'), path: '/settings', icon: Settings },
       { name: t('nav.support', 'Help & Support'), path: '/support', icon: LifeBuoy },
     ];
@@ -257,25 +259,31 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
                   }`
                 }
               >
-                <div
-                  className={`flex items-center ${
-                    isCollapsed ? 'justify-center' : 'space-x-2.5 truncate'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {!isCollapsed && <span className="truncate">{link.name}</span>}
-                </div>
+                {({ isActive }) => (
+                  <>
+                    <div
+                      className={`flex items-center ${
+                        isCollapsed ? 'justify-center' : 'space-x-2.5 truncate'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {!isCollapsed && <span className="truncate">{link.name}</span>}
+                    </div>
 
-                {link.badge > 0 && (
-                  <span
-                    className={`${
-                      isCollapsed
-                        ? 'absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white'
-                        : 'text-[10px] bg-white text-[var(--bg-primary)] font-bold px-1.5 py-0.2 rounded-full shadow-xs'
-                    }`}
-                  >
-                    {!isCollapsed && link.badge}
-                  </span>
+                    {link.badge > 0 && (
+                      <span
+                        className={`${
+                          isCollapsed
+                            ? 'absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse'
+                            : isActive
+                            ? 'text-[10px] bg-white text-[var(--bg-primary)] font-bold px-1.5 py-0.2 rounded-full shadow-xs'
+                            : 'text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.2 rounded-full shadow-xs animate-pulse'
+                        }`}
+                      >
+                        {!isCollapsed && link.badge}
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             );
@@ -407,14 +415,24 @@ export const Sidebar = ({ mobileOpen = false, onCloseMobile = () => {} }) => {
                       }`
                     }
                   >
-                    <div className="flex items-center space-x-3 truncate">
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{link.name}</span>
-                    </div>
-                    {link.badge > 0 && (
-                      <span className="text-[10px] bg-white text-[var(--bg-primary)] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                        {link.badge}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        <div className="flex items-center space-x-3 truncate">
+                          <Icon className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{link.name}</span>
+                        </div>
+                        {link.badge > 0 && (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
+                              isActive
+                                ? 'bg-white text-[var(--bg-primary)]'
+                                : 'bg-rose-500 text-white animate-pulse'
+                            }`}
+                          >
+                            {link.badge}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 );

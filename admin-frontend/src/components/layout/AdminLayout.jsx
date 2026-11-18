@@ -9,12 +9,18 @@ export const AdminLayout = () => {
   const { adminSubRole } = useAdminAuth();
 
   return (
-    <div className="h-screen w-screen flex bg-[#161210] text-stone-200 overflow-hidden select-none font-sans">
+    <div
+      className="h-screen w-screen flex text-stone-200 overflow-hidden select-none font-sans"
+      style={{ backgroundColor: 'var(--admin-bg-base)' }}
+    >
       {/* Platform Admin Sidebar */}
       <AdminSidebar />
 
       {/* Main Admin Content Viewport */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1A1614]">
+      <div
+        className="flex-1 flex flex-col h-full overflow-hidden"
+        style={{ backgroundColor: 'var(--admin-bg-panel)' }}
+      >
         {/* Admin Header */}
         <AdminHeader
           selectedDateFilter={selectedDateFilter}

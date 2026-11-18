@@ -39,6 +39,37 @@ public class ChatController {
                 .body(ApiResponse.created("Message sent successfully", response));
     }
 
+    @PostMapping("/conversations")
+    public ResponseEntity<ApiResponse<ConversationResponse>> getOrCreateConversation(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody Map<String, String> body) {
+        String recipientPublicId = body.get("recipientPublicId");
+        String recipientUsername = body.get("recipientUsername");
+        String appointmentPublicId = body.get("appointmentPublicId");
+        ConversationResponse response = chatService.getOrCreateConversationForAppointmentResponse(
+                principal, recipientPublicId, recipientUsername, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Conversation initialized", response));
+    }
+
+    @GetMapping("/appointment/{appointmentPublicId}")
+    public ResponseEntity<ApiResponse<ConversationResponse>> getConversationByAppointment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String appointmentPublicId) {
+        ConversationResponse response = chatService.getConversationByAppointmentResponse(principal, appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Appointment conversation retrieved successfully", response));
+    }
+
+    @PostMapping("/conversations/{conversationPublicId}/messages")
+    public ResponseEntity<ApiResponse<ChatMessageResponse>> sendConversationMessage(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String conversationPublicId,
+            @RequestBody Map<String, String> body) {
+        String content = body.get("content");
+        ChatMessageResponse response = chatService.sendMessageToConversation(principal, conversationPublicId, content);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created("Message sent successfully", response));
+    }
+
     @PostMapping(value = "/conversations/{conversationPublicId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ChatMessageResponse>> uploadAttachment(
             @AuthenticationPrincipal UserPrincipal principal,

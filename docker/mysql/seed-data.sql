@@ -28,7 +28,10 @@ VALUES
 (2, '22222222-2222-2222-2222-222222222222', 'adv_meera', 'meera.deshmukh@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
 (3, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'raghavan.nambiar@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
 (4, '44444444-4444-4444-4444-444444444444', 'firm_admin', 'admin@lexveritas.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'FIRM_ADMIN', 'ACTIVE', 1),
-(5, '55555555-5555-5555-5555-555555555555', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1)
+(5, '55555555-5555-5555-5555-555555555555', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1),
+(6, '66666666-6666-6666-6666-666666666666', 'adv_ananya', 'ananya.sengupta@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
+(7, '77777777-7777-7777-7777-777777777777', 'adv_vikram', 'vikram.rathore@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
+(8, '88888888-8888-8888-8888-888888888888', 'adv_rohan', 'rohan.kulkarni@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1)
 ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
 
 -- =========================================================================
@@ -98,7 +101,9 @@ CREATE TABLE IF NOT EXISTS `law_firms` (
 
 INSERT INTO `law_firms` (`public_id`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`)
 VALUES
-('firm-001-lex-veritas', '44444444-4444-4444-4444-444444444444', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED')
+('firm-001-lex-veritas', '44444444-4444-4444-4444-444444444444', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED'),
+('firm-002-shardul-partners', '44444444-4444-4444-4444-444444444444', 'Shardul & Chambers Legal LLP', 'shardul-chambers-legal-llp', 'Boutique dispute resolution and appellate practice firm specializing in Supreme Court litigation and NCLT matters.', 'contact@shardullegal.com', '+91 11 2338 9911', 'Barakhamba Road, Connaught Place', 'New Delhi', 'Delhi', 'VERIFIED'),
+('firm-003-crest-law-partners', '44444444-4444-4444-4444-444444444444', 'Crestline Law Partners LLP', 'crestline-law-partners-llp', 'Technology, IPR, venture capital structuring and corporate compliance counsel across India.', 'advisory@crestlinelegal.com', '+91 80 4120 7700', 'MG Road, Central Business District', 'Bengaluru', 'Karnataka', 'VERIFIED')
 ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`);
 
 -- Lawyer Profiles
@@ -127,7 +132,10 @@ CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
 INSERT INTO `lawyer_profiles` (`id`, `user_public_id`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `state`, `messaging_enabled`, `verification_status`, `public_profile_status`)
 VALUES
 (1, '22222222-2222-2222-2222-222222222222', 'adv_meera', 'adv-meera-deshmukh', 'Adv. Meera Deshmukh', 'Independent counsel specializing in criminal defense, anticipatory bail, and Section 420 IPC matters.', 'B.A. LL.B (Hons), Bar Council of Delhi (D/1842/2012)', 12, '+91 98200 11223', 'meera.deshmukh@example.com', 'New Delhi', 'Delhi', 1, 'VERIFIED', 'PUBLISHED'),
-(2, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED')
+(2, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED'),
+(3, '66666666-6666-6666-6666-666666666666', 'adv_ananya', 'adv-ananya-sengupta', 'Adv. Ananya Sengupta', 'Technology contracts specialist, startup cross-border incorporation, SaaS agreements, and venture seed financing.', 'B.A. LL.B, National Law School of India University (KAR/3920/2014)', 10, '+91 98450 44556', 'ananya.sengupta@example.com', 'Bengaluru', 'Karnataka', 1, 'VERIFIED', 'PUBLISHED'),
+(4, '77777777-7777-7777-7777-777777777777', 'adv_vikram', 'adv-vikram-rathore', 'Adv. Vikramaditya Rathore', 'Family and matrimonial litigator handling mutual consent divorce, child custody, maintenance petitions, and mediation.', 'LL.B, Campus Law Centre, Delhi University (D/892/2011)', 13, '+91 98101 55667', 'vikram.rathore@example.com', 'Delhi NCR', 'Delhi', 1, 'VERIFIED', 'PUBLISHED'),
+(5, '88888888-8888-8888-8888-888888888888', 'adv_rohan', 'adv-rohan-kulkarni', 'Adv. Rohan Kulkarni', 'Cybercrime and IT Act counsel specializing in online financial fraud, identity theft, data privacy, and digital forensics.', 'LL.M (Cyber Law), Mumbai University (MAH/1042/2016)', 8, '+91 98210 66778', 'rohan.kulkarni@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Firm Members Link
@@ -138,7 +146,8 @@ CREATE TABLE IF NOT EXISTS `firm_members` (
     `firm_role` VARCHAR(30) NOT NULL DEFAULT 'PARTNER',
     `status` VARCHAR(30) NOT NULL DEFAULT 'ACCEPTED',
     `invited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `firm_role`, `status`)
@@ -155,7 +164,8 @@ CREATE TABLE IF NOT EXISTS `legal_services` (
     `mode` VARCHAR(30) NOT NULL,
     `duration_minutes` INT NOT NULL DEFAULT 30,
     `price` DECIMAL(10, 2) NOT NULL,
-    `is_active` BOOLEAN DEFAULT 1
+    `is_active` BOOLEAN DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `title`, `description`, `mode`, `duration_minutes`, `price`, `is_active`)
@@ -184,11 +194,17 @@ CREATE TABLE IF NOT EXISTS `availability_slots` (
 
 INSERT INTO `availability_slots` (`id`, `public_id`, `lawyer_user_public_id`, `start_time`, `end_time`, `slot_status`)
 VALUES
-(1, 'slot-001', '22222222-2222-2222-2222-222222222222', '2026-11-17 10:00:00', '2026-11-17 10:45:00', 'BOOKED'),
-(2, 'slot-002', '22222222-2222-2222-2222-222222222222', '2026-11-17 11:30:00', '2026-11-17 12:15:00', 'BOOKED'),
-(3, 'slot-003', '22222222-2222-2222-2222-222222222222', '2026-11-17 15:00:00', '2026-11-17 15:45:00', 'AVAILABLE'),
-(4, 'slot-004', '33333333-3333-3333-3333-333333333333', '2026-11-17 16:00:00', '2026-11-17 16:45:00', 'AVAILABLE')
-ON DUPLICATE KEY UPDATE `slot_status` = VALUES(`slot_status`);
+(1, 'slot-001', '22222222-2222-2222-2222-222222222222', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 11 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 11 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(2, 'slot-002', '22222222-2222-2222-2222-222222222222', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 15 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 15 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(3, 'slot-003', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(4, 'slot-004', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 14 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 14 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(5, 'slot-005', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 11 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 11 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(6, 'slot-006', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 16 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 16 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(7, 'slot-007', '66666666-6666-6666-6666-666666666666', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(8, 'slot-008', '66666666-6666-6666-6666-666666666666', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 16 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 16 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(9, 'slot-009', '77777777-7777-7777-7777-777777777777', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 12 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 12 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE'),
+(10, 'slot-010', '88888888-8888-8888-8888-888888888888', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 15 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 15 HOUR + INTERVAL 45 MINUTE, 'AVAILABLE')
+ON DUPLICATE KEY UPDATE `slot_status` = VALUES(`slot_status`), `start_time` = VALUES(`start_time`), `end_time` = VALUES(`end_time`);
 
 CREATE TABLE IF NOT EXISTS `appointments` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -221,7 +237,8 @@ USE `chat_db`;
 
 CREATE TABLE IF NOT EXISTS `chat_conversations` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `public_id` VARCHAR(100) NOT NULL UNIQUE,
+    `appointment_public_id` VARCHAR(100),
     `participant_one_public_id` VARCHAR(36) NOT NULL,
     `participant_one_username` VARCHAR(50),
     `participant_two_public_id` VARCHAR(36) NOT NULL,

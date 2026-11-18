@@ -22,40 +22,6 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const MOCK_FALLBACK_TICKETS = [
-  {
-    publicId: 'tkt-001',
-    ticketId: 'TKT-2026-401',
-    raisedBy: 'Vikram Patel',
-    userPublicId: 'cli-003',
-    userRole: 'CLIENT',
-    category: 'ESCROW_DISPUTE',
-    relatedAppointmentId: 'APT-2026-083',
-    priority: 'HIGH',
-    assignedAdmin: 'Amit Saxena (Support Lead)',
-    status: 'UNDER_REVIEW',
-    createdAt: '2026-02-14T16:30:00Z',
-    title: 'Refund request for cancelled consultation with Adv. Meera Deshmukh',
-    description:
-      'I had to cancel 15 minutes before scheduled time due to a sudden medical emergency. Adv. Meera kindly agreed over chat that a full refund can be issued.',
-    internalNotes: [
-      'Checked appointment APT-2026-083. Advocate confirmed on record that waiver of short-notice penalty is approved. Finance refund authorized for ₹1,650.',
-    ],
-    messages: [
-      {
-        sender: 'Vikram Patel (Client)',
-        timestamp: '2026-02-14T16:30:00Z',
-        text: 'Please process refund to my original UPI account.',
-      },
-      {
-        sender: 'Amit Saxena (Support Lead)',
-        timestamp: '2026-02-14T17:15:00Z',
-        text: 'Hello Vikram, we reviewed your request and confirmed with Adv. Meera. Your refund of ₹1,650 is queued for escrow payout reversal.',
-      },
-    ],
-  },
-];
-
 export const HelpSupportPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -86,11 +52,10 @@ export const HelpSupportPage = () => {
       if (stored) {
         setTickets(JSON.parse(stored));
       } else {
-        setTickets(MOCK_FALLBACK_TICKETS);
-        localStorage.setItem('lawino_admin_tickets', JSON.stringify(MOCK_FALLBACK_TICKETS));
+        setTickets([]);
       }
     } catch {
-      setTickets(MOCK_FALLBACK_TICKETS);
+      setTickets([]);
     }
   };
 

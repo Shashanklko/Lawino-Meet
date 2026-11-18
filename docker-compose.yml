@@ -26,7 +26,52 @@ services:
       - lawino-net
 
   # =========================================================================
-  # 2. Microservice: Auth Service (Port 8081)
+  # 2. RabbitMQ Distributed Message Broker with Management Web UI
+  # =========================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: lawino-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-lawino_mq}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 3. Netflix / Spring Cloud Eureka Service Discovery Registry
+  # =========================================================================
+  eureka-server:
+    image: steeltoeoss/eureka-server:latest
+    container_name: lawino-eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761 || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - lawino-net
+
+  # =========================================================================
+  # 4. Microservice: Auth Service (Port 8081)
   # =========================================================================
   auth-service:
     build:
@@ -34,8 +79,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-auth-service
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     environment:
       AUTH_SERVICE_PORT: 8081
       MYSQL_HOST: mysql
@@ -46,14 +89,23 @@ services:
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 3. Microservice: User & Firm Service (Port 8082)
+  # 5. Microservice: User & Firm Service (Port 8082)
   # =========================================================================
   user-service:
     build:
@@ -61,8 +113,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-user-service
     restart: unless-stopped
-    ports:
-      - "8082:8082"
     environment:
       USER_SERVICE_PORT: 8082
       MYSQL_HOST: mysql
@@ -72,6 +122,13 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      USER_SERVICE_URL: http://user-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -81,11 +138,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 4. Microservice: Appointment Service (Port 8083)
+  # 6. Microservice: Appointment Service (Port 8083)
   # =========================================================================
   appointment-service:
     build:
@@ -93,8 +154,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-appointment-service
     restart: unless-stopped
-    ports:
-      - "8083:8083"
     environment:
       APPOINTMENT_SERVICE_PORT: 8083
       MYSQL_HOST: mysql
@@ -104,14 +163,25 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      USER_SERVICE_URL: http://user-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 5. Microservice: Meeting & WebRTC Signaling Service (Port 8084)
+  # 7. Microservice: Meeting & WebRTC Signaling Service (Port 8084)
   # =========================================================================
   meeting-service:
     build:
@@ -119,8 +189,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-meeting-service
     restart: unless-stopped
-    ports:
-      - "8084:8084"
     environment:
       MEETING_SERVICE_PORT: 8084
       MYSQL_HOST: mysql
@@ -130,14 +198,25 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      USER_SERVICE_URL: http://user-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 6. Microservice: Notification Service (Port 8085)
+  # 8. Microservice: Notification Service (Port 8085)
   # =========================================================================
   notification-service:
     build:
@@ -145,8 +224,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-notification-service
     restart: unless-stopped
-    ports:
-      - "8085:8085"
     environment:
       NOTIFICATION_SERVICE_PORT: 8085
       MYSQL_HOST: mysql
@@ -156,14 +233,25 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      USER_SERVICE_URL: http://user-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 7. Microservice: Chat & WebSocket Messaging Service (Port 8086)
+  # 9. Microservice: Chat & WebSocket Messaging Service (Port 8086)
   # =========================================================================
   chat-service:
     build:
@@ -171,8 +259,6 @@ services:
       dockerfile: Dockerfile
     container_name: lawino-chat-service
     restart: unless-stopped
-    ports:
-      - "8086:8086"
     environment:
       CHAT_SERVICE_PORT: 8086
       MYSQL_HOST: mysql
@@ -182,6 +268,13 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
+      USER_SERVICE_URL: http://user-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -191,11 +284,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - lawino-net
 
   # =========================================================================
-  # 8. Web Frontend Application (Port 3000)
+  # 10. Web Frontend Application (Port 3000)
   # =========================================================================
   frontend:
     build:
@@ -209,7 +306,7 @@ services:
       - lawino-net
 
   # =========================================================================
-  # 9. Admin Portal Application (Port 3002)
+  # 11. Admin Portal Application (Port 3002)
   # =========================================================================
   admin-frontend:
     build:
@@ -223,7 +320,7 @@ services:
       - lawino-net
 
   # =========================================================================
-  # 10. API Gateway & Reverse Proxy (Port 80 & 3001)
+  # 12. API Gateway & Load Balancer (Port 80 & 3001)
   # =========================================================================
   gateway:
     image: nginx:1.25-alpine
@@ -243,6 +340,8 @@ services:
       - chat-service
       - frontend
       - admin-frontend
+      - rabbitmq
+      - eureka-server
     networks:
       - lawino-net
 
@@ -250,6 +349,8 @@ volumes:
   mysql_data:
     driver: local
   uploads_data:
+    driver: local
+  rabbitmq_data:
     driver: local
 
 networks:

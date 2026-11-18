@@ -14,6 +14,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     Optional<Conversation> findByPublicId(String publicId);
 
+    Optional<Conversation> findByAppointmentPublicId(String appointmentPublicId);
+
     List<Conversation> findByParticipantOnePublicIdOrParticipantTwoPublicIdOrderByLastMessageAtDesc(
             String participantOne, String participantTwo);
 

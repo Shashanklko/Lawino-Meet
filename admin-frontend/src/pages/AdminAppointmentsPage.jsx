@@ -45,10 +45,10 @@ export const AdminAppointmentsPage = () => {
 
   const filteredAppointments = appointments.filter((apt) => {
     const matchesSearch =
-      apt.appointmentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      apt.client.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      apt.advocate.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (apt.firm && apt.firm.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (apt.appointmentId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (apt.client?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (apt.advocate?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (apt.firm?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === 'ALL' || apt.appointmentStatus === statusFilter;
     const matchesChannel = channelFilter === 'ALL' || apt.bookingChannel === channelFilter;

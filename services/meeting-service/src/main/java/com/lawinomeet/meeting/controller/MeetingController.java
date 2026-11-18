@@ -25,7 +25,7 @@ public class MeetingController {
             @Valid @RequestBody CreateRoomRequest request) {
         MeetingRoomResponse response = meetingService.createOrGetRoom(principal, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created("Meeting room initialized successfully", response));
+                .body(ApiResponse.created("1:1 Meeting room initialized successfully", response));
     }
 
     @GetMapping("/rooms/{roomPublicId}")
@@ -49,7 +49,7 @@ public class MeetingController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String roomPublicId) {
         JoinRoomResponse response = meetingService.joinRoom(principal, roomPublicId);
-        return ResponseEntity.ok(ApiResponse.ok("Joined meeting room successfully", response));
+        return ResponseEntity.ok(ApiResponse.ok("Joined 1:1 consultation room successfully", response));
     }
 
     @PostMapping("/rooms/{roomPublicId}/leave")
@@ -65,7 +65,7 @@ public class MeetingController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String roomPublicId) {
         MeetingRoomResponse response = meetingService.endRoom(principal, roomPublicId);
-        return ResponseEntity.ok(ApiResponse.ok("Meeting room ended", response));
+        return ResponseEntity.ok(ApiResponse.ok("Meeting room ended successfully", response));
     }
 
     @PostMapping("/rooms/{roomPublicId}/signal")

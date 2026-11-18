@@ -24,4 +24,6 @@ public class CreateRoomRequest {
     private String lawyerUserPublicId;
 
     private String lawyerUsername;
+
+    private String consultationType;
 }

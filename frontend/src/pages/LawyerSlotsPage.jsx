@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { appointmentApi } from '../api/appointmentApi';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_LAWYER_SLOTS } from '../data/mockData';
 import { PageHeader } from '../components/dashboard/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -24,7 +23,7 @@ export const LawyerSlotsPage = () => {
   const { user } = useAuth();
   const hasFirmMembership = !!user?.firmMembership;
 
-  const [slots, setSlots] = useState(MOCK_LAWYER_SLOTS);
+  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -32,16 +31,74 @@ export const LawyerSlotsPage = () => {
   // Single slot form state
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('10:00');
-  const [endTime, setEndTime] = useState('10:45');
+  const [endTime, setEndTime] = useState('11:00');
   const [singleSubmitting, setSingleSubmitting] = useState(false);
 
-  // Batch slots form state
+  // Batch slots form state: Weekly 4-day, 5-day, 6-day, 7-day schedule
+  const [batchPreset, setBatchPreset] = useState('5_DAY'); // '4_DAY' | '5_DAY' | '6_DAY' | '7_DAY' | 'CUSTOM'
   const [batchStartDate, setBatchStartDate] = useState('');
   const [batchEndDate, setBatchEndDate] = useState('');
-  const [batchStartHour, setBatchStartHour] = useState(10);
-  const [batchEndHour, setBatchEndHour] = useState(17);
-  const [slotDuration, setSlotDuration] = useState(45);
+  const [batchStartHour, setBatchStartHour] = useState(10); // 10 AM (Morning)
+  const [batchEndHour, setBatchEndHour] = useState(17); // 5 PM (Evening)
+  const [batchBufferMinutes, setBatchBufferMinutes] = useState(0);
+  const [slotDuration, setSlotDuration] = useState(60); // 1-hour slot standard
   const [batchSubmitting, setBatchSubmitting] = useState(false);
+
+  // Filter tabs for slot list
+  const [slotFilter, setSlotFilter] = useState('ALL'); // 'ALL' | 'TODAY' | 'TOMORROW' | 'WEEK'
+
+  // Calculate grouped slots by date and morning/afternoon/evening
+  const groupedSlots = React.useMemo(() => {
+    const sorted = [...slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const filtered = sorted.filter((s) => {
+      if (!s.startTime) return false;
+      const dateStr = s.startTime.split('T')[0];
+      if (slotFilter === 'TODAY') return dateStr === todayStr;
+      if (slotFilter === 'TOMORROW') return dateStr === tomorrowStr;
+      if (slotFilter === 'WEEK') {
+        const d = new Date(s.startTime);
+        return d >= new Date(now.setHours(0, 0, 0, 0)) && d <= weekEnd;
+      }
+      return true;
+    });
+
+    const groups = {};
+    filtered.forEach((slot) => {
+      const d = new Date(slot.startTime);
+      const dateKey = slot.startTime.split('T')[0];
+      if (!groups[dateKey]) {
+        groups[dateKey] = {
+          dateKey,
+          dateFormatted: d.toLocaleDateString('en-IN', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          }),
+          morning: [],
+          afternoon: [],
+          evening: [],
+        };
+      }
+      const hour = d.getHours();
+      if (hour < 12) {
+        groups[dateKey].morning.push(slot);
+      } else if (hour < 17) {
+        groups[dateKey].afternoon.push(slot);
+      } else {
+        groups[dateKey].evening.push(slot);
+      }
+    });
+    return groups;
+  }, [slots, slotFilter]);
 
   // Block time / exception form state
   const [blockDate, setBlockDate] = useState('');
@@ -50,15 +107,41 @@ export const LawyerSlotsPage = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const applyPreset = (preset) => {
+    setBatchPreset(preset);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const startStr = tomorrow.toISOString().split('T')[0];
+    setBatchStartDate(startStr);
+
+    const end = new Date(tomorrow);
+    if (preset === '4_DAY') {
+      end.setDate(end.getDate() + 3);
+    } else if (preset === '5_DAY') {
+      end.setDate(end.getDate() + 4);
+    } else if (preset === '6_DAY') {
+      end.setDate(end.getDate() + 5);
+    } else if (preset === '7_DAY') {
+      end.setDate(end.getDate() + 6);
+    }
+    setBatchEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const openBatchModal = () => {
+    applyPreset('5_DAY');
+    setIsBatchModalOpen(true);
+  };
+
   const fetchSlots = async () => {
+    setLoading(true);
     try {
       const res = await appointmentApi.getMySlots();
-      const list = res?.data?.content || res?.data || [];
-      if (list.length > 0) {
-        setSlots(list);
-      }
+      const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+      setSlots(list);
     } catch {
-      // Mock data used
+      setSlots([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,68 +160,84 @@ export const LawyerSlotsPage = () => {
     const startDateTime = `${startDate}T${startTime}:00`;
     const endDateTime = `${startDate}T${endTime}:00`;
 
-    // Check for overlap on the single calendar
-    const hasOverlap = slots.some((s) => {
-      const sStart = new Date(s.startTime).getTime();
-      const sEnd = new Date(s.endTime).getTime();
-      const nStart = new Date(startDateTime).getTime();
-      const nEnd = new Date(endDateTime).getTime();
-      return (nStart >= sStart && nStart < sEnd) || (nEnd > sStart && nEnd <= sEnd);
-    });
-
-    if (hasOverlap) {
-      setError('Time conflict: An existing appointment or slot already covers this time window.');
+    try {
+      await appointmentApi.createSlot({
+        startTime: new Date(startDateTime).toISOString(),
+        endTime: new Date(endDateTime).toISOString(),
+      });
+      await fetchSlots();
+      setMessage('Availability slot published to your calendar.');
+      setStartDate('');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Time conflict: An existing appointment or slot already covers this window.');
+    } finally {
       setSingleSubmitting(false);
-      return;
     }
-
-    const newSlot = {
-      publicId: `slot-local-${Date.now()}`,
-      startTime: new Date(startDateTime).toISOString(),
-      endTime: new Date(endDateTime).toISOString(),
-      status: 'AVAILABLE',
-    };
-
-    setSlots((prev) => [newSlot, ...prev]);
-    setMessage('Open availability slot added to unified calendar.');
-    setStartDate('');
-    setSingleSubmitting(false);
-    setTimeout(() => setMessage(''), 3000);
   };
 
-  const handleCreateBatchSlots = (e) => {
+  const handleCreateBatchSlots = async (e) => {
     e.preventDefault();
     if (!batchStartDate || !batchEndDate) return;
     setBatchSubmitting(true);
+    setError('');
+    setMessage('');
 
-    const generated = [];
-    const curr = new Date(batchStartDate);
-    const end = new Date(batchEndDate);
+    const payloadSlots = [];
+    const curr = new Date(batchStartDate + 'T00:00:00');
+    const end = new Date(batchEndDate + 'T23:59:59');
 
     while (curr <= end) {
-      // Mon to Fri only
-      if (curr.getDay() !== 0 && curr.getDay() !== 6) {
-        for (let h = batchStartHour; h < batchEndHour; h += 2) {
-          const s = new Date(curr);
-          s.setHours(h, 0, 0, 0);
-          const e = new Date(curr);
-          e.setHours(h, slotDuration, 0, 0);
-          generated.push({
-            publicId: `slot-batch-${Math.random()}`,
-            startTime: s.toISOString(),
-            endTime: e.toISOString(),
-            status: 'AVAILABLE',
+      const dayOfWeek = curr.getDay(); // 0 is Sun, 1 is Mon, 6 is Sat
+      let shouldInclude = true;
+      if (batchPreset === '4_DAY') {
+        shouldInclude = dayOfWeek >= 1 && dayOfWeek <= 4; // Mon to Thu
+      } else if (batchPreset === '5_DAY') {
+        shouldInclude = dayOfWeek >= 1 && dayOfWeek <= 5; // Mon to Fri
+      } else if (batchPreset === '6_DAY') {
+        shouldInclude = dayOfWeek >= 1 && dayOfWeek <= 6; // Mon to Sat
+      } else if (batchPreset === '7_DAY') {
+        shouldInclude = true; // All 7 days
+      }
+
+      if (shouldInclude) {
+        let slotStart = new Date(curr);
+        slotStart.setHours(Number(batchStartHour), 0, 0, 0);
+
+        const dayEnd = new Date(curr);
+        dayEnd.setHours(Number(batchEndHour), 0, 0, 0);
+
+        while (slotStart.getTime() + slotDuration * 60000 <= dayEnd.getTime()) {
+          const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
+          payloadSlots.push({
+            startTime: slotStart.toISOString(),
+            endTime: slotEnd.toISOString(),
           });
+          slotStart = new Date(slotEnd.getTime() + Number(batchBufferMinutes) * 60000);
         }
       }
       curr.setDate(curr.getDate() + 1);
     }
 
-    setSlots((prev) => [...generated, ...prev]);
-    setMessage(`Generated ${generated.length} weekly open slots across the calendar.`);
-    setIsBatchModalOpen(false);
-    setBatchSubmitting(false);
-    setTimeout(() => setMessage(''), 3000);
+    if (payloadSlots.length === 0) {
+      setError('No valid slots could be generated for the selected range.');
+      setBatchSubmitting(false);
+      return;
+    }
+
+    try {
+      await appointmentApi.batchCreateSlots({ slots: payloadSlots });
+      await fetchSlots();
+      setMessage(`Successfully generated ${payloadSlots.length} open slots for ${batchPreset === '5_DAY' ? '5-Day Work Week' : '7-Day Full Week'} from morning to evening.`);
+      setIsBatchModalOpen(false);
+      setTimeout(() => setMessage(''), 4000);
+    } catch (err) {
+      console.warn('Batch slots creation failed:', err);
+      await fetchSlots();
+      setError(err.response?.data?.message || 'Some slots could not be created due to overlaps.');
+    } finally {
+      setBatchSubmitting(false);
+    }
   };
 
   const handleBlockException = (e) => {
@@ -171,6 +270,76 @@ export const LawyerSlotsPage = () => {
     setSlots((prev) => prev.filter((s) => s.publicId !== slotPublicId));
     setMessage('Slot removed from calendar.');
     setTimeout(() => setMessage(''), 2500);
+  };
+
+  const renderSlotCard = (slot) => {
+    const isBooked = slot.status === 'BOOKED';
+    const startDateObj = new Date(slot.startTime);
+    const endDateObj = new Date(slot.endTime);
+
+    return (
+      <div
+        key={slot.publicId}
+        className={`p-2.5 rounded-xl border transition flex items-center justify-between text-xs ${
+          isBooked
+            ? 'bg-stone-100/80 border-stone-200 text-stone-500'
+            : 'bg-white border-stone-200 hover:border-emerald-300 shadow-2xs'
+        }`}
+      >
+        <div className="flex items-center space-x-2.5 min-w-0">
+          <div
+            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+              isBooked ? 'bg-stone-200 text-stone-600' : 'bg-emerald-100 text-emerald-800'
+            }`}
+          >
+            {isBooked ? <Lock className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5 flex-wrap">
+              <span className="font-mono font-bold text-stone-900 text-[11px]">
+                {startDateObj.toLocaleTimeString('en-IN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                –{' '}
+                {endDateObj.toLocaleTimeString('en-IN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              {isBooked ? (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-stone-200 text-stone-700">
+                  Booked
+                </span>
+              ) : (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                  Open
+                </span>
+              )}
+            </div>
+            {slot.label && (
+              <p className="text-[10px] text-stone-500 font-sans truncate">
+                {slot.label}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="shrink-0 pl-1.5">
+          {!isBooked && (
+            <button
+              type="button"
+              onClick={() => handleDeleteSlot(slot.publicId)}
+              className="p-1 rounded text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              title="Delete open slot"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const bookedCount = slots.filter((s) => s.status === 'BOOKED').length;
@@ -326,195 +495,326 @@ export const LawyerSlotsPage = () => {
 
         {/* Right 2 Cols: Master Calendar Slot List */}
         <div className="lg:col-span-2 p-5 rounded-xl border border-[var(--border-cream)] bg-white/95 backdrop-blur-sm shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-            <h3 className="font-serif font-bold text-sm text-stone-900">
-              Master Calendar Schedule ({slots.length})
-            </h3>
-            <span className="text-[10px] font-mono text-stone-500">
-              Chronological Order
-            </span>
-          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-stone-100 gap-2">
+            <div>
+              <h3 className="font-serif font-bold text-sm text-stone-900">
+                Master Calendar Schedule ({slots.length} Slots)
+              </h3>
+              <p className="text-[11px] text-stone-500 font-sans">
+                Grouped by day &bull; Morning, Afternoon &amp; Evening sessions
+              </p>
+            </div>
 
-          <div className="space-y-2.5">
-            {slots.map((slot) => {
-              const isBooked = slot.status === 'BOOKED';
-              const startDateObj = new Date(slot.startTime);
-              const endDateObj = new Date(slot.endTime);
-
-              return (
-                <div
-                  key={slot.publicId}
-                  className={`p-3.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-                    isBooked
-                      ? 'bg-[var(--bg-cream-soft)] border-[var(--border-cream)]'
-                      : 'bg-emerald-50/40 border-emerald-200'
+            {/* Quick Filter Tabs */}
+            <div className="flex items-center space-x-1 bg-stone-100/80 p-0.5 rounded-lg text-[11px]">
+              {[
+                { id: 'ALL', label: 'All Slots' },
+                { id: 'TODAY', label: 'Today' },
+                { id: 'TOMORROW', label: 'Tomorrow' },
+                { id: 'WEEK', label: 'Next 7 Days' },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setSlotFilter(f.id)}
+                  className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                    slotFilter === f.id
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <div className="flex items-start space-x-3">
-                    <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                        isBooked
-                          ? 'bg-stone-200 text-stone-700'
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                    >
-                      {isBooked ? (
-                        <Lock className="w-4 h-4" />
-                      ) : (
-                        <Clock className="w-4 h-4" />
-                      )}
-                    </div>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                    <div>
+          {/* Grouped Days Listing */}
+          {Object.keys(groupedSlots).length === 0 ? (
+            <div className="py-12 text-center text-stone-400 space-y-2">
+              <Calendar className="w-8 h-8 mx-auto text-stone-300" />
+              <p className="text-xs font-medium text-stone-600">No consultation slots found for this filter.</p>
+              <p className="text-[11px] text-stone-400">Click "Generate Working Hours" above to publish your availability.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+              {Object.keys(groupedSlots).map((dateKey) => {
+                const group = groupedSlots[dateKey];
+                const totalDaySlots =
+                  group.morning.length + group.afternoon.length + group.evening.length;
+
+                return (
+                  <div key={dateKey} className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-3.5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-stone-200/60 pb-2">
                       <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-stone-900">
-                          {startDateObj.toLocaleDateString('en-IN', {
-                            weekday: 'short',
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </p>
-                        {isBooked ? (
-                          slot.practiceType === 'FIRM' ? (
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                              Firm Appointment
-                            </span>
-                          ) : slot.practiceType === 'INDEPENDENT' ? (
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                              Independent Booking
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-stone-200 text-stone-800 border border-stone-300">
-                              Chamber Exception
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Open for Booking
-                          </span>
-                        )}
+                        <Calendar className="w-3.5 h-3.5 text-stone-600" />
+                        <h4 className="font-serif font-bold text-xs text-stone-900">
+                          {group.dateFormatted}
+                        </h4>
                       </div>
-
-                      <p className="text-stone-600 font-medium text-[11px] mt-0.5">
-                        {startDateObj.toLocaleTimeString('en-IN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}{' '}
-                        –{' '}
-                        {endDateObj.toLocaleTimeString('en-IN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-
-                      {slot.label && (
-                        <p className="text-[10px] text-stone-500 font-sans mt-0.5">
-                          {slot.label} {slot.clientName && `(${slot.clientName})`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 shrink-0">
-                    {isBooked ? (
-                      <span className="text-[10px] font-mono text-stone-500 bg-white border border-[var(--border-cream)] px-2 py-1 rounded">
-                        Blocked on Platform
+                      <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
+                        {totalDaySlots} {totalDaySlots === 1 ? 'slot' : 'slots'}
                       </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSlot(slot.publicId)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                        title="Remove open slot"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    </div>
+
+                    {/* Morning Section */}
+                    {group.morning.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center space-x-1.5 text-[10px] font-semibold text-amber-800 uppercase tracking-wider">
+                          <span>🌅 Morning Sessions</span>
+                          <span className="text-stone-400 font-normal">({group.morning.length})</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {group.morning.map((slot) => renderSlotCard(slot))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Afternoon Section */}
+                    {group.afternoon.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center space-x-1.5 text-[10px] font-semibold text-orange-800 uppercase tracking-wider">
+                          <span>☀️ Afternoon Sessions</span>
+                          <span className="text-stone-400 font-normal">({group.afternoon.length})</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {group.afternoon.map((slot) => renderSlotCard(slot))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Evening Section */}
+                    {group.evening.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center space-x-1.5 text-[10px] font-semibold text-indigo-900 uppercase tracking-wider">
+                          <span>🌙 Evening Sessions</span>
+                          <span className="text-stone-400 font-normal">({group.evening.length})</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {group.evening.map((slot) => renderSlotCard(slot))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* =====================================================================
-          MODAL: BATCH RECURRING SLOTS
+          MODAL: BATCH RECURRING SLOTS (5-DAY / 7-DAY & MORNING-TO-EVENING)
       ====================================================================== */}
       {isBatchModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[var(--border-cream)] shadow-2xl animate-in fade-in zoom-in-95 text-xs">
-            <h3 className="font-serif font-bold text-base text-stone-900 mb-1">
-              Generate Weekly Working Hours
-            </h3>
-            <p className="text-stone-500 mb-4 font-sans leading-relaxed">
-              Batch create open 45-minute slots across weekdays for incoming client consultations.
-            </p>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-stone-200 shadow-2xl animate-in fade-in zoom-in-95 text-xs space-y-4">
+            <div className="flex items-start justify-between border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-base text-stone-900">
+                  Generate Consultation Slots
+                </h3>
+                <p className="text-stone-500 font-sans mt-0.5">
+                  Set up recurring 5-day or 7-day availability windows from morning to evening.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBatchModalOpen(false)}
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateBatchSlots} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            {/* Preset Selector */}
+            <div>
+              <label className="block text-[11px] font-semibold text-stone-700 mb-1.5">
+                1. Select Weekly Availability Schedule (4, 5, 6, or 7 Days)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyPreset('4_DAY')}
+                  className={`p-2.5 rounded-xl border text-center transition cursor-pointer ${
+                    batchPreset === '4_DAY'
+                      ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900 shadow-2xs ring-1 ring-[var(--bg-primary)]'
+                      : 'border-stone-200 hover:bg-stone-50 text-stone-600'
+                  }`}
+                >
+                  <p className="text-xs">Weekly 4 Days</p>
+                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Mon – Thu</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyPreset('5_DAY')}
+                  className={`p-2.5 rounded-xl border text-center transition cursor-pointer ${
+                    batchPreset === '5_DAY'
+                      ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900 shadow-2xs ring-1 ring-[var(--bg-primary)]'
+                      : 'border-stone-200 hover:bg-stone-50 text-stone-600'
+                  }`}
+                >
+                  <p className="text-xs">Weekly 5 Days</p>
+                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Mon – Fri</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyPreset('6_DAY')}
+                  className={`p-2.5 rounded-xl border text-center transition cursor-pointer ${
+                    batchPreset === '6_DAY'
+                      ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900 shadow-2xs ring-1 ring-[var(--bg-primary)]'
+                      : 'border-stone-200 hover:bg-stone-50 text-stone-600'
+                  }`}
+                >
+                  <p className="text-xs">Weekly 6 Days</p>
+                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Mon – Sat</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyPreset('7_DAY')}
+                  className={`p-2.5 rounded-xl border text-center transition cursor-pointer ${
+                    batchPreset === '7_DAY'
+                      ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900 shadow-2xs ring-1 ring-[var(--bg-primary)]'
+                      : 'border-stone-200 hover:bg-stone-50 text-stone-600'
+                  }`}
+                >
+                  <p className="text-xs">Weekly 7 Days</p>
+                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">All 7 Days</p>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateBatchSlots} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">From Date</label>
+                  <label className="block text-[11px] font-medium text-stone-700 mb-1">Schedule From Date</label>
                   <input
                     type="date"
                     value={batchStartDate}
-                    onChange={(e) => setBatchStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setBatchStartDate(e.target.value);
+                      setBatchPreset('CUSTOM');
+                    }}
                     required
-                    className="w-full p-2 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800"
+                    className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-stone-50/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">To Date</label>
+                  <label className="block text-[11px] font-medium text-stone-700 mb-1">Schedule To Date</label>
                   <input
                     type="date"
                     value={batchEndDate}
-                    onChange={(e) => setBatchEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setBatchEndDate(e.target.value);
+                      setBatchPreset('CUSTOM');
+                    }}
                     required
-                    className="w-full p-2 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800"
+                    className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-stone-50/50"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">Daily Start (Hour)</label>
-                  <input
-                    type="number"
-                    min="8"
-                    max="18"
-                    value={batchStartHour}
-                    onChange={(e) => setBatchStartHour(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800"
-                  />
+              {/* Working Hours: Morning to Evening */}
+              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2.5">
+                <span className="text-[11px] font-semibold text-stone-800 block">
+                  2. Daily Working Window (Morning to Evening)
+                </span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-medium text-stone-600 mb-1">🌅 Morning Start</label>
+                    <select
+                      value={batchStartHour}
+                      onChange={(e) => setBatchStartHour(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-white"
+                    >
+                      <option value={8}>08:00 AM (Early)</option>
+                      <option value={9}>09:00 AM (Morning)</option>
+                      <option value={10}>10:00 AM (Recommended Morning)</option>
+                      <option value={11}>11:00 AM (Late Morning)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-stone-600 mb-1">🌙 Evening Close</label>
+                    <select
+                      value={batchEndHour}
+                      onChange={(e) => setBatchEndHour(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-white"
+                    >
+                      <option value={16}>04:00 PM (Late Afternoon)</option>
+                      <option value={17}>05:00 PM (Standard Evening)</option>
+                      <option value={18}>06:00 PM (Evening)</option>
+                      <option value={19}>07:00 PM (Late Evening)</option>
+                      <option value={20}>08:00 PM (Night)</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">Daily End (Hour)</label>
-                  <input
-                    type="number"
-                    min="12"
-                    max="22"
-                    value={batchEndHour}
-                    onChange={(e) => setBatchEndHour(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800"
-                  />
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-medium text-stone-600 mb-1">Slot Duration</label>
+                    <select
+                      value={slotDuration}
+                      onChange={(e) => setSlotDuration(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-white"
+                    >
+                      <option value={60}>60 Minutes (1 Hour Standard)</option>
+                      <option value={45}>45 Minutes</option>
+                      <option value={30}>30 Minutes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-stone-600 mb-1">Buffer Break</label>
+                    <select
+                      value={batchBufferMinutes}
+                      onChange={(e) => setBatchBufferMinutes(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-white"
+                    >
+                      <option value={0}>No Break (Continuous)</option>
+                      <option value={10}>10 Min Break</option>
+                      <option value={15}>15 Min Break (Standard)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end space-x-2">
+              {/* Informational Summary Box */}
+              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-950 flex items-center space-x-2.5 text-[11px]">
+                <Info className="w-4 h-4 text-blue-700 shrink-0" />
+                <p>
+                  Will publish slots daily from <strong className="font-mono">{batchStartHour > 12 ? `${batchStartHour - 12}:00 PM` : `${batchStartHour}:00 AM`}</strong> to{' '}
+                  <strong className="font-mono">{batchEndHour > 12 ? `${batchEndHour - 12}:00 PM` : `${batchEndHour}:00 AM`}</strong> for{' '}
+                  <strong>
+                    {batchPreset === '4_DAY'
+                      ? 'Weekly 4 Days (Mon–Thu)'
+                      : batchPreset === '5_DAY'
+                      ? 'Weekly 5 Days (Mon–Fri)'
+                      : batchPreset === '6_DAY'
+                      ? 'Weekly 6 Days (Mon–Sat)'
+                      : batchPreset === '7_DAY'
+                      ? 'Weekly 7 Days (Mon–Sun)'
+                      : 'the chosen schedule'}
+                  </strong>
+                  &nbsp;• 1-Hour consultation slots.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end space-x-2 border-t border-stone-100">
                 <button
                   type="button"
                   onClick={() => setIsBatchModalOpen(false)}
-                  className="px-3 py-2 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50"
+                  className="px-3.5 py-2 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={batchSubmitting}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold cursor-pointer shadow-xs"
                 >
-                  {batchSubmitting ? 'Generating...' : 'Generate Slots'}
+                  {batchSubmitting ? 'Generating Slots...' : 'Publish Availability'}
                 </button>
               </div>
             </form>

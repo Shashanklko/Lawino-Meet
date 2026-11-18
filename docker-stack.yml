@@ -27,6 +27,9 @@ services:
       - target: 443
         published: 443
         mode: ingress
+      - target: 3001
+        published: 3001
+        mode: ingress
     networks:
       - lawino-overlay
     deploy:
@@ -72,10 +75,20 @@ services:
     image: ${REGISTRY:-lawinomeet}/auth-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     networks:
       - lawino-overlay
     deploy:
@@ -94,14 +107,24 @@ services:
     image: ${REGISTRY:-lawinomeet}/user-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/user_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-lawino-meet-assets}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     volumes:
       - lawino_uploads_data:/app/uploads
     networks:
@@ -121,10 +144,20 @@ services:
     image: ${REGISTRY:-lawinomeet}/appointment-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/appointment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     networks:
       - lawino-overlay
     deploy:
@@ -142,10 +175,20 @@ services:
     image: ${REGISTRY:-lawinomeet}/meeting-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/meeting_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     networks:
       - lawino-overlay
     deploy:
@@ -160,10 +203,20 @@ services:
     image: ${REGISTRY:-lawinomeet}/notification-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     networks:
       - lawino-overlay
     deploy:
@@ -178,14 +231,24 @@ services:
     image: ${REGISTRY:-lawinomeet}/chat-service:${TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
       - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST:-mysql}:3306/chat_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-lawino_user}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-LawinoSecurePass2026!}
-      - JWT_SECRET=${JWT_SECRET:-YourSuperSecretJwtKeyLawinoMeetProduction2026SuperLongString!}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-lawino-meet-assets}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
     volumes:
       - lawino_uploads_data:/app/uploads
     networks:
@@ -195,5 +258,33 @@ services:
       update_config:
         parallelism: 1
         delay: 10s
+      restart_policy:
+        condition: on-failure
+
+
+  # =========================================================================
+  # 10. Distributed RabbitMQ Message Broker
+  # =========================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-lawino_mq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # =========================================================================
+  # 11. Eureka Discovery Service & Registry
+  # =========================================================================
+  eureka-server:
+    image: steeltoeoss/eureka-server:latest
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
       restart_policy:
         condition: on-failure

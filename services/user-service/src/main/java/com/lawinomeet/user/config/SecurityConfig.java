@@ -32,7 +32,9 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/api/users/ping",
                     "/api/search/**",
-                    "/api/specializations/**"
+                    "/api/specializations/**",
+                    "/api/wallet/deduct-appointment",
+                    "/api/wallet/settle-appointment"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/lawyers/**", "/api/firms/**").permitAll()
                 .anyRequest().authenticated()

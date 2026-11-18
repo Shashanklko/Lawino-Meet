@@ -2,16 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Bell, X, CheckCircle2, Clock, ShieldAlert } from 'lucide-react';
 import { notificationApi } from '../api/notificationApi';
 import { useAuth } from './AuthContext';
-import { MOCK_NOTIFICATIONS } from '../data/mockData';
 
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  const [unreadCount, setUnreadCount] = useState(
-    MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length
-  );
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   // 3-Second Floating Notification Toast State
@@ -65,11 +62,14 @@ export const NotificationProvider = ({ children }) => {
     if (!isAuthenticated) return;
     try {
       const res = await notificationApi.getUnreadCount();
-      if (res.success && typeof res.data === 'number') {
-        setUnreadCount(res.data);
+      if (res && res.success) {
+        const count = typeof res.data?.unreadCount === 'number'
+          ? res.data.unreadCount
+          : (typeof res.data === 'number' ? res.data : 0);
+        setUnreadCount(count);
       }
     } catch {
-      // Keep mock count
+      // Keep count
     }
   }, [isAuthenticated]);
 
@@ -78,14 +78,10 @@ export const NotificationProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await notificationApi.getMyNotifications(page, size);
-      const list = res?.data?.content || res?.data || [];
-      if (list.length > 0) {
-        setNotifications(list);
-      } else {
-        setNotifications(MOCK_NOTIFICATIONS);
-      }
+      const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+      setNotifications(list);
     } catch {
-      setNotifications(MOCK_NOTIFICATIONS);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

@@ -19,10 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -47,6 +44,14 @@ public class MeetingService {
 
     @Transactional
     public MeetingRoomResponse createOrGetRoom(UserPrincipal principal, CreateRoomRequest request) {
+        if (request.getConsultationType() != null &&
+            ("CHAT".equalsIgnoreCase(request.getConsultationType()) ||
+             "IN_PERSON".equalsIgnoreCase(request.getConsultationType()) ||
+             "OFFLINE".equalsIgnoreCase(request.getConsultationType()))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "VIDEO_NOT_PERMITTED",
+                    "Video consultation room cannot be launched for " + request.getConsultationType() + " appointments.");
+        }
+
         Optional<MeetingRoom> existing = roomRepository.findByAppointmentPublicId(request.getAppointmentPublicId());
         if (existing.isPresent()) {
             MeetingRoom room = existing.get();
@@ -54,6 +59,7 @@ public class MeetingService {
             return MeetingRoomResponse.fromEntity(room, getIceServers());
         }
 
+        // 1:1 Consultation Meeting Room
         MeetingRoom room = MeetingRoom.builder()
                 .publicId(UUID.randomUUID().toString())
                 .appointmentPublicId(request.getAppointmentPublicId())
@@ -66,7 +72,7 @@ public class MeetingService {
                 .build();
 
         MeetingRoom saved = roomRepository.save(room);
-        log.info("Initialized consultation meeting room {} for appointment {}",
+        log.info("Initialized 1:1 consultation meeting room {} for appointment {}",
                 saved.getPublicId(), saved.getAppointmentPublicId());
 
         return MeetingRoomResponse.fromEntity(saved, getIceServers());
@@ -98,10 +104,11 @@ public class MeetingService {
                     "This consultation meeting has already ended.");
         }
 
-        String role = principal.getPublicId().equals(room.getClientUserPublicId()) ? "CLIENT" : "LAWYER";
+        String role = principal.getPublicId().equals(room.getLawyerUserPublicId()) ? "HOST" : "CLIENT";
         Instant now = Instant.now();
 
         MeetingParticipant participant = MeetingParticipant.builder()
+                .publicId(UUID.randomUUID().toString())
                 .meetingRoom(room)
                 .userPublicId(principal.getPublicId())
                 .username(principal.getUsername())
@@ -110,23 +117,25 @@ public class MeetingService {
                 .build();
         participantRepository.save(participant);
 
-        // Check if both client and lawyer have joined to transition to ACTIVE
+        // Transition room to ACTIVE when both counsel and client have joined
         List<MeetingParticipant> participants = participantRepository.findByMeetingRoomId(room.getId());
+        boolean hasHost = participants.stream().anyMatch(p -> "HOST".equals(p.getRole()));
         boolean hasClient = participants.stream().anyMatch(p -> "CLIENT".equals(p.getRole()));
-        boolean hasLawyer = participants.stream().anyMatch(p -> "LAWYER".equals(p.getRole()));
 
-        if (hasClient && hasLawyer && room.getRoomStatus() == RoomStatus.WAITING) {
+        if (hasHost && hasClient && room.getRoomStatus() == RoomStatus.WAITING) {
             room.setRoomStatus(RoomStatus.ACTIVE);
-            room.setStartedAt(now);
+            if (room.getStartedAt() == null) {
+                room.setStartedAt(now);
+            }
             room = roomRepository.save(room);
-            log.info("Both participants joined. Meeting room {} is now ACTIVE", roomPublicId);
+            log.info("Counsel and client joined. 1:1 Meeting room {} is now ACTIVE", roomPublicId);
         }
 
         // Notify room subscribers via WebSocket
         try {
-            messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId,
+            messagingTemplate.convertAndSend("/topic/rooms/" + room.getPublicId(),
                     SignalingPayload.builder()
-                            .type("JOIN")
+                            .type("USER_JOINED")
                             .senderUserPublicId(principal.getPublicId())
                             .data(room.getRoomStatus().name())
                             .build());
@@ -154,47 +163,59 @@ public class MeetingService {
                     participantRepository.save(p);
                 });
 
+        log.info("User {} left meeting room {}", principal.getUsername(), roomPublicId);
+
         try {
-            messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId,
+            messagingTemplate.convertAndSend("/topic/rooms/" + room.getPublicId(),
                     SignalingPayload.builder()
-                            .type("LEAVE")
+                            .type("USER_LEFT")
                             .senderUserPublicId(principal.getPublicId())
+                            .data("LEFT")
                             .build());
         } catch (Exception e) {
-            log.warn("Signaling dispatch failed: {}", e.getMessage());
+            log.warn("Signaling leave dispatch failed: {}", e.getMessage());
         }
     }
 
     @Transactional
     public MeetingRoomResponse endRoom(UserPrincipal principal, String roomPublicId) {
         MeetingRoom room = getRoomOrThrow(roomPublicId);
-        validateParticipantOrAdmin(room, principal);
 
-        if (room.getRoomStatus() != RoomStatus.ENDED) {
-            Instant now = Instant.now();
-            room.setRoomStatus(RoomStatus.ENDED);
-            room.setEndedAt(now);
-            if (room.getStartedAt() != null) {
-                room.setDurationSeconds(Duration.between(room.getStartedAt(), now).getSeconds());
-            } else {
-                room.setDurationSeconds(0L);
-            }
-            room = roomRepository.save(room);
+        boolean isHost = principal.getPublicId().equals(room.getLawyerUserPublicId());
+        boolean isAdmin = "PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "ROLE_PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "FIRM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "ROLE_FIRM_ADMIN".equalsIgnoreCase(principal.getRole());
 
-            try {
-                messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId,
-                        SignalingPayload.builder()
-                                .type("END")
-                                .senderUserPublicId(principal.getPublicId())
-                                .build());
-            } catch (Exception e) {
-                log.warn("Signaling dispatch failed: {}", e.getMessage());
-            }
-            log.info("Meeting room {} ended by user {}. Total duration: {}s",
-                    roomPublicId, principal.getUsername(), room.getDurationSeconds());
+        if (!isHost && !isAdmin) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                    "Only the presiding advocate or platform administrator can end this consultation.");
         }
 
-        return MeetingRoomResponse.fromEntity(room, getIceServers());
+        Instant now = Instant.now();
+        room.setRoomStatus(RoomStatus.ENDED);
+        room.setEndedAt(now);
+
+        if (room.getStartedAt() != null) {
+            room.setDurationSeconds(Duration.between(room.getStartedAt(), now).getSeconds());
+        }
+
+        MeetingRoom saved = roomRepository.save(room);
+        log.info("Meeting room {} ended by counsel/admin {}. Duration: {}s",
+                roomPublicId, principal.getUsername(), saved.getDurationSeconds());
+
+        try {
+            messagingTemplate.convertAndSend("/topic/rooms/" + room.getPublicId(),
+                    SignalingPayload.builder()
+                            .type("ROOM_ENDED")
+                            .senderUserPublicId(principal.getPublicId())
+                            .data("COMPLETED")
+                            .build());
+        } catch (Exception e) {
+            log.warn("Signaling end dispatch failed: {}", e.getMessage());
+        }
+
+        return MeetingRoomResponse.fromEntity(saved, getIceServers());
     }
 
     public void relaySignal(UserPrincipal principal, String roomPublicId, SignalingPayload payload) {
@@ -202,11 +223,7 @@ public class MeetingService {
         validateParticipantOrAdmin(room, principal);
 
         payload.setSenderUserPublicId(principal.getPublicId());
-        try {
-            messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId, payload);
-        } catch (Exception e) {
-            log.warn("Signal relay failed: {}", e.getMessage());
-        }
+        messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId, payload);
     }
 
     public List<IceServerConfig> getIceServers() {
@@ -215,28 +232,40 @@ public class MeetingService {
             configs.add(IceServerConfig.builder().urls(List.of(stunServer)).build());
         }
         if (StringUtils.hasText(turnServer)) {
-            configs.add(IceServerConfig.builder()
-                    .urls(List.of(turnServer))
-                    .username(turnUsername)
-                    .credential(turnCredential)
-                    .build());
+            IceServerConfig.IceServerConfigBuilder turnBuilder = IceServerConfig.builder()
+                    .urls(List.of(turnServer));
+            if (StringUtils.hasText(turnUsername)) {
+                turnBuilder.username(turnUsername);
+            }
+            if (StringUtils.hasText(turnCredential)) {
+                turnBuilder.credential(turnCredential);
+            }
+            configs.add(turnBuilder.build());
+        }
+        if (configs.isEmpty()) {
+            configs.add(IceServerConfig.builder().urls(List.of("stun:stun.l.google.com:19302")).build());
         }
         return configs;
     }
 
-    private MeetingRoom getRoomOrThrow(String publicId) {
-        return roomRepository.findByPublicId(publicId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "Meeting room not found."));
+    private MeetingRoom getRoomOrThrow(String roomPublicId) {
+        return roomRepository.findByPublicId(roomPublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND",
+                        "Meeting room not found with public ID: " + roomPublicId));
     }
 
     private void validateParticipantOrAdmin(MeetingRoom room, UserPrincipal principal) {
-        boolean isAuthorized = room.isAuthorizedParticipant(principal.getPublicId()) ||
-                "ROLE_PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
-                "ROLE_FIRM_ADMIN".equalsIgnoreCase(principal.getRole());
+        boolean isDirect = room.isAuthorizedParticipant(principal.getPublicId());
+        boolean isAdmin = "PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "ROLE_PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "FIRM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
+                          "ROLE_FIRM_ADMIN".equalsIgnoreCase(principal.getRole());
 
-        if (!isAuthorized) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
-                    "You are not an authorized participant in this consultation meeting.");
+        if (isDirect || isAdmin) {
+            return;
         }
+
+        throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                "You are not an authorized participant in this 1:1 consultation meeting.");
     }
 }

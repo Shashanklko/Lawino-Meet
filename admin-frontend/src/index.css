@@ -2,14 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* =========================================================================
+   LawinoMeet Platform Administration - 4 Legal Authority Console Themes
+   ========================================================================= */
+
+/* 1. Imperial Charcoal (Dark Onyx & Imperial Burgundy) - Default */
+:root, [data-theme='dark-onyx'] {
   --admin-bg-base: #161210;
   --admin-bg-panel: #1A1614;
   --admin-bg-sidebar: #1C1816;
   --admin-bg-header: #241E1C;
-  --admin-accent-burgundy: #941B2B;
+  --admin-bg-card: #201B19;
+  --admin-accent: #941B2B;
+  --admin-accent-hover: #7B1422;
   --admin-accent-gold: #E9A943;
   --admin-border: #2E2724;
+  --admin-border-subtle: #3A322E;
+  --admin-text-primary: #FAF5F0;
+  --admin-text-secondary: #D4CDC5;
+  --admin-text-muted: #8C827A;
+}
+
+/* 2. High Court Navy (Midnight Navy & Sovereign Gold) */
+[data-theme='navy'] {
+  --admin-bg-base: #070F1E;
+  --admin-bg-panel: #0B1528;
+  --admin-bg-sidebar: #091224;
+  --admin-bg-header: #0F1C34;
+  --admin-bg-card: #12213D;
+  --admin-accent: #D4AF37;
+  --admin-accent-hover: #B8962C;
+  --admin-accent-gold: #D4AF37;
+  --admin-border: #1A2D52;
+  --admin-border-subtle: #243C6B;
+  --admin-text-primary: #F0F4FA;
+  --admin-text-secondary: #CAD6E8;
+  --admin-text-muted: #7E92B0;
+}
+
+/* 3. Chambers Emerald (Dark Jade Chambers & Antique Gold) */
+[data-theme='emerald'] {
+  --admin-bg-base: #051812;
+  --admin-bg-panel: #082119;
+  --admin-bg-sidebar: #071C15;
+  --admin-bg-header: #0D2C22;
+  --admin-bg-card: #11352A;
+  --admin-accent: #C2A649;
+  --admin-accent-hover: #A88E3A;
+  --admin-accent-gold: #C2A649;
+  --admin-border: #164032;
+  --admin-border-subtle: #1E5241;
+  --admin-text-primary: #F0FAF5;
+  --admin-text-secondary: #C8E3D7;
+  --admin-text-muted: #78A392;
+}
+
+/* 4. Bar Council Maroon (High Court Robe Maroon & Warm Parchment) */
+[data-theme='classic-maroon'] {
+  --admin-bg-base: #1F0408;
+  --admin-bg-panel: #27070C;
+  --admin-bg-sidebar: #24050A;
+  --admin-bg-header: #320A10;
+  --admin-bg-card: #3D0E15;
+  --admin-accent: #C5A880;
+  --admin-accent-hover: #AD916A;
+  --admin-accent-gold: #E5C399;
+  --admin-border: #4D151E;
+  --admin-border-subtle: #611C27;
+  --admin-text-primary: #FAF0F2;
+  --admin-text-secondary: #E3CCD0;
+  --admin-text-muted: #A37A82;
+}
+
+body {
+  background-color: var(--admin-bg-base);
+  color: var(--admin-text-secondary);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* =========================================================================
+   Universal Theme Override Selectors for Admin Pages & Component Cards
+   ========================================================================= */
+[data-theme='navy'] [class*='bg-[#161210]'],
+[data-theme='navy'] [class*='bg-[#1A1614]'],
+[data-theme='navy'] [class*='bg-[#1C1816]'],
+[data-theme='navy'] [class*='bg-[#1E1917]'],
+[data-theme='navy'] [class*='bg-[#201B19]'],
+[data-theme='navy'] [class*='bg-[#221C1A]'],
+[data-theme='navy'] [class*='bg-[#241E1C]'],
+[data-theme='navy'] .bg-stone-900,
+[data-theme='navy'] .bg-stone-900\/80,
+[data-theme='navy'] .bg-stone-900\/60 {
+  background-color: var(--admin-bg-card) !important;
+}
+
+[data-theme='navy'] [class*='border-stone-800'],
+[data-theme='navy'] [class*='border-stone-700'] {
+  border-color: var(--admin-border) !important;
+}
+
+[data-theme='emerald'] [class*='bg-[#161210]'],
+[data-theme='emerald'] [class*='bg-[#1A1614]'],
+[data-theme='emerald'] [class*='bg-[#1C1816]'],
+[data-theme='emerald'] [class*='bg-[#1E1917]'],
+[data-theme='emerald'] [class*='bg-[#201B19]'],
+[data-theme='emerald'] [class*='bg-[#221C1A]'],
+[data-theme='emerald'] [class*='bg-[#241E1C]'],
+[data-theme='emerald'] .bg-stone-900,
+[data-theme='emerald'] .bg-stone-900\/80,
+[data-theme='emerald'] .bg-stone-900\/60 {
+  background-color: var(--admin-bg-card) !important;
+}
+
+[data-theme='emerald'] [class*='border-stone-800'],
+[data-theme='emerald'] [class*='border-stone-700'] {
+  border-color: var(--admin-border) !important;
+}
+
+[data-theme='classic-maroon'] [class*='bg-[#161210]'],
+[data-theme='classic-maroon'] [class*='bg-[#1A1614]'],
+[data-theme='classic-maroon'] [class*='bg-[#1C1816]'],
+[data-theme='classic-maroon'] [class*='bg-[#1E1917]'],
+[data-theme='classic-maroon'] [class*='bg-[#201B19]'],
+[data-theme='classic-maroon'] [class*='bg-[#221C1A]'],
+[data-theme='classic-maroon'] [class*='bg-[#241E1C]'],
+[data-theme='classic-maroon'] .bg-stone-900,
+[data-theme='classic-maroon'] .bg-stone-900\/80,
+[data-theme='classic-maroon'] .bg-stone-900\/60 {
+  background-color: var(--admin-bg-card) !important;
+}
+
+[data-theme='classic-maroon'] [class*='border-stone-800'],
+[data-theme='classic-maroon'] [class*='border-stone-700'] {
+  border-color: var(--admin-border) !important;
 }
 
 /* Custom scrollbars for admin tables and logs */
@@ -18,12 +143,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #171412;
+  background: var(--admin-bg-base);
 }
 ::-webkit-scrollbar-thumb {
-  background: #3A322E;
+  background: var(--admin-border-subtle);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4E433E;
+  background: var(--admin-border);
 }

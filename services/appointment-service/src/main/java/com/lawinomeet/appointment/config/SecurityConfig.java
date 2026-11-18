@@ -32,7 +32,7 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/api/appointments/ping"
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/lawyers/*/slots").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/lawyers/*/slots", "/api/slots/lawyer/*").permitAll()
                 .anyRequest().authenticated()
             );
 

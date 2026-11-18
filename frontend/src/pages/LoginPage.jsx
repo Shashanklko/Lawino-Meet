@@ -27,19 +27,8 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, loginAsDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  const handleDemoLogin = (roleKey) => {
-    const user = loginAsDemo(roleKey);
-    if (user.role === 'LAWYER') {
-      navigate('/lawyer');
-    } else if (user.role === 'FIRM_ADMIN') {
-      navigate('/firm');
-    } else {
-      navigate('/client');
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -174,61 +163,9 @@ export const LoginPage = () => {
             </div>
           )}
 
-          {/* STANDARD CLIENT, ADVOCATE & FIRM LOGIN */}
+          {/* Form */}
           <div className="space-y-3.5">
-              {/* ⚡ 1-Click UI Test Grid */}
-              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#E8E2D8] space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 text-xs font-serif font-bold text-[#831826]">
-                    <Sparkles className="w-3.5 h-3.5 text-[#E5A952]" />
-                    <span>Direct 1-Click Role Login</span>
-                  </div>
-                  <span className="text-[9px] font-mono uppercase bg-[#831826]/10 text-[#831826] px-1.5 py-0.2 rounded font-semibold">
-                    Demo
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('client')}
-                    className="p-2 rounded-lg border border-[#E8E2D8] bg-white hover:border-[#831826] hover:bg-rose-50/40 text-center transition group shadow-xs cursor-pointer"
-                  >
-                    <User className="w-3.5 h-3.5 mx-auto text-[#831826] mb-0.5 group-hover:scale-110 transition" />
-                    <div className="text-[11px] font-bold text-[#2E2A29]">Client</div>
-                    <div className="text-[9px] text-[#8C847E]">Rohit</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('lawyer')}
-                    className="p-2 rounded-lg border border-[#E8E2D8] bg-white hover:border-[#831826] hover:bg-rose-50/40 text-center transition group shadow-xs cursor-pointer"
-                  >
-                    <Briefcase className="w-3.5 h-3.5 mx-auto text-[#831826] mb-0.5 group-hover:scale-110 transition" />
-                    <div className="text-[11px] font-bold text-[#2E2A29]">Advocate</div>
-                    <div className="text-[9px] text-[#8C847E]">Raghavan</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('firmAdmin')}
-                    className="p-2 rounded-lg border border-[#E8E2D8] bg-white hover:border-[#831826] hover:bg-rose-50/40 text-center transition group shadow-xs cursor-pointer"
-                  >
-                    <Building className="w-3.5 h-3.5 mx-auto text-[#831826] mb-0.5 group-hover:scale-110 transition" />
-                    <div className="text-[11px] font-bold text-[#2E2A29]">Firm Admin</div>
-                    <div className="text-[9px] text-[#8C847E]">Singhania</div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="relative flex items-center justify-center my-0.5">
-                <div className="border-t border-[#E8E2D8] w-full" />
-                <span className="bg-white px-2.5 text-[9px] uppercase tracking-wider text-[#8C847E] font-medium absolute">
-                  or sign in with credentials
-                </span>
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1">
                   <label className="block text-[11px] font-sans font-medium uppercase tracking-wider text-[#524B47]">
                     Email or Username

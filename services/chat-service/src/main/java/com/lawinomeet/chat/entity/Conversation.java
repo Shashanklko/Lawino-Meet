@@ -14,6 +14,7 @@ import java.util.UUID;
     indexes = {
         @Index(name = "idx_conversation_public_id", columnList = "public_id", unique = true),
         @Index(name = "idx_conversation_participants", columnList = "participant_one_public_id, participant_two_public_id"),
+        @Index(name = "idx_conversation_appointment", columnList = "appointment_public_id"),
         @Index(name = "idx_conversation_last_message", columnList = "last_message_at")
     }
 )
@@ -28,8 +29,11 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "public_id", nullable = false, unique = true, length = 36)
+    @Column(name = "public_id", nullable = false, unique = true, length = 100)
     private String publicId;
+
+    @Column(name = "appointment_public_id", length = 100)
+    private String appointmentPublicId;
 
     @Column(name = "participant_one_public_id", nullable = false, length = 36)
     private String participantOnePublicId;

@@ -12,5 +12,11 @@ public interface MeetingParticipantRepository extends JpaRepository<MeetingParti
 
     List<MeetingParticipant> findByMeetingRoomId(Long roomId);
 
+    List<MeetingParticipant> findByMeetingRoomPublicId(String roomPublicId);
+
+    Optional<MeetingParticipant> findByPublicId(String publicId);
+
     Optional<MeetingParticipant> findTopByMeetingRoomIdAndUserPublicIdOrderByJoinedAtDesc(Long roomId, String userPublicId);
+
+    Optional<MeetingParticipant> findTopByMeetingRoomPublicIdAndUserPublicIdOrderByJoinedAtDesc(String roomPublicId, String userPublicId);
 }
