@@ -76,17 +76,18 @@ public class AppointmentService {
             slot.setSlotStatus(SlotStatus.PENDING);
             slot.setUpdatedAt(now);
         } else if (request.getCustomStartTime1() != null) {
-            if (request.getLawyerUserPublicId() == null || request.getLawyerUserPublicId().isBlank()) {
+            String targetLawyerId = AvailabilityService.resolveLawyerUserPublicId(request.getLawyerUserPublicId());
+            if (targetLawyerId == null || targetLawyerId.isBlank()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "MISSING_LAWYER", "Lawyer ID is required for custom consultation.");
             }
-            if (request.getLawyerUserPublicId().equals(client.getPublicId())) {
+            if (targetLawyerId.equals(client.getPublicId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_BOOKING", "You cannot book an appointment with yourself.");
             }
             Instant start1 = request.getCustomStartTime1();
             Instant end1 = request.getCustomEndTime1() != null ? request.getCustomEndTime1() : start1.plus(1, ChronoUnit.HOURS);
             slot = AvailabilitySlot.builder()
                     .publicId(UUID.randomUUID().toString())
-                    .lawyerUserPublicId(request.getLawyerUserPublicId())
+                    .lawyerUserPublicId(targetLawyerId)
                     .startTime(start1)
                     .endTime(end1)
                     .slotStatus(SlotStatus.PENDING)

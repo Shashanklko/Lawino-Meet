@@ -482,7 +482,7 @@ export const FundsBillingPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             label="Available Wallet Balance"
-            value={`₹${clientWallet.walletBalance.toLocaleString('en-IN')}`}
+            value={`₹${(Number(clientWallet.walletBalance) || 0).toLocaleString('en-IN')}`}
             subtext="Ready for direct 1-click consultation booking"
             icon={Wallet}
             badge="Available"
@@ -490,7 +490,7 @@ export const FundsBillingPage = () => {
           />
           <MetricCard
             label="Active Retainers in Escrow"
-            value={`₹${clientWallet.nonWithdrawableEscrow.toLocaleString('en-IN')}`}
+            value={`₹${(Number(clientWallet.nonWithdrawableEscrow) || 0).toLocaleString('en-IN')}`}
             subtext="Held safely for scheduled consultations"
             icon={Lock}
             badge="Non-Withdrawable"
@@ -498,13 +498,13 @@ export const FundsBillingPage = () => {
           />
           <MetricCard
             label="Refundable Remaining Amount"
-            value={`₹${clientWallet.walletBalance.toLocaleString('en-IN')}`}
+            value={`₹${(Number(clientWallet.walletBalance) || 0).toLocaleString('en-IN')}`}
             subtext="Eligible for immediate bank / UPI withdrawal"
             icon={ArrowUpRight}
           />
           <MetricCard
             label="Lifetime Retainers Funded"
-            value={`₹${clientWallet.totalDeposited.toLocaleString('en-IN')}`}
+            value={`₹${(Number(clientWallet.totalDeposited) || 0).toLocaleString('en-IN')}`}
             subtext="Total legal consult balance deposited"
             icon={DollarSign}
           />
@@ -582,10 +582,10 @@ export const FundsBillingPage = () => {
                     </td>
                     <td
                       className={`py-2.5 px-3 font-serif font-bold ${
-                        tx.amount > 0 ? 'text-emerald-700' : 'text-stone-900'
+                        Number(tx.amount) > 0 ? 'text-emerald-700' : 'text-stone-900'
                       }`}
                     >
-                      {tx.amount > 0 ? `+₹${tx.amount.toLocaleString('en-IN')}` : `-₹${Math.abs(tx.amount).toLocaleString('en-IN')}`}
+                      {Number(tx.amount) > 0 ? `+₹${(Number(tx.amount) || 0).toLocaleString('en-IN')}` : `-₹${Math.abs(Number(tx.amount) || 0).toLocaleString('en-IN')}`}
                     </td>
                     <td className="py-2.5 px-3">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-medium">
@@ -725,7 +725,7 @@ export const FundsBillingPage = () => {
               <p className="text-stone-500 mb-3 font-sans leading-relaxed">
                 Available refundable balance:{' '}
                 <strong className="text-stone-900 font-serif">
-                  ₹{clientWallet.walletBalance.toLocaleString('en-IN')}
+                  ₹{(Number(clientWallet.walletBalance) || 0).toLocaleString('en-IN')}
                 </strong>
               </p>
 
@@ -736,14 +736,14 @@ export const FundsBillingPage = () => {
                   <span>Escrow Protection Active</span>
                 </div>
                 <p>
-                  ₹{clientWallet.nonWithdrawableEscrow.toLocaleString('en-IN')} held in active consultation escrow is protected and cannot be withdrawn until consultation completion or cancellation.
+                  ₹{(Number(clientWallet.nonWithdrawableEscrow) || 0).toLocaleString('en-IN')} held in active consultation escrow is protected and cannot be withdrawn until consultation completion or cancellation.
                 </p>
               </div>
 
               {clientWithdrawSuccess ? (
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center font-medium my-4">
                   <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
-                  ₹{Number(clientWithdrawAmount).toLocaleString('en-IN')} refund initiated successfully via IMPS/UPI!
+                  ₹{(Number(clientWithdrawAmount) || 0).toLocaleString('en-IN')} refund initiated successfully via IMPS/UPI!
                 </div>
               ) : (
                 <form onSubmit={handleClientWithdraw} className="space-y-4">
@@ -768,7 +768,7 @@ export const FundsBillingPage = () => {
                         onClick={() => setClientWithdrawAmount(clientWallet.walletBalance)}
                         className="text-[var(--bg-primary)] font-semibold hover:underline cursor-pointer"
                       >
-                        Withdraw All Remaining (₹{clientWallet.walletBalance.toLocaleString('en-IN')})
+                        Withdraw All Remaining (₹{(Number(clientWallet.walletBalance) || 0).toLocaleString('en-IN')})
                       </button>
                     </div>
                   </div>
@@ -1182,13 +1182,13 @@ export const FundsBillingPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard
           label="Total Billed YTD"
-          value={`₹${fundsData.totalEarned.toLocaleString('en-IN')}`}
+          value={`₹${(Number(fundsData.totalEarned) || 0).toLocaleString('en-IN')}`}
           subtext="+18.4% growth vs previous cycle"
           icon={DollarSign}
         />
         <MetricCard
           label="Withdrawable Balance"
-          value={`₹${fundsData.withdrawableBalance.toLocaleString('en-IN')}`}
+          value={`₹${(Number(fundsData.withdrawableBalance) || 0).toLocaleString('en-IN')}`}
           subtext="Available for immediate bank transfer"
           icon={Wallet}
           badge="Ready"
@@ -1196,7 +1196,7 @@ export const FundsBillingPage = () => {
         />
         <MetricCard
           label="Non-Withdrawable Escrow"
-          value={`₹${fundsData.nonWithdrawableEscrow.toLocaleString('en-IN')}`}
+          value={`₹${(Number(fundsData.nonWithdrawableEscrow) || 0).toLocaleString('en-IN')}`}
           subtext="Held safely until consultation ends"
           icon={Lock}
           badge="Protected"
@@ -1356,7 +1356,7 @@ export const FundsBillingPage = () => {
                     </span>
                   </div>
                   <p className="text-base font-serif font-bold text-stone-900">
-                    ₹{p.amount.toLocaleString('en-IN')}
+                    ₹{(Number(p.amount) || 0).toLocaleString('en-IN')}
                   </p>
                   <p className="text-[11px] text-stone-600 truncate">{p.method}</p>
                   <p className="text-[10px] text-stone-400 font-mono">{p.referenceId}</p>
@@ -1455,7 +1455,7 @@ export const FundsBillingPage = () => {
             <p className="text-stone-500 mb-4 font-sans leading-relaxed">
               Available balance:{' '}
               <strong className="text-stone-900 font-serif">
-                ₹{fundsData.withdrawableBalance.toLocaleString('en-IN')}
+                ₹{(Number(fundsData.withdrawableBalance) || 0).toLocaleString('en-IN')}
               </strong>
             </p>
 

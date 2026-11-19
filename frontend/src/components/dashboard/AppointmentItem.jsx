@@ -247,7 +247,7 @@ export const AppointmentItem = ({
                 onClick={() => onPay(appointment)}
                 className="px-2.5 py-1 rounded-lg bg-[var(--bg-primary)] text-white font-semibold hover:opacity-90 transition text-xs cursor-pointer"
               >
-                Pay ₹{Math.round((appointment.service?.price || 500) * 1.1).toLocaleString('en-IN')}
+                Pay ₹{(Math.round(Number(appointment.fee || appointment.service?.price || 1500) * 1.1) || 1650).toLocaleString('en-IN')}
               </button>
             )}
             {isPending && isLawyer && onAccept && preferredSlots.length >= 2 ? (
@@ -342,7 +342,7 @@ export const AppointmentItem = ({
 
           <div className="text-right">
             <span className="font-serif font-bold text-stone-900 text-sm">
-              ₹{(appointment.service?.price || 1500).toLocaleString('en-IN')}
+              ₹{(Number(appointment.fee || appointment.service?.price) || 1500).toLocaleString('en-IN')}
             </span>
           </div>
         </div>
@@ -684,7 +684,7 @@ export const AppointmentItem = ({
               onClick={() => onPay(appointment)}
               className="px-2.5 py-1 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-medium text-[11px] transition cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
             >
-              <span>{t('action.payRetainer', 'Pay Retainer')} (₹{Math.round((appointment.service?.price || 500) * 1.1).toLocaleString('en-IN')})</span>
+              <span>{t('action.payRetainer', 'Pay Retainer')} (₹{(Math.round(Number(appointment.fee || appointment.service?.price || 1500) * 1.1) || 1650).toLocaleString('en-IN')})</span>
             </button>
           )}
 

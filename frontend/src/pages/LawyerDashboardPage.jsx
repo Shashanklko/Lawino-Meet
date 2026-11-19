@@ -771,13 +771,13 @@ export const LawyerDashboardPage = () => {
                                 {apt.service?.title}
                               </p>
                               <p className="text-[10px] text-stone-500">
-                                {new Date(apt.slot?.startTime).toLocaleString('en-IN', {
+                                {apt.slot?.startTime ? new Date(apt.slot.startTime).toLocaleString('en-IN', {
                                   weekday: 'short',
                                   day: 'numeric',
                                   month: 'short',
                                   hour: '2-digit',
                                   minute: '2-digit',
-                                })}
+                                }) : 'Pending Confirmation'}
                               </p>
                             </div>
                           </div>
@@ -1137,16 +1137,16 @@ export const LawyerDashboardPage = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-stone-500">Scheduled Time</span>
                           <span className="font-semibold text-stone-800">
-                            {new Date(apt.slot?.startTime).toLocaleString('en-IN', {
+                            {apt.slot?.startTime ? new Date(apt.slot.startTime).toLocaleString('en-IN', {
                               dateStyle: 'medium',
                               timeStyle: 'short',
-                            })}
+                            }) : 'Pending Scheduling'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-stone-500">Retainer Fee</span>
                           <span className="font-serif font-bold text-stone-900">
-                            ₹{apt.service?.price?.toLocaleString('en-IN')}
+                            ₹{(Number(apt.service?.price || apt.fee) || 1500).toLocaleString('en-IN')}
                           </span>
                         </div>
                       </div>
@@ -1652,7 +1652,7 @@ export const LawyerDashboardPage = () => {
               <div className="flex justify-between items-center text-xs border-t border-stone-200 pt-1.5">
                 <span className="text-stone-500">Retainer Fee in Escrow:</span>
                 <span className="font-serif font-bold text-stone-900 text-sm">
-                  ₹{(completingApt.service?.price || 1800).toLocaleString('en-IN')}
+                  ₹{(Number(completingApt.service?.price || completingApt.fee) || 1800).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>
