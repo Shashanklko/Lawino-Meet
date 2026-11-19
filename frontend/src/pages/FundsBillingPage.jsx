@@ -140,16 +140,17 @@ export const FundsBillingPage = () => {
 
   // Filtered Lawyer/Firm Transactions
   const filteredLawyerTransactions = fundsData.transactions.filter((tx) => {
-    const matchesSearch =
-      tx.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.serviceType.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase();
+    const clientName = (tx.clientName || '').toLowerCase();
+    const id = (tx.id || '').toLowerCase();
+    const serviceType = (tx.serviceType || tx.description || '').toLowerCase();
 
+    const matchesSearch = !q || clientName.includes(q) || id.includes(q) || serviceType.includes(q);
     if (!matchesSearch) return false;
 
-    if (activeTab === 'ESCROW') return tx.status === 'NON_WITHDRAWABLE_ESCROW';
-    if (activeTab === 'WITHDRAWABLE') return tx.status === 'WITHDRAWABLE';
-    if (activeTab === 'PAID') return tx.status === 'PAID_OUT';
+    if (activeTab === 'ESCROW') return tx.type === 'ESCROW_HOLD' || tx.status === 'NON_WITHDRAWABLE_ESCROW' || tx.status === 'PENDING';
+    if (activeTab === 'WITHDRAWABLE') return tx.type === 'DEPOSIT' || tx.type === 'ESCROW_RELEASE' || tx.status === 'SUCCESS' || tx.status === 'COMPLETED';
+    if (activeTab === 'PAID') return tx.type === 'WITHDRAWAL' || tx.status === 'PAID_OUT';
     return true;
   });
 
@@ -198,11 +199,16 @@ export const FundsBillingPage = () => {
           transactions: txs,
         }));
 
+        const totalWithdrawnAmount = txs.filter((t) => t.type === 'WITHDRAWAL').reduce((s, t) => s + t.amount, 0);
+        const totalEarnedAmount = bal + escrow + totalWithdrawnAmount;
+
         setFundsData((prev) => ({
           ...prev,
           withdrawableBalance: bal,
           nonWithdrawableEscrow: escrow,
-          totalEarned: bal + escrow,
+          totalEarned: totalEarnedAmount,
+          totalWithdrawn: totalWithdrawnAmount,
+          upcomingPayouts: escrow,
           transactions: txs,
         }));
       }

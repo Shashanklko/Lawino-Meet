@@ -62,9 +62,7 @@ export const FloatingChatWidget = () => {
   };
 
   const handleLaunchMeeting = () => {
-    const roomId = activeConversation?.publicId
-      ? `chamber_${activeConversation.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
-      : 'chamber_consultation';
+    const roomId = activeConversation?.meetingRoomPublicId || activeConversation?.appointmentPublicId || activeConversation?.publicId || 'chamber_consultation';
     navigate(`/meeting/${roomId}`);
     setIsOpen(false);
   };

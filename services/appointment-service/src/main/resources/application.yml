@@ -41,3 +41,4 @@ app:
   services:
     user-service-url: ${USER_SERVICE_URL:http://localhost:8082}
     notification-service-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+    meeting-service-url: ${MEETING_SERVICE_URL:http://localhost:8084}

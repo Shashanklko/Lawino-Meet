@@ -39,6 +39,9 @@ public class AppointmentService {
     @Value("${app.services.notification-service-url:http://localhost:8085}")
     private String notificationServiceUrl;
 
+    @Value("${app.services.meeting-service-url:http://localhost:8084}")
+    private String meetingServiceUrl;
+
     @Transactional
     public AppointmentResponse bookAppointment(UserPrincipal client, CreateAppointmentRequest request) {
         AvailabilitySlot slot;
@@ -381,7 +384,8 @@ public class AppointmentService {
 
         // 2. Room assignment according to Consultation Type
         if (appointment.getConsultationType() == ConsultationType.ONLINE) {
-            appointment.setMeetingRoomPublicId(UUID.randomUUID().toString());
+            String roomId = initializeMeetingRoom(client, appointment);
+            appointment.setMeetingRoomPublicId(roomId != null ? roomId : appointment.getPublicId());
             appointment.setChatConversationPublicId("chat-" + appointment.getPublicId());
         } else if (appointment.getConsultationType() == ConsultationType.CHAT) {
             appointment.setMeetingRoomPublicId(null); // Strictly no video room
@@ -403,11 +407,21 @@ public class AppointmentService {
         log.info("Client {} verified retainer payment of ₹{} for appointment {}. Mode: {}. Status updated to CONFIRMED.",
                 client.getUsername(), fee, appointmentPublicId, appointment.getConsultationType());
 
+        // Notify lawyer
         dispatchNotification(
                 updated.getLawyerUserPublicId(),
-                "APPOINTMENT_ACCEPTED",
-                "Retainer Payment Verified",
+                "APPOINTMENT_CONFIRMED",
+                "Retainer Payment Received",
                 "Client " + client.getUsername() + " has completed payment for appointment #" + appointmentPublicId.substring(0, 8) + ". Consultation confirmed.",
+                appointmentPublicId
+        );
+
+        // Notify client
+        dispatchNotification(
+                updated.getClientUserPublicId(),
+                "PAYMENT_DEDUCTED",
+                "Consultation Confirmed & Unlocked",
+                "Payment of ₹" + fee + " processed successfully. Your consultation chamber is now active.",
                 appointmentPublicId
         );
 
@@ -711,14 +725,45 @@ public class AppointmentService {
         }
     }
 
+    private String initializeMeetingRoom(UserPrincipal client, Appointment appointment) {
+        try {
+            Map<String, Object> req = new HashMap<>();
+            req.put("appointmentPublicId", appointment.getPublicId());
+            req.put("clientUserPublicId", appointment.getClientUserPublicId());
+            req.put("clientUsername", appointment.getClientUsername());
+            req.put("lawyerUserPublicId", appointment.getLawyerUserPublicId());
+            req.put("lawyerUsername", appointment.getLawyerUsername());
+            req.put("consultationType", "ONLINE");
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(req, headers);
+
+            ResponseEntity<Map> res = restTemplate.postForEntity(
+                    meetingServiceUrl + "/api/meetings/rooms", entity, Map.class);
+            if (res.getBody() != null && res.getBody().containsKey("data")) {
+                Map data = (Map) res.getBody().get("data");
+                if (data != null && data.get("publicId") != null) {
+                    return data.get("publicId").toString();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Meeting room creation call to meeting-service ({}) returned: {}", meetingServiceUrl, e.getMessage());
+        }
+        return appointment.getPublicId();
+    }
+
     private void dispatchNotification(String recipientPublicId, String type, String title, String message, String relatedEntityId) {
         try {
             Map<String, Object> req = new HashMap<>();
             req.put("recipientUserPublicId", recipientPublicId);
+            req.put("notificationType", type);
             req.put("type", type);
             req.put("title", title);
             req.put("message", message);
+            req.put("referenceType", "APPOINTMENT");
             req.put("relatedEntityType", "APPOINTMENT");
+            req.put("referenceId", relatedEntityId);
             req.put("relatedEntityPublicId", relatedEntityId);
 
             HttpHeaders headers = new HttpHeaders();

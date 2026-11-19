@@ -268,12 +268,7 @@ export const ClientDashboardPage = () => {
   };
 
   const handleJoinCall = (apt) => {
-    const rawId = apt.publicId || apt.appointmentPublicId || apt.id;
-    const roomId = rawId
-      ? `chamber_${String(rawId).replace(/[^a-zA-Z0-9_-]/g, '_')}`
-      : (apt.meetingRoomPublicId && !apt.meetingRoomPublicId.includes('room-chamber')
-          ? apt.meetingRoomPublicId
-          : 'chamber_consultation');
+    const roomId = apt.meetingRoomPublicId || apt.publicId || apt.appointmentPublicId || apt.id || 'chamber_consultation';
     navigate(`/meeting/${roomId}`);
   };
 

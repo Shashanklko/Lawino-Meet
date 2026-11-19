@@ -249,9 +249,27 @@ public class MeetingService {
     }
 
     private MeetingRoom getRoomOrThrow(String roomPublicId) {
-        return roomRepository.findByPublicId(roomPublicId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND",
-                        "Meeting room not found with public ID: " + roomPublicId));
+        Optional<MeetingRoom> byPublicId = roomRepository.findByPublicId(roomPublicId);
+        if (byPublicId.isPresent()) {
+            return byPublicId.get();
+        }
+
+        String cleanId = roomPublicId != null && roomPublicId.startsWith("chamber_")
+                ? roomPublicId.substring("chamber_".length())
+                : roomPublicId;
+
+        Optional<MeetingRoom> byAptId = roomRepository.findByAppointmentPublicId(cleanId);
+        if (byAptId.isPresent()) {
+            return byAptId.get();
+        }
+
+        Optional<MeetingRoom> byCleanPublicId = roomRepository.findByPublicId(cleanId);
+        if (byCleanPublicId.isPresent()) {
+            return byCleanPublicId.get();
+        }
+
+        throw new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND",
+                "Meeting room not found with public ID: " + roomPublicId);
     }
 
     private void validateParticipantOrAdmin(MeetingRoom room, UserPrincipal principal) {

@@ -1,23 +1,10 @@
-# Stage 1: Build JAR using Maven
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
-WORKDIR /build
-
-COPY pom.xml .
-RUN mvn dependency:go-offline -B || true
-
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# Stage 2: Minimal Lightweight Runtime Image
-FROM eclipse-temurin:21-jre-alpine
+FROM maven:3.9.9-eclipse-temurin-21-alpine
 WORKDIR /app
 
-RUN apk add --no-cache curl
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup 2>/dev/null || true && adduser -S appuser -G appgroup 2>/dev/null || true
 USER appuser
 
-COPY --from=builder /build/target/*.jar app.jar
+COPY target/*.jar app.jar
 
 ENV PORT=8086
 EXPOSE 8086

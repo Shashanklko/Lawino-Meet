@@ -211,19 +211,23 @@ export const MessagesPage = () => {
   const isChatLocked = activeConversation?.isLocked;
 
   const handleLaunchMeeting = () => {
+    if (relatedAppointment?.meetingRoomPublicId) {
+      navigate(`/meeting/${relatedAppointment.meetingRoomPublicId}`);
+      return;
+    }
     if (relatedAppointment?.publicId) {
-      const roomId = `chamber_${relatedAppointment.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-      navigate(`/meeting/${roomId}`);
+      navigate(`/meeting/${relatedAppointment.publicId}`);
+      return;
+    }
+    if (appointments[0]?.meetingRoomPublicId) {
+      navigate(`/meeting/${appointments[0].meetingRoomPublicId}`);
       return;
     }
     if (appointments[0]?.publicId) {
-      const roomId = `chamber_${appointments[0].publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-      navigate(`/meeting/${roomId}`);
+      navigate(`/meeting/${appointments[0].publicId}`);
       return;
     }
-    const roomId = activeConversation?.publicId
-      ? `chamber_${activeConversation.publicId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
-      : 'chamber_consultation';
+    const roomId = activeConversation?.publicId || 'chamber_consultation';
     navigate(`/meeting/${roomId}`);
   };
 
