@@ -45,6 +45,11 @@ export const VideoMeetingPage = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [peerConnected, setPeerConnected] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [sessionOutcome, setSessionOutcome] = useState('COMPLETED'); // 'COMPLETED' | 'INCOMPLETE'
+  const [incompleteReason, setIncompleteReason] = useState('NO_SHOW');
+  const [issueNotes, setIssueNotes] = useState('');
+  const [isSubmittingOutcome, setIsSubmittingOutcome] = useState(false);
+  const [outcomeSubmitted, setOutcomeSubmitted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // WebRTC & Media Refs
@@ -141,6 +146,13 @@ export const VideoMeetingPage = () => {
     };
   }, [roomPublicId]);
 
+  // Ensure local video element displays local camera stream once loading completes
+  useEffect(() => {
+    if (!loading && localVideoRef.current && localStreamRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [loading]);
+
   // 2. Setup WebRTC Peer Connection & STOMP Signaling
   useEffect(() => {
     if (loading || error || !localStreamRef.current) return;
@@ -209,9 +221,9 @@ export const VideoMeetingPage = () => {
           const payload = JSON.parse(message.body);
           if (payload.senderUserPublicId === user?.publicId) return; // Ignore self
 
-          if (payload.type === 'USER_JOINED') {
-            // When other peer joins, the Lawyer initiates the offer
-            if (isLawyer) {
+          const initiateOffer = async () => {
+            if (!pc || pc.signalingState !== 'stable') return;
+            try {
               const offer = await pc.createOffer();
               await pc.setLocalDescription(offer);
               client.publish({
@@ -222,6 +234,28 @@ export const VideoMeetingPage = () => {
                   data: JSON.stringify(offer)
                 })
               });
+            } catch (err) {
+              console.warn('Error initiating WebRTC offer:', err);
+            }
+          };
+
+          if (payload.type === 'USER_JOINED') {
+            if (isLawyer) {
+              await initiateOffer();
+            } else {
+              // Client replies with PEER_READY so arriving lawyer receives presence confirmation
+              client.publish({
+                destination: `/app/meeting.signal/${roomPublicId}`,
+                body: JSON.stringify({
+                  type: 'PEER_READY',
+                  senderUserPublicId: user?.publicId,
+                  data: 'READY'
+                })
+              });
+            }
+          } else if (payload.type === 'PEER_READY') {
+            if (isLawyer) {
+              await initiateOffer();
             }
           } else if (payload.type === 'OFFER') {
             const offerObj = JSON.parse(payload.data);
@@ -393,22 +427,54 @@ export const VideoMeetingPage = () => {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-
       await meetingApi.endMeeting(roomPublicId);
-
-      // If appointmentPublicId is known and user is lawyer, complete appointment
-      if (isLawyer && meetingDetails?.appointmentPublicId) {
-        try {
-          await appointmentApi.completeAppointment(meetingDetails.appointmentPublicId);
-        } catch (err) {
-          console.warn('Error completing appointment:', err);
-        }
-      }
-
       setShowCompletionModal(true);
     } catch (err) {
       console.error('Error ending consultation:', err);
-      navigate(isLawyer ? '/lawyer' : '/client');
+      setShowCompletionModal(true);
+    }
+  };
+
+  const handleConfirmCompletion = async () => {
+    setIsSubmittingOutcome(true);
+    try {
+      if (meetingDetails?.appointmentPublicId) {
+        if (isLawyer) {
+          await appointmentApi.completeAppointment(meetingDetails.appointmentPublicId);
+        } else {
+          try {
+            await appointmentApi.confirmCompletion(meetingDetails.appointmentPublicId);
+          } catch (e) {
+            console.warn('Confirm completion error:', e);
+          }
+        }
+      }
+      setOutcomeSubmitted(true);
+    } catch (err) {
+      console.warn('Completion recording error:', err);
+      setOutcomeSubmitted(true);
+    } finally {
+      setIsSubmittingOutcome(false);
+    }
+  };
+
+  const handleConfirmIncomplete = async () => {
+    setIsSubmittingOutcome(true);
+    const reasonText = `[Incomplete Consultation] ${incompleteReason}: ${issueNotes || 'Client/Counsel indicated incomplete session'}`;
+    try {
+      if (meetingDetails?.appointmentPublicId) {
+        try {
+          await appointmentApi.cancelAppointment(meetingDetails.appointmentPublicId, reasonText);
+        } catch (e) {
+          console.warn('Incomplete reporting error:', e);
+        }
+      }
+      setOutcomeSubmitted(true);
+    } catch (err) {
+      console.warn('Incomplete reporting error:', err);
+      setOutcomeSubmitted(true);
+    } finally {
+      setIsSubmittingOutcome(false);
     }
   };
 
@@ -688,26 +754,167 @@ export const VideoMeetingPage = () => {
         </div>
       </footer>
 
-      {/* 5. Consultation Completed Modal */}
+      {/* 5. Consultation Concluded Modal (Completed or Not Completed) */}
       {showCompletionModal && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-            <div className="w-16 h-16 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-serif font-bold text-stone-100">Consultation Session Concluded</h3>
-            <p className="text-sm text-stone-400 mt-2">
-              The 1:1 legal tele-consultation between {meetingDetails?.lawyerUsername ? `Adv. ${meetingDetails.lawyerUsername}` : 'Counsel'} and {meetingDetails?.clientUsername || 'Client'} has been successfully concluded.
-            </p>
-            <div className="bg-stone-950 rounded-xl p-3 my-5 text-xs text-stone-300 font-mono border border-stone-800">
-              Duration: {formatDuration(callDuration)} &bull; Status: COMPLETED
-            </div>
-            <button
-              onClick={() => navigate(isLawyer ? '/lawyer' : '/client')}
-              className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg transition"
-            >
-              Return to Dashboard
-            </button>
+          <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center shadow-2xl animate-in fade-in zoom-in-95 text-stone-200">
+            {outcomeSubmitted ? (
+              <div className="space-y-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                  sessionOutcome === 'COMPLETED'
+                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                    : 'bg-rose-950/80 text-rose-400 border border-rose-800'
+                }`}>
+                  {sessionOutcome === 'COMPLETED' ? (
+                    <CheckCircle2 className="w-8 h-8" />
+                  ) : (
+                    <AlertCircle className="w-8 h-8" />
+                  )}
+                </div>
+                <h3 className="text-xl font-serif font-bold text-stone-100">
+                  {sessionOutcome === 'COMPLETED' ? 'Consultation Verified Completed' : 'Session Recorded as Incomplete'}
+                </h3>
+                <p className="text-xs text-stone-400 leading-relaxed max-w-sm mx-auto">
+                  {sessionOutcome === 'COMPLETED'
+                    ? 'Thank you. The session has been verified, and retainer fee escrow is queued for automated release to counsel.'
+                    : 'Your report has been securely registered. Retainer escrow is held and protected. Our legal operations support team will review the log.'}
+                </p>
+                <div className="bg-stone-950 rounded-xl p-3 text-xs text-stone-300 font-mono border border-stone-800">
+                  Duration: {formatDuration(callDuration)} &bull; Status: {sessionOutcome === 'COMPLETED' ? 'COMPLETED' : 'INCOMPLETE / REPORTED'}
+                </div>
+                <button
+                  onClick={() => navigate(isLawyer ? '/lawyer' : '/client')}
+                  className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-medium rounded-xl shadow-lg transition text-xs"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 text-left">
+                <div className="text-center">
+                  <div className="w-14 h-14 rounded-full bg-stone-800 text-amber-500 border border-stone-700 flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-xl font-serif font-bold text-stone-100">
+                    Consultation Concluded
+                  </h3>
+                  <p className="text-xs text-stone-400 mt-1">
+                    Call session ended between {meetingDetails?.lawyerUsername ? `Adv. ${meetingDetails.lawyerUsername}` : 'Counsel'} and {meetingDetails?.clientUsername || 'Client'}.
+                  </p>
+                  <div className="inline-block bg-stone-950 rounded-lg px-3 py-1 my-3 text-[11px] text-stone-400 font-mono border border-stone-800">
+                    Duration: {formatDuration(callDuration)}
+                  </div>
+                </div>
+
+                {/* Outcome Toggle */}
+                <div>
+                  <label className="block text-xs font-semibold text-stone-300 mb-2">
+                    How was this legal consultation session?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSessionOutcome('COMPLETED')}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                        sessionOutcome === 'COMPLETED'
+                          ? 'border-emerald-600 bg-emerald-950/40 text-emerald-200 ring-1 ring-emerald-600'
+                          : 'border-stone-800 bg-stone-950/60 text-stone-400 hover:bg-stone-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-1.5 font-bold text-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>Completed</span>
+                      </div>
+                      <p className="text-[10px] text-stone-400 font-normal mt-1 leading-snug">
+                        Advice concluded. Release escrow fee.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSessionOutcome('INCOMPLETE')}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                        sessionOutcome === 'INCOMPLETE'
+                          ? 'border-rose-600 bg-rose-950/40 text-rose-200 ring-1 ring-rose-600'
+                          : 'border-stone-800 bg-stone-950/60 text-stone-400 hover:bg-stone-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-1.5 font-bold text-xs">
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
+                        <span>Not Completed</span>
+                      </div>
+                      <p className="text-[10px] text-stone-400 font-normal mt-1 leading-snug">
+                        Hold escrow. Report issue / no-show.
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Incomplete Reason Details */}
+                {sessionOutcome === 'INCOMPLETE' && (
+                  <div className="p-3.5 rounded-xl bg-rose-950/30 border border-rose-900/60 space-y-2.5 text-xs">
+                    <span className="font-semibold text-rose-300 block text-[11px]">
+                      Reason for incomplete consultation:
+                    </span>
+                    <select
+                      value={incompleteReason}
+                      onChange={(e) => setIncompleteReason(e.target.value)}
+                      className="w-full p-2 rounded-lg bg-stone-950 border border-stone-800 text-xs text-stone-200 focus:outline-none focus:border-rose-500"
+                    >
+                      <option value="NO_SHOW">Peer was absent / did not join room</option>
+                      <option value="TECHNICAL_FAILURE">Audio or video technical breakdown</option>
+                      <option value="PREMATURE_DISCONNECT">Call disconnected prematurely</option>
+                      <option value="ADVICE_UNFULFILLED">Legal matter unresolved / left early</option>
+                      <option value="OTHER">Other technical or scheduling problem</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      placeholder="Optional brief notes on the issue..."
+                      value={issueNotes}
+                      onChange={(e) => setIssueNotes(e.target.value)}
+                      className="w-full p-2 rounded-lg bg-stone-950 border border-stone-800 text-xs text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-rose-500"
+                    />
+                    <p className="text-[10px] text-rose-400/90 font-mono">
+                      Escrow retainer will remain protected and will NOT be auto-settled.
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="pt-2 space-y-2">
+                  {sessionOutcome === 'COMPLETED' ? (
+                    <button
+                      type="button"
+                      disabled={isSubmittingOutcome}
+                      onClick={handleConfirmCompletion}
+                      className="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-medium rounded-xl shadow-lg transition text-xs flex items-center justify-center space-x-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{isSubmittingOutcome ? 'Verifying...' : 'Confirm Consultation Completed'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isSubmittingOutcome}
+                      onClick={handleConfirmIncomplete}
+                      className="w-full py-3 bg-gradient-to-r from-rose-700 to-rose-800 hover:from-rose-600 hover:to-rose-700 text-white font-medium rounded-xl shadow-lg transition text-xs flex items-center justify-center space-x-1.5"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{isSubmittingOutcome ? 'Recording...' : 'Mark Consultation as Not Completed'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(isLawyer ? '/lawyer' : '/client')}
+                    className="w-full py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-300 font-medium rounded-xl transition text-xs"
+                  >
+                    Skip &amp; Return to Dashboard
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

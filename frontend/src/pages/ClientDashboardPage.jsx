@@ -40,6 +40,12 @@ import { meetingApi } from '../api/meetingApi';
 import { walletApi } from '../api/walletApi';
 import { useChat } from '../context/ChatContext';
 
+const formatAdvocateName = (name) => {
+  if (!name) return 'Counsel';
+  const clean = String(name).trim();
+  return clean.toLowerCase().startsWith('adv.') ? clean : `Adv. ${clean}`;
+};
+
 const normalizeFirmItem = (f) => {
   return {
     ...f,
@@ -543,7 +549,7 @@ export const ClientDashboardPage = () => {
             formatted: `${start2.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
           }
         ]),
-        consultationType: selectedConsultMode || 'ONLINE',
+        consultationType: (selectedConsultMode === 'OFFLINE' || selectedConsultMode === 'IN_PERSON') ? 'IN_PERSON' : (selectedConsultMode || 'ONLINE'),
         consultationReason: reason,
         firmPublicId: channel === 'FIRM' ? (lawyer.firmPublicId || null) : null,
       };
@@ -590,7 +596,7 @@ export const ClientDashboardPage = () => {
             formatted: `${start2.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
           }
         ]),
-        consultationType: selectedConsultMode || 'ONLINE',
+        consultationType: (selectedConsultMode === 'OFFLINE' || selectedConsultMode === 'IN_PERSON') ? 'IN_PERSON' : (selectedConsultMode || 'ONLINE'),
         consultationReason: reason,
         firmPublicId: channel === 'FIRM' ? (lawyer.firmPublicId || null) : null,
       };
@@ -707,7 +713,7 @@ export const ClientDashboardPage = () => {
     const matchesMode =
       selectedMode === 'ALL' ||
       (selectedMode === 'ONLINE' && l.availableOnline) ||
-      (selectedMode === 'OFFLINE' && l.availableOffline);
+      ((selectedMode === 'OFFLINE' || selectedMode === 'IN_PERSON') && l.availableOffline);
 
     return matchesSearch && matchesSpec && matchesCity && matchesMode;
   });
@@ -1171,7 +1177,7 @@ export const ClientDashboardPage = () => {
                 >
                   <option value="ALL">Any Mode</option>
                   <option value="ONLINE">Online WebRTC</option>
-                  <option value="OFFLINE">Chamber Visit</option>
+                  <option value="IN_PERSON">Chamber Visit</option>
                 </select>
               </div>
             </div>
@@ -1216,20 +1222,32 @@ export const ClientDashboardPage = () => {
 
                     {/* Advocate Profile Core */}
                     <div className="flex items-start space-x-3 mb-3">
-                      <div className="w-11 h-11 rounded-xl bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-base shadow-xs shrink-0">
+                      <Link
+                        to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                        className="w-11 h-11 rounded-xl bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-base shadow-xs shrink-0 hover:opacity-90 transition"
+                        title="View Full Profile"
+                      >
                         {adv.fullName[4] || 'A'}
-                      </div>
+                      </Link>
                       <div className="overflow-hidden">
-                        <h4 className="font-serif font-bold text-sm text-stone-900 truncate">
+                        <Link
+                          to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                          className="font-serif font-bold text-sm text-stone-900 truncate block hover:text-[var(--bg-primary)] hover:underline transition"
+                          title="View Full Profile"
+                        >
                           {adv.fullName}
-                        </h4>
+                        </Link>
                         <p className="text-[11px] text-stone-500 font-sans truncate">
                           {adv.specialization?.replace('_', ' ')} • {adv.yearsOfExperience} Years Exp
                         </p>
                         {adv.firmAffiliation && (
-                          <p className="text-[10px] text-blue-700 font-medium truncate mt-0.5">
+                          <Link
+                            to={`/firms/${adv.firmAffiliation.firmPublicId || adv.firmAffiliation.firmSlug || 'firm-001-lex-veritas'}`}
+                            className="text-[10px] text-blue-700 hover:text-blue-900 hover:underline font-medium truncate block mt-0.5"
+                            title="View Law Firm Profile"
+                          >
                             {adv.firmAffiliation.firmName} ({adv.firmAffiliation.designation})
-                          </p>
+                          </Link>
                         )}
                       </div>
                     </div>
@@ -1268,53 +1286,69 @@ export const ClientDashboardPage = () => {
                   {/* Permitted Booking Channels (Rule from Section 5.B) */}
                   <div className="pt-2 border-t border-stone-100">
                     {isFirmExclusive ? (
-                      <div className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedLawyerModal({ ...adv, forcedChannel: 'FIRM' });
-                          }}
-                          className="w-full py-2 px-3 rounded-lg bg-blue-800 hover:bg-blue-900 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
-                        >
-                          <Building className="w-3.5 h-3.5" />
-                          <span>Request Through Firm</span>
-                        </button>
+                      <div className="space-y-1.5">
+                        <div className="grid grid-cols-5 gap-1.5">
+                          <Link
+                            to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                            className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
+                          >
+                            <span>View Details</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLawyerModal({ ...adv, forcedChannel: 'FIRM' });
+                            }}
+                            className="col-span-3 py-2 px-2 rounded-lg bg-blue-800 hover:bg-blue-900 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
+                          >
+                            <Building className="w-3.5 h-3.5" />
+                            <span>Request via Firm</span>
+                          </button>
+                        </div>
                         <p className="text-[9px] text-stone-400 text-center font-sans">
                           Practices exclusively with {adv.firmAffiliation.firmName}.
                         </p>
                       </div>
                     ) : isFirmAndIndep ? (
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="space-y-1.5">
+                        <div className="grid grid-cols-5 gap-1.5">
+                          <Link
+                            to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                            className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
+                          >
+                            <span>View Details</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLawyerModal({ ...adv, forcedChannel: 'INDEPENDENT' });
+                            }}
+                            className="col-span-3 py-2 px-2.5 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Book Consultation</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-5 gap-1.5">
+                        <Link
+                          to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                          className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
+                        >
+                          <span>View Details</span>
+                        </Link>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedLawyerModal({ ...adv, forcedChannel: 'INDEPENDENT' });
                           }}
-                          className="py-1.5 px-2 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-medium text-xs flex items-center justify-center space-x-1 transition cursor-pointer"
+                          className="col-span-3 py-2 px-2.5 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
                         >
-                          <span>Independent</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedLawyerModal({ ...adv, forcedChannel: 'FIRM' });
-                          }}
-                          className="py-1.5 px-2 rounded-lg border border-blue-300 text-blue-800 hover:bg-blue-50 font-medium text-xs flex items-center justify-center space-x-1 transition cursor-pointer"
-                        >
-                          <span>Through Firm</span>
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Book Consultation</span>
                         </button>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedLawyerModal({ ...adv, forcedChannel: 'INDEPENDENT' });
-                        }}
-                        className="w-full py-2 px-3 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Book Consultation</span>
-                      </button>
                     )}
                   </div>
                 </div>
@@ -1370,14 +1404,22 @@ export const ClientDashboardPage = () => {
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 mb-3">
                     <div className="flex items-start space-x-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-stone-900 to-stone-700 text-white flex items-center justify-center font-serif font-bold text-lg shadow-xs shrink-0">
+                      <Link
+                        to={`/firms/${firm.publicId || firm.slug}`}
+                        className="w-12 h-12 rounded-xl bg-gradient-to-tr from-stone-900 to-stone-700 text-white flex items-center justify-center font-serif font-bold text-lg shadow-xs shrink-0 hover:opacity-90 transition"
+                        title="View Full Firm Profile"
+                      >
                         {firm.name[0]}
-                      </div>
+                      </Link>
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <h4 className="font-serif font-bold text-base text-stone-900 leading-snug">
+                          <Link
+                            to={`/firms/${firm.publicId || firm.slug}`}
+                            className="font-serif font-bold text-base text-stone-900 leading-snug hover:text-[var(--bg-primary)] hover:underline transition"
+                            title="View Full Firm Profile"
+                          >
                             {firm.name}
-                          </h4>
+                          </Link>
                           {firm.verified && (
                             <span className="text-[10px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
                               Verified LLP
@@ -1431,12 +1473,12 @@ export const ClientDashboardPage = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
+                <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
                   <Link
-                    to="/client/advocates"
-                    className="text-xs font-semibold text-[var(--bg-primary)] hover:underline flex items-center space-x-1"
+                    to={`/firms/${firm.publicId || firm.slug}`}
+                    className="px-3 py-1.5 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center space-x-1 transition shadow-xs"
                   >
-                    <span>Explore Firm Lawyers</span>
+                    <span>View Firm Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
 
@@ -1650,7 +1692,7 @@ export const ClientDashboardPage = () => {
                     </span>
                   </div>
                   <p className="text-[11px] text-amber-900 leading-relaxed font-sans">
-                    Each consultation session is strictly <strong>1 hour</strong>. Please choose <strong>2 preferred time slots</strong> (Primary &amp; Alternative). Adv. {selectedLawyerModal.fullName} will confirm or propose a convenient adjustment.
+                    Each consultation session is strictly <strong>1 hour</strong>. Please choose <strong>2 preferred time slots</strong> (Primary &amp; Alternative). {formatAdvocateName(selectedLawyerModal.fullName)} will confirm or propose a convenient adjustment.
                   </p>
                 </div>
 
@@ -1722,7 +1764,7 @@ export const ClientDashboardPage = () => {
                           <div className="space-y-0.5">
                             <p className="font-semibold text-amber-900">Custom Scheduling Available</p>
                             <p className="text-[11px] text-amber-800 leading-relaxed">
-                              Adv. {selectedLawyerModal.fullName} currently has no pre-listed calendar slots. You can propose 2 preferred 1-hour consultation times below, and counsel will review and confirm your session.
+                              {formatAdvocateName(selectedLawyerModal.fullName)} currently has no pre-listed calendar slots. You can propose 2 preferred 1-hour consultation times below, and counsel will review and confirm your session.
                             </p>
                           </div>
                         </div>
@@ -1997,9 +2039,9 @@ export const ClientDashboardPage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedConsultMode('OFFLINE')}
+                      onClick={() => setSelectedConsultMode('IN_PERSON')}
                       className={`p-2.5 rounded-xl border text-left transition ${
-                        selectedConsultMode === 'OFFLINE'
+                        selectedConsultMode === 'IN_PERSON' || selectedConsultMode === 'OFFLINE'
                           ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900'
                           : 'border-stone-200 text-stone-600 hover:bg-stone-50'
                       }`}

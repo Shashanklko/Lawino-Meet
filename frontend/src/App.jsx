@@ -13,6 +13,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LawyerDiscoveryPage } from './pages/LawyerDiscoveryPage';
 import { LawyerProfilePage } from './pages/LawyerProfilePage';
+import { FirmProfilePage } from './pages/FirmProfilePage';
 import { ClientDashboardPage } from './pages/ClientDashboardPage';
 import { LawyerDashboardPage } from './pages/LawyerDashboardPage';
 import { LawyerSlotsPage } from './pages/LawyerSlotsPage';
@@ -44,6 +45,9 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/lawyers" element={<LawyerDiscoveryPage />} />
                   <Route path="/lawyers/:lawyerPublicId" element={<LawyerProfilePage />} />
+                  <Route path="/firms/:firmIdentifier" element={<FirmProfilePage />} />
+                  <Route path="/client/advocates/:lawyerPublicId" element={<LawyerProfilePage />} />
+                  <Route path="/client/firms/:firmIdentifier" element={<FirmProfilePage />} />
 
                   {/* Common Protected Routes */}
                   <Route element={<ProtectedRoute />}>

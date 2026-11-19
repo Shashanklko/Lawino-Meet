@@ -103,7 +103,25 @@ export const LawyerProfilePage = () => {
         if (lawyerRes.status === 'fulfilled' && lawyerRes.value.success && lawyerRes.value.data) {
           setLawyer(lawyerRes.value.data);
         } else {
-          setError('Advocate profile not found.');
+          // Fallback search across lawyers list by UUID, slug or username
+          try {
+            const allRes = await userApi.searchLawyers();
+            const list = allRes?.data?.content || allRes?.data || [];
+            const found = list.find(
+              (l) =>
+                l.publicId === lawyerPublicId ||
+                l.userPublicId === lawyerPublicId ||
+                l.slug === lawyerPublicId ||
+                l.username === lawyerPublicId
+            );
+            if (found) {
+              setLawyer(found);
+            } else {
+              setError('Advocate profile not found.');
+            }
+          } catch {
+            setError('Advocate profile not found.');
+          }
         }
         if (servicesRes.status === 'fulfilled' && servicesRes.value.success && servicesRes.value.data?.length) {
           setServices(servicesRes.value.data);

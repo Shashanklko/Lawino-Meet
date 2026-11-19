@@ -177,8 +177,24 @@ export const ChatProvider = ({ children }) => {
       const res = await chatApi.getMyConversations();
       const rawList = res?.data || [];
       const normalizedList = rawList.map(normalizeConversation);
-      setConversations(normalizedList);
-      const totalUnread = normalizedList.reduce(
+      // Deduplicate conversations per other participant so duplicate threads never appear in sidebar
+      const dedupedMap = new Map();
+      normalizedList.forEach((c) => {
+        const key = c.targetUser?.publicId || c.publicId;
+        if (!dedupedMap.has(key)) {
+          dedupedMap.set(key, c);
+        } else {
+          const existing = dedupedMap.get(key);
+          const tNew = new Date(c.lastMessageAt || c.createdAt || 0).getTime();
+          const tExisting = new Date(existing.lastMessageAt || existing.createdAt || 0).getTime();
+          if (tNew > tExisting) {
+            dedupedMap.set(key, c);
+          }
+        }
+      });
+      const uniqueList = Array.from(dedupedMap.values());
+      setConversations(uniqueList);
+      const totalUnread = uniqueList.reduce(
         (acc, c) => acc + (c.unreadCount || c.unreadMessagesCount || 0),
         0
       );
@@ -186,8 +202,9 @@ export const ChatProvider = ({ children }) => {
 
       // If active conversation is open, update its reference
       setActiveConversation((prev) => {
-        if (!prev) return normalizedList[0] || null;
-        const matching = normalizedList.find((c) => c.publicId === prev.publicId);
+        if (!prev) return uniqueList[0] || null;
+        const matching = uniqueList.find((c) => c.publicId === prev.publicId) ||
+          uniqueList.find((c) => c.targetUser?.publicId === prev.targetUser?.publicId);
         return matching ? { ...prev, ...matching } : prev;
       });
     } catch {
@@ -351,7 +368,7 @@ export const ChatProvider = ({ children }) => {
     setMessages((prev) => [...prev, newMsg]);
 
     try {
-      // Call backend REST endpoint
+      // Call backend REST endpoint (persists to DB and triggers STOMP broadcast automatically)
       const res = await chatApi.sendMessage(activeConversation.publicId, trimmed);
       if (res?.data) {
         // Replace local optimistic message with persisted entity
@@ -359,21 +376,6 @@ export const ChatProvider = ({ children }) => {
           prev.map((m) => (m.publicId === localPublicId ? res.data : m))
         );
       }
-
-      // Also publish to STOMP if connected
-      if (stompClientRef.current && stompClientRef.current.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/chat.send',
-          body: JSON.stringify({
-            conversationPublicId: activeConversation.publicId,
-            content: trimmed,
-            senderPublicId: user?.publicId,
-            senderUsername: user?.username,
-            recipientUserPublicId: activeConversation.targetUser?.publicId,
-          }),
-        });
-      }
-
       fetchConversations();
     } catch (err) {
       console.warn('Chat send encountered an issue, preserving optimistic state:', err);

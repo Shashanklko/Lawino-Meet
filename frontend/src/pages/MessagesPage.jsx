@@ -52,6 +52,7 @@ export const MessagesPage = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentSuccessToast, setPaymentSuccessToast] = useState('');
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -196,11 +197,17 @@ export const MessagesPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    sendMessage(inputText.trim());
+    if (!inputText.trim() || isSendingMessage) return;
+    const textToSend = inputText.trim();
     setInputText('');
+    setIsSendingMessage(true);
+    try {
+      await sendMessage(textToSend);
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   const filteredConversations = conversations.filter((c) => {
