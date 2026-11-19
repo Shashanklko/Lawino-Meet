@@ -31,6 +31,7 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/api/meetings/ping",
                     "/api/meetings/ice-servers",
+                    "/api/meetings/rooms",
                     "/ws-meeting/**"
                 ).permitAll()
                 .anyRequest().authenticated()

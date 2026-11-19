@@ -21,6 +21,11 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     @Query("SELECT c FROM Conversation c WHERE " +
            "(c.participantOnePublicId = :u1 AND c.participantTwoPublicId = :u2) OR " +
-           "(c.participantOnePublicId = :u2 AND c.participantTwoPublicId = :u1)")
-    Optional<Conversation> findConversationBetween(@Param("u1") String u1, @Param("u2") String u2);
+           "(c.participantOnePublicId = :u2 AND c.participantTwoPublicId = :u1) " +
+           "ORDER BY c.lastMessageAt DESC")
+    List<Conversation> findAllConversationsBetween(@Param("u1") String u1, @Param("u2") String u2);
+
+    default Optional<Conversation> findConversationBetween(String u1, String u2) {
+        return findAllConversationsBetween(u1, u2).stream().findFirst();
+    }
 }

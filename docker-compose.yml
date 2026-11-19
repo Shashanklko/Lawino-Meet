@@ -124,6 +124,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEETING_SERVICE_URL: http://meeting-service:8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -165,6 +166,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEETING_SERVICE_URL: http://meeting-service:8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -200,6 +202,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEETING_SERVICE_URL: http://meeting-service:8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -235,6 +238,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEETING_SERVICE_URL: http://meeting-service:8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -270,6 +274,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEETING_SERVICE_URL: http://meeting-service:8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672

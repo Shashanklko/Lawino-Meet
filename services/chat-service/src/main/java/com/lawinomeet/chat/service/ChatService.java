@@ -50,44 +50,7 @@ public class ChatService {
                         sender.getPublicId(), sender.getUsername(),
                         request.getRecipientUserPublicId(), request.getRecipientUsername());
 
-        Instant now = Instant.now();
-        String snippet = request.getContent().length() > 450 ?
-                request.getContent().substring(0, 450) + "..." : request.getContent();
-        conversation.setLastMessageContent(snippet);
-        conversation.setLastMessageAt(now);
-        conversationRepository.save(conversation);
-
-        ChatMessage message = ChatMessage.builder()
-                .publicId(UUID.randomUUID().toString())
-                .conversation(conversation)
-                .senderUserPublicId(sender.getPublicId())
-                .senderUsername(sender.getUsername())
-                .recipientUserPublicId(request.getRecipientUserPublicId())
-                .recipientUsername(request.getRecipientUsername())
-                .content(request.getContent())
-                .isRead(false)
-                .build();
-
-        ChatMessage saved = messageRepository.save(message);
-        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved);
-
-        // Real-time WebSocket dispatch to recipient's private user queue and shared topics
-        try {
-            messagingTemplate.convertAndSendToUser(
-                    request.getRecipientUserPublicId(),
-                    "/queue/messages",
-                    response
-            );
-            // Public topic broadcasts for reliable real-time updates across browsers
-            messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getPublicId(), response);
-            messagingTemplate.convertAndSend("/topic/users/" + request.getRecipientUserPublicId() + "/messages", response);
-            messagingTemplate.convertAndSend("/topic/users/" + sender.getPublicId() + "/messages", response);
-            log.info("Dispatched WebSocket message {} to conversation {} and users", saved.getPublicId(), conversation.getPublicId());
-        } catch (Exception e) {
-            log.warn("WebSocket dispatch failed (client will fetch via REST): {}", e.getMessage());
-        }
-
-        return response;
+        return saveAndDispatchMessage(sender, conversation, request.getRecipientUserPublicId(), request.getRecipientUsername(), request.getContent());
     }
 
     @Transactional
@@ -108,13 +71,47 @@ public class ChatService {
                 ? conversation.getParticipantTwoUsername()
                 : conversation.getParticipantOneUsername();
 
-        SendMessageRequest request = SendMessageRequest.builder()
+        return saveAndDispatchMessage(sender, conversation, recipientPublicId, recipientUsername, content);
+    }
+
+    private ChatMessageResponse saveAndDispatchMessage(
+            UserPrincipal sender, Conversation conversation,
+            String recipientPublicId, String recipientUsername, String content) {
+        Instant now = Instant.now();
+        String snippet = content.length() > 450 ? content.substring(0, 450) + "..." : content;
+        conversation.setLastMessageContent(snippet);
+        conversation.setLastMessageAt(now);
+        conversationRepository.save(conversation);
+
+        ChatMessage message = ChatMessage.builder()
+                .publicId(UUID.randomUUID().toString())
+                .conversation(conversation)
+                .senderUserPublicId(sender.getPublicId())
+                .senderUsername(sender.getUsername())
                 .recipientUserPublicId(recipientPublicId)
                 .recipientUsername(recipientUsername)
                 .content(content)
+                .isRead(false)
                 .build();
 
-        return sendMessage(sender, request);
+        ChatMessage saved = messageRepository.save(message);
+        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved);
+
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    recipientPublicId,
+                    "/queue/messages",
+                    response
+            );
+            messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getPublicId(), response);
+            messagingTemplate.convertAndSend("/topic/users/" + recipientPublicId + "/messages", response);
+            messagingTemplate.convertAndSend("/topic/users/" + sender.getPublicId() + "/messages", response);
+            log.info("Dispatched WebSocket message {} to conversation {} and users", saved.getPublicId(), conversation.getPublicId());
+        } catch (Exception e) {
+            log.warn("WebSocket dispatch failed (client will fetch via REST): {}", e.getMessage());
+        }
+
+        return response;
     }
 
     @Transactional
@@ -270,29 +267,43 @@ public class ChatService {
 
     private Conversation getOrCreateConversationForAppointment(
             String user1Id, String user1Name, String user2Id, String user2Name, String appointmentPublicId) {
-        return conversationRepository.findByAppointmentPublicId(appointmentPublicId)
-                .orElseGet(() -> {
-                    boolean isOrder = user1Id.compareTo(user2Id) < 0;
-                    String p1Id = isOrder ? user1Id : user2Id;
-                    String p1Name = isOrder ? user1Name : user2Name;
-                    String p2Id = isOrder ? user2Id : user1Id;
-                    String p2Name = isOrder ? user2Name : user1Name;
+        if (appointmentPublicId != null && !appointmentPublicId.isBlank()) {
+            var existingByApt = conversationRepository.findByAppointmentPublicId(appointmentPublicId);
+            if (existingByApt.isPresent()) {
+                return existingByApt.get();
+            }
+        }
 
-                    Conversation conv = Conversation.builder()
-                            .publicId(UUID.randomUUID().toString())
-                            .appointmentPublicId(appointmentPublicId)
-                            .participantOnePublicId(p1Id)
-                            .participantOneUsername(p1Name)
-                            .participantTwoPublicId(p2Id)
-                            .participantTwoUsername(p2Name)
-                            .lastMessageAt(Instant.now())
-                            .build();
+        var existingBetween = conversationRepository.findConversationBetween(user1Id, user2Id);
+        if (existingBetween.isPresent()) {
+            Conversation conv = existingBetween.get();
+            if (appointmentPublicId != null && !appointmentPublicId.isBlank() && conv.getAppointmentPublicId() == null) {
+                conv.setAppointmentPublicId(appointmentPublicId);
+                conversationRepository.save(conv);
+            }
+            return conv;
+        }
 
-                    Conversation saved = conversationRepository.save(conv);
-                    log.info("Created new isolated chat conversation {} for appointment {} between {} and {}",
-                            saved.getPublicId(), appointmentPublicId, p1Id, p2Id);
-                    return saved;
-                });
+        boolean isOrder = user1Id.compareTo(user2Id) < 0;
+        String p1Id = isOrder ? user1Id : user2Id;
+        String p1Name = isOrder ? user1Name : user2Name;
+        String p2Id = isOrder ? user2Id : user1Id;
+        String p2Name = isOrder ? user2Name : user1Name;
+
+        Conversation conv = Conversation.builder()
+                .publicId(UUID.randomUUID().toString())
+                .appointmentPublicId(appointmentPublicId)
+                .participantOnePublicId(p1Id)
+                .participantOneUsername(p1Name)
+                .participantTwoPublicId(p2Id)
+                .participantTwoUsername(p2Name)
+                .lastMessageAt(Instant.now())
+                .build();
+
+        Conversation saved = conversationRepository.save(conv);
+        log.info("Created new unified chat conversation {} for appointment {} between {} and {}",
+                saved.getPublicId(), appointmentPublicId, p1Id, p2Id);
+        return saved;
     }
 
     private Conversation getOrCreateConversation(String user1Id, String user1Name, String user2Id, String user2Name) {

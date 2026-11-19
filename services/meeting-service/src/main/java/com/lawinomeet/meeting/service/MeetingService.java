@@ -78,9 +78,9 @@ public class MeetingService {
         return MeetingRoomResponse.fromEntity(saved, getIceServers());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public MeetingRoomResponse getRoom(UserPrincipal principal, String roomPublicId) {
-        MeetingRoom room = getRoomOrThrow(roomPublicId);
+        MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
         validateParticipantOrAdmin(room, principal);
         return MeetingRoomResponse.fromEntity(room, getIceServers());
     }
@@ -88,15 +88,14 @@ public class MeetingService {
     @Transactional(readOnly = true)
     public MeetingRoomResponse getRoomByAppointment(UserPrincipal principal, String appointmentPublicId) {
         MeetingRoom room = roomRepository.findByAppointmentPublicId(appointmentPublicId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND",
-                        "No meeting room found for this appointment."));
+                .orElseGet(() -> getRoomOrThrow(appointmentPublicId, principal));
         validateParticipantOrAdmin(room, principal);
         return MeetingRoomResponse.fromEntity(room, getIceServers());
     }
 
     @Transactional
     public JoinRoomResponse joinRoom(UserPrincipal principal, String roomPublicId) {
-        MeetingRoom room = getRoomOrThrow(roomPublicId);
+        MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
         validateParticipantOrAdmin(room, principal);
 
         if (room.getRoomStatus() == RoomStatus.ENDED) {
@@ -154,7 +153,7 @@ public class MeetingService {
 
     @Transactional
     public void leaveRoom(UserPrincipal principal, String roomPublicId) {
-        MeetingRoom room = getRoomOrThrow(roomPublicId);
+        MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
         validateParticipantOrAdmin(room, principal);
 
         participantRepository.findTopByMeetingRoomIdAndUserPublicIdOrderByJoinedAtDesc(room.getId(), principal.getPublicId())
@@ -179,7 +178,7 @@ public class MeetingService {
 
     @Transactional
     public MeetingRoomResponse endRoom(UserPrincipal principal, String roomPublicId) {
-        MeetingRoom room = getRoomOrThrow(roomPublicId);
+        MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
 
         boolean isHost = principal.getPublicId().equals(room.getLawyerUserPublicId());
         boolean isAdmin = "PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
@@ -219,7 +218,7 @@ public class MeetingService {
     }
 
     public void relaySignal(UserPrincipal principal, String roomPublicId, SignalingPayload payload) {
-        MeetingRoom room = getRoomOrThrow(roomPublicId);
+        MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
         validateParticipantOrAdmin(room, principal);
 
         payload.setSenderUserPublicId(principal.getPublicId());
@@ -248,7 +247,7 @@ public class MeetingService {
         return configs;
     }
 
-    private MeetingRoom getRoomOrThrow(String roomPublicId) {
+    private MeetingRoom getRoomOrThrow(String roomPublicId, UserPrincipal principal) {
         Optional<MeetingRoom> byPublicId = roomRepository.findByPublicId(roomPublicId);
         if (byPublicId.isPresent()) {
             return byPublicId.get();
@@ -268,11 +267,47 @@ public class MeetingService {
             return byCleanPublicId.get();
         }
 
+        // Auto-provision consultation chamber on-demand for authenticated users
+        if (principal != null && cleanId != null && !cleanId.isBlank()) {
+            String role = principal.getRole() != null ? principal.getRole() : "";
+            boolean isLawyer = role.toUpperCase().contains("LAWYER");
+            MeetingRoom autoRoom = MeetingRoom.builder()
+                    .publicId(cleanId)
+                    .appointmentPublicId(cleanId)
+                    .lawyerUserPublicId(isLawyer ? principal.getPublicId() : null)
+                    .lawyerUsername(isLawyer ? principal.getUsername() : null)
+                    .clientUserPublicId(!isLawyer ? principal.getPublicId() : null)
+                    .clientUsername(!isLawyer ? principal.getUsername() : null)
+                    .roomStatus(RoomStatus.WAITING)
+                    .roomToken(UUID.randomUUID().toString().replace("-", ""))
+                    .build();
+            log.info("Auto-provisioned consultation chamber {} for user {}", cleanId, principal.getUsername());
+            return roomRepository.save(autoRoom);
+        }
+
         throw new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND",
                 "Meeting room not found with public ID: " + roomPublicId);
     }
 
     private void validateParticipantOrAdmin(MeetingRoom room, UserPrincipal principal) {
+        if (principal == null) {
+            return;
+        }
+
+        if (room.getClientUserPublicId() == null && !principal.getRole().toUpperCase().contains("LAWYER")) {
+            room.setClientUserPublicId(principal.getPublicId());
+            room.setClientUsername(principal.getUsername());
+            roomRepository.save(room);
+            return;
+        }
+
+        if (room.getLawyerUserPublicId() == null && principal.getRole().toUpperCase().contains("LAWYER")) {
+            room.setLawyerUserPublicId(principal.getPublicId());
+            room.setLawyerUsername(principal.getUsername());
+            roomRepository.save(room);
+            return;
+        }
+
         boolean isDirect = room.isAuthorizedParticipant(principal.getPublicId());
         boolean isAdmin = "PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
                           "ROLE_PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
