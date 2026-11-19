@@ -38,3 +38,12 @@ app:
   jwt:
     secret: ${JWT_SECRET:super-secret-jwt-key-change-this-in-production-min-256-bits-length}
     issuer: ${JWT_ISSUER:lawino-meet}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true

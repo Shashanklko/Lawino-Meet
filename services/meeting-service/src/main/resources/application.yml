@@ -44,3 +44,12 @@ webrtc:
   turn-server: ${TURN_SERVER_URL:}
   turn-username: ${TURN_USERNAME:}
   turn-credential: ${TURN_CREDENTIAL:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true

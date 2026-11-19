@@ -42,3 +42,12 @@ app:
     user-service-url: ${USER_SERVICE_URL:http://localhost:8082}
     notification-service-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
     meeting-service-url: ${MEETING_SERVICE_URL:http://localhost:8084}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
