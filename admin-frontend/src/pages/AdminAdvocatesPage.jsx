@@ -47,10 +47,10 @@ export const AdminAdvocatesPage = () => {
 
   const filteredAdvocates = advocates.filter((a) => {
     const matchesSearch =
-      a.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.barCouncilNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.specialization.toLowerCase().includes(searchQuery.toLowerCase());
+      (a.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.barCouncilNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.specialization || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesVerif = verificationFilter === 'ALL' || a.verificationStatus === verificationFilter;
     const matchesPractice = practiceFilter === 'ALL' || a.practiceArrangement === practiceFilter;
@@ -197,9 +197,9 @@ export const AdminAdvocatesPage = () => {
                       {adv.firmAffiliation ? (
                         <div>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                            FIRM: {adv.firmAffiliation}
+                            FIRM: {typeof adv.firmAffiliation === 'object' ? adv.firmAffiliation?.firmName : adv.firmAffiliation}
                           </span>
-                          <p className="text-[9px] text-stone-500 mt-0.5">{adv.firmRole}</p>
+                          <p className="text-[9px] text-stone-500 mt-0.5">{adv.firmRole || 'Member'}</p>
                         </div>
                       ) : (
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
@@ -208,7 +208,7 @@ export const AdminAdvocatesPage = () => {
                       )}
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold text-amber-400">
-                      ₹{adv.hourlyRate.toLocaleString('en-IN')} / session
+                      ₹{(Number(adv.hourlyRate) || 1500).toLocaleString('en-IN')} / session
                     </td>
                     <td className="py-3 px-4">
                       <span

@@ -19,4 +19,20 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+      if (!isLoginRequest && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        console.warn('Session expired or unauthorized. Clearing credentials.');
+        localStorage.removeItem('lawino_admin_token');
+        localStorage.removeItem('lawino_admin_user');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;

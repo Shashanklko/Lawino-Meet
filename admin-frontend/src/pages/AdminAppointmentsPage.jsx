@@ -187,31 +187,31 @@ export const AdminAppointmentsPage = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="font-serif font-bold text-cream-100">{apt.client.fullName}</p>
-                      <p className="text-[10px] text-stone-500 font-mono">{apt.client.phone}</p>
+                      <p className="font-serif font-bold text-cream-100">{apt.client?.fullName || 'Client'}</p>
+                      <p className="text-[10px] text-stone-500 font-mono">{apt.client?.phone || 'N/A'}</p>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="font-serif font-bold text-amber-400">{apt.advocate.fullName}</p>
+                      <p className="font-serif font-bold text-amber-400">{apt.advocate?.fullName || 'Advocate'}</p>
                       <p className="text-[10px] text-stone-500">
                         {apt.firm ? apt.firm.name : 'Independent Chamber'}
                       </p>
                     </td>
-                    <td className="py-3 px-4 text-stone-300 font-medium">{apt.service.title}</td>
+                    <td className="py-3 px-4 text-stone-300 font-medium">{apt.service?.title || 'Legal Consultation'}</td>
                     <td className="py-3 px-4">
                       <p className="font-mono text-cream-100">
-                        {new Date(apt.scheduledDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        {apt.scheduledDate ? new Date(apt.scheduledDate).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Pending'}
                       </p>
                       <p className="text-[10px] text-stone-500 font-mono">
-                        {new Date(apt.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {apt.scheduledDate ? new Date(apt.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 AM'}
                       </p>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-1">
                         <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-stone-900 border border-stone-700 text-stone-300">
-                          {apt.bookingChannel}
+                          {apt.bookingChannel || 'INDEPENDENT'}
                         </span>
                         <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-stone-900 border border-stone-700 text-stone-300">
-                          {apt.service.mode}
+                          {apt.service?.mode || 'ONLINE'}
                         </span>
                       </div>
                     </td>

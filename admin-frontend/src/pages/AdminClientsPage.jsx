@@ -45,10 +45,10 @@ export const AdminClientsPage = () => {
 
   const filteredClients = clients.filter((c) => {
     const matchesSearch =
-      c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.clientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery);
+      (c.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.clientId || c.publicId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.phone || '').includes(searchQuery);
 
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -182,7 +182,7 @@ export const AdminClientsPage = () => {
                       {client.totalAppointments} sessions
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold text-amber-400">
-                      ₹{client.walletBalance.toLocaleString('en-IN')}
+                      ₹{(Number(client.walletBalance) || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4">
                       <span

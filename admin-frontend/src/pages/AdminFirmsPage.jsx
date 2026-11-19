@@ -42,10 +42,10 @@ export const AdminFirmsPage = () => {
 
   const filteredFirms = firms.filter((f) => {
     const matchesSearch =
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.firmAdminName.toLowerCase().includes(searchQuery.toLowerCase());
+      (f.name || f.firmName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.registrationNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.city || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.firmAdminName || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesVerif =
       verificationFilter === 'ALL' || f.verificationStatus === verificationFilter;
