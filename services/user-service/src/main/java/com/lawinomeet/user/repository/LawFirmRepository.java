@@ -16,6 +16,8 @@ public interface LawFirmRepository extends JpaRepository<LawFirm, Long> {
 
     Optional<LawFirm> findByPublicId(String publicId);
 
+    Optional<LawFirm> findByShortUid(String shortUid);
+
     Optional<LawFirm> findBySlugIgnoreCase(String slug);
 
     Optional<LawFirm> findByAdminUserPublicId(String adminUserPublicId);

@@ -21,7 +21,7 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
 
-    @PostMapping
+    @PostMapping({"", "/reserve"})
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> bookAppointment(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -148,7 +148,7 @@ public class AppointmentController {
         return ResponseEntity.ok(ApiResponse.ok("Consultation marked completed. Client notified to confirm delivery.", response));
     }
 
-    @PatchMapping("/{appointmentPublicId}/confirm-completion")
+    @PatchMapping({"/{appointmentPublicId}/confirm-completion", "/{appointmentPublicId}/confirm"})
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> confirmCompletion(
             @AuthenticationPrincipal UserPrincipal principal,

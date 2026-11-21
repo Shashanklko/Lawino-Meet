@@ -34,10 +34,28 @@ public class ChatMessageResponse {
     private Instant readAt;
     private Instant createdAt;
 
-    public static ChatMessageResponse fromEntity(ChatMessage message) {
+    private String replyToMessagePublicId;
+    private String replyToSenderName;
+    private String replyToContent;
+
+    private boolean deletedForEveryone;
+    private boolean deletedForMe;
+
+    public static ChatMessageResponse fromEntity(ChatMessage message, String currentUserPublicId) {
         if (message == null) {
             return null;
         }
+        boolean isDelEveryone = message.isDeletedForEveryone();
+        boolean isDelMe = currentUserPublicId != null &&
+                message.getDeletedForUserIds() != null &&
+                java.util.Arrays.asList(message.getDeletedForUserIds().split(",")).contains(currentUserPublicId);
+
+        String effectiveContent = isDelEveryone ? "This message was deleted" : message.getContent();
+        String effectiveAttachmentUrl = isDelEveryone ? null : message.getAttachmentUrl();
+        String effectiveAttachmentName = isDelEveryone ? null : message.getAttachmentName();
+        String effectiveAttachmentType = isDelEveryone ? null : message.getAttachmentType();
+        Long effectiveAttachmentSize = isDelEveryone ? null : message.getAttachmentSize();
+
         return ChatMessageResponse.builder()
                 .publicId(message.getPublicId())
                 .conversationPublicId(message.getConversation() != null ? message.getConversation().getPublicId() : null)
@@ -45,15 +63,24 @@ public class ChatMessageResponse {
                 .senderUsername(message.getSenderUsername())
                 .recipientUserPublicId(message.getRecipientUserPublicId())
                 .recipientUsername(message.getRecipientUsername())
-                .content(message.getContent())
-                .attachmentUrl(message.getAttachmentUrl())
-                .attachmentName(message.getAttachmentName())
-                .attachmentType(message.getAttachmentType())
-                .attachmentSize(message.getAttachmentSize())
-                .messageType(message.getMessageType())
+                .content(effectiveContent)
+                .attachmentUrl(effectiveAttachmentUrl)
+                .attachmentName(effectiveAttachmentName)
+                .attachmentType(effectiveAttachmentType)
+                .attachmentSize(effectiveAttachmentSize)
+                .messageType(isDelEveryone ? "DELETED" : message.getMessageType())
                 .isRead(message.isRead())
                 .readAt(message.getReadAt())
                 .createdAt(message.getCreatedAt())
+                .replyToMessagePublicId(message.getReplyToMessagePublicId())
+                .replyToSenderName(message.getReplyToSenderName())
+                .replyToContent(message.getReplyToContent())
+                .deletedForEveryone(isDelEveryone)
+                .deletedForMe(isDelMe)
                 .build();
+    }
+
+    public static ChatMessageResponse fromEntity(ChatMessage message) {
+        return fromEntity(message, null);
     }
 }

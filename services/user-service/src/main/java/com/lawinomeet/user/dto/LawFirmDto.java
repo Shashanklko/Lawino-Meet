@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class LawFirmDto {
     private String publicId;
+    private String shortUid;
     private String firmName;
     private String slug;
     private String description;
@@ -33,6 +34,7 @@ public class LawFirmDto {
     public static LawFirmDto fromEntity(LawFirm entity) {
         return LawFirmDto.builder()
                 .publicId(entity.getPublicId())
+                .shortUid(entity.getShortUid())
                 .firmName(entity.getFirmName())
                 .slug(entity.getSlug())
                 .description(entity.getDescription())

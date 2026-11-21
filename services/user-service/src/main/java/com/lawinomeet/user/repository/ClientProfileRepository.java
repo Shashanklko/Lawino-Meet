@@ -11,6 +11,8 @@ public interface ClientProfileRepository extends JpaRepository<ClientProfile, Lo
 
     Optional<ClientProfile> findByUserPublicId(String userPublicId);
 
+    Optional<ClientProfile> findByShortUid(String shortUid);
+
     Optional<ClientProfile> findByUsernameIgnoreCase(String username);
 
     boolean existsByUserPublicId(String userPublicId);

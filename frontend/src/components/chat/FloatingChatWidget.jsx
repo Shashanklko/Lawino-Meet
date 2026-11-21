@@ -10,6 +10,8 @@ import {
   CheckCheck,
   Sparkles,
   Maximize2,
+  Calendar,
+  CheckCircle2,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
@@ -54,9 +56,16 @@ export const FloatingChatWidget = () => {
     }
   }, [messages, isOpen]);
 
+  const isSessionConcluded = Boolean(
+    activeConversation?.isClosed ||
+    activeConversation?.status === 'COMPLETED' ||
+    activeConversation?.appointmentStatus === 'COMPLETED' ||
+    activeConversation?.appointmentStatus === 'COMPLETION_REQUESTED'
+  );
+
   const handleSend = (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (isSessionConcluded || !inputText.trim()) return;
     sendMessage(inputText.trim());
     setInputText('');
   };
@@ -213,27 +222,50 @@ export const FloatingChatWidget = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Box */}
-          <form
-            onSubmit={handleSend}
-            className="p-3 bg-white border-t border-stone-200/70 flex items-center space-x-2 shrink-0"
-          >
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Type privileged message or query..."
-              className="flex-1 bg-[var(--bg-cream-soft)] border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[var(--bg-primary)] focus:bg-white transition"
-            />
-            <button
-              type="submit"
-              disabled={!inputText.trim()}
-              className="p-2.5 rounded-xl bg-[var(--bg-primary)] hover:opacity-90 disabled:opacity-40 text-white transition shadow-xs cursor-pointer"
-              title="Send Message"
+          {/* Input Box or Concluded Notice */}
+          {isSessionConcluded ? (
+            <div className="p-3 bg-stone-50 border-t border-stone-200/80 text-center space-y-2 shrink-0">
+              <div className="text-[11px] text-stone-600 flex items-center justify-center space-x-1 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Session Concluded • Messaging Closed</span>
+              </div>
+              {user?.role !== 'LAWYER' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    const slug = activeConversation?.targetUser?.username || 'adv_raghavan';
+                    navigate(`/lawyers/${slug}`);
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-[var(--bg-primary)] hover:opacity-90 text-white text-[11px] font-serif font-bold uppercase tracking-wider transition shadow-xs cursor-pointer flex items-center justify-center space-x-1.5"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Book Reappointment</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSend}
+              className="p-3 bg-white border-t border-stone-200/70 flex items-center space-x-2 shrink-0"
             >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Type privileged message or query..."
+                className="flex-1 bg-[var(--bg-cream-soft)] border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[var(--bg-primary)] focus:bg-white transition"
+              />
+              <button
+                type="submit"
+                disabled={!inputText.trim()}
+                className="p-2.5 rounded-xl bg-[var(--bg-primary)] hover:opacity-90 disabled:opacity-40 text-white transition shadow-xs cursor-pointer"
+                title="Send Message"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
         </div>
       )}
 

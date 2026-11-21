@@ -4,10 +4,16 @@ import { ADMIN_SUB_ROLES } from '../utils/adminPermissions';
 
 const AdminAuthContext = createContext(null);
 
+const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000; // 43,200,000 ms (12 Hours)
+
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const stored = localStorage.getItem('lawino_admin_user');
+      const sessionStartedAt = localStorage.getItem('lawino_admin_session_started_at');
+      if (sessionStartedAt && Date.now() - Number(sessionStartedAt) > TWELVE_HOURS_MS) {
+        return null;
+      }
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -25,16 +31,44 @@ export const AdminAuthProvider = ({ children }) => {
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const token = localStorage.getItem('lawino_admin_token');
+    const sessionStartedAt = localStorage.getItem('lawino_admin_session_started_at');
+    if (sessionStartedAt && Date.now() - Number(sessionStartedAt) > TWELVE_HOURS_MS) {
+      return false;
+    }
     return !!token && !token.startsWith('mock_admin_token_');
   });
 
+  // Watchdog: check 12-hour timeout periodically
   useEffect(() => {
-    // Invalidate any legacy demo/mock tokens from previous testing
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      const sessionStartedAt = localStorage.getItem('lawino_admin_session_started_at');
+      if (sessionStartedAt && Date.now() - Number(sessionStartedAt) > TWELVE_HOURS_MS) {
+        console.warn('Admin 12-hour session expired. Re-authentication required.');
+        logout();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    // Invalidate any legacy demo/mock tokens or expired sessions
     const token = localStorage.getItem('lawino_admin_token');
+    const sessionStartedAt = localStorage.getItem('lawino_admin_session_started_at');
+    if (sessionStartedAt && Date.now() - Number(sessionStartedAt) > TWELVE_HOURS_MS) {
+      localStorage.removeItem('lawino_admin_token');
+      localStorage.removeItem('lawino_admin_user');
+      localStorage.removeItem('lawino_admin_subrole');
+      localStorage.removeItem('lawino_admin_session_started_at');
+      setAdminUser(null);
+      setIsAuthenticated(false);
+      return;
+    }
     if (token && token.startsWith('mock_admin_token_')) {
       localStorage.removeItem('lawino_admin_token');
       localStorage.removeItem('lawino_admin_user');
       localStorage.removeItem('lawino_admin_subrole');
+      localStorage.removeItem('lawino_admin_session_started_at');
       setAdminUser(null);
       setIsAuthenticated(false);
     }
@@ -74,6 +108,7 @@ export const AdminAuthProvider = ({ children }) => {
         localStorage.setItem('lawino_admin_token', accessToken);
         localStorage.setItem('lawino_admin_user', JSON.stringify(userObj));
         localStorage.setItem('lawino_admin_subrole', 'SUPER_ADMIN');
+        localStorage.setItem('lawino_admin_session_started_at', Date.now().toString());
         setAdminUser(userObj);
         setAdminSubRoleState('SUPER_ADMIN');
         setIsAuthenticated(true);
@@ -91,6 +126,7 @@ export const AdminAuthProvider = ({ children }) => {
     localStorage.removeItem('lawino_admin_token');
     localStorage.removeItem('lawino_admin_user');
     localStorage.removeItem('lawino_admin_subrole');
+    localStorage.removeItem('lawino_admin_session_started_at');
     setAdminUser(null);
     setIsAuthenticated(false);
   };

@@ -30,9 +30,33 @@ import {
 import { LevelBadge } from './LevelBadge';
 import { Level2ChangeModal } from './Level2ChangeModal';
 import { ProfileChangeHistory } from './ProfileChangeHistory';
+import { userApi } from '../../api/userApi';
 
 export const AdvocateProfileModule = ({ user, onSaveToast }) => {
   const [activeTab, setActiveTab] = useState('personal');
+  const [profileImageUrl, setProfileImageUrl] = useState(user?.profileImageUrl || null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = React.useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingPhoto(true);
+      const res = await userApi.uploadLawyerPhoto(file);
+      const newUrl = res?.data?.profileImageUrl || res?.profileImageUrl;
+      if (newUrl) {
+        setProfileImageUrl(newUrl);
+        onSaveToast('Profile photograph uploaded successfully.');
+      }
+    } catch (err) {
+      console.warn('Failed to upload photo:', err);
+      setProfileImageUrl(URL.createObjectURL(file));
+      onSaveToast('Profile photograph preview updated.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   // Level 2 Modal State
   const [l2ModalOpen, setL2ModalOpen] = useState(false);
@@ -336,17 +360,36 @@ export const AdvocateProfileModule = ({ user, onSaveToast }) => {
 
             {/* Profile Photo */}
             <div className="flex items-center space-x-4">
+              <input
+                type="file"
+                ref={photoInputRef}
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
               <div className="relative group">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#941B2B] to-amber-700 text-white flex items-center justify-center font-serif font-bold text-2xl shadow-md overflow-hidden">
-                  RN
+                  {profileImageUrl ? (
+                    <img src={profileImageUrl} alt="Advocate profile" className="w-full h-full object-cover" />
+                  ) : (
+                    displayName
+                      ?.replace('Adv. ', '')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase() || 'RN'
+                  )}
                 </div>
                 <button
                   type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
                   className="absolute inset-0 bg-black/50 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 rounded-2xl transition cursor-pointer"
                   title="Upload New Photograph (Level 1)"
                 >
                   <Camera className="w-5 h-5 mb-0.5" />
-                  <span className="text-[9px] font-mono">Change</span>
+                  <span className="text-[9px] font-mono">{isUploadingPhoto ? 'Uploading...' : 'Change'}</span>
                 </button>
               </div>
               <div>

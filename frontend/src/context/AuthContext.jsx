@@ -3,6 +3,8 @@ import { authApi } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
+const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000; // 43,200,000 ms (Strict 12-Hour Session Expiration)
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('lawino_user');
@@ -11,15 +13,57 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('lawino_token'));
   const [loading, setLoading] = useState(true);
 
+  // Active 12-Hour Session Expiration Watchdog
+  useEffect(() => {
+    if (!token) return;
+
+    const checkSessionExpiration = () => {
+      const sessionStartedAt = localStorage.getItem('lawino_session_started_at');
+      if (sessionStartedAt) {
+        const elapsed = Date.now() - Number(sessionStartedAt);
+        if (elapsed > TWELVE_HOURS_MS) {
+          console.warn('12-hour session window elapsed. User must re-authenticate.');
+          localStorage.removeItem('lawino_token');
+          localStorage.removeItem('lawino_refresh_token');
+          localStorage.removeItem('lawino_user');
+          localStorage.removeItem('lawino_session_started_at');
+          setToken(null);
+          setUser(null);
+          window.location.href = '/login?expired=12h';
+        }
+      }
+    };
+
+    checkSessionExpiration();
+    const interval = setInterval(checkSessionExpiration, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, [token]);
+
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem('lawino_token');
+      const sessionStartedAt = localStorage.getItem('lawino_session_started_at');
+
+      // Check if session has exceeded 12 hours
+      if (sessionStartedAt && Date.now() - Number(sessionStartedAt) > TWELVE_HOURS_MS) {
+        console.warn('Existing session older than 12 hours. Logging out.');
+        localStorage.removeItem('lawino_token');
+        localStorage.removeItem('lawino_refresh_token');
+        localStorage.removeItem('lawino_user');
+        localStorage.removeItem('lawino_session_started_at');
+        setToken(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       if (storedToken) {
         // Clear any old legacy mock tokens
         if (storedToken.startsWith('mock_demo_token_')) {
           localStorage.removeItem('lawino_token');
           localStorage.removeItem('lawino_refresh_token');
           localStorage.removeItem('lawino_user');
+          localStorage.removeItem('lawino_session_started_at');
           setToken(null);
           setUser(null);
           setLoading(false);
@@ -30,12 +74,16 @@ export const AuthProvider = ({ children }) => {
           if (res.success && res.data) {
             setUser(res.data);
             localStorage.setItem('lawino_user', JSON.stringify(res.data));
+            if (!sessionStartedAt) {
+              localStorage.setItem('lawino_session_started_at', Date.now().toString());
+            }
           }
         } catch (err) {
           console.warn('Session verification failed, logging out:', err);
           localStorage.removeItem('lawino_token');
           localStorage.removeItem('lawino_refresh_token');
           localStorage.removeItem('lawino_user');
+          localStorage.removeItem('lawino_session_started_at');
           setToken(null);
           setUser(null);
         }
@@ -54,6 +102,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('lawino_token', accessToken);
         localStorage.setItem('lawino_refresh_token', refreshToken);
         localStorage.setItem('lawino_user', JSON.stringify(userData));
+        localStorage.setItem('lawino_session_started_at', Date.now().toString());
         setToken(accessToken);
         setUser(userData);
         return userData;
@@ -76,6 +125,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('lawino_token', accessToken);
         localStorage.setItem('lawino_refresh_token', refreshToken);
         localStorage.setItem('lawino_user', JSON.stringify(userData));
+        localStorage.setItem('lawino_session_started_at', Date.now().toString());
         setToken(accessToken);
         setUser(userData);
         return userData;
@@ -101,6 +151,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('lawino_token');
       localStorage.removeItem('lawino_refresh_token');
       localStorage.removeItem('lawino_user');
+      localStorage.removeItem('lawino_session_started_at');
       setToken(null);
       setUser(null);
     }

@@ -14,6 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ClientProfileDto {
     private String userPublicId;
+    private String shortUid;
     private String username;
     private String fullName;
     private String phone;
@@ -26,6 +27,7 @@ public class ClientProfileDto {
     public static ClientProfileDto fromEntity(ClientProfile entity) {
         return ClientProfileDto.builder()
                 .userPublicId(entity.getUserPublicId())
+                .shortUid(entity.getShortUid())
                 .username(entity.getUsername())
                 .fullName(entity.getFullName())
                 .phone(entity.getPhone())

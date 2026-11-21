@@ -57,76 +57,12 @@ public class AvailabilityService {
         return created;
     }
 
-    public static String resolveLawyerUserPublicId(String identifier) {
-        if (identifier == null) return null;
-        if (identifier.contains("33333333") || identifier.contains("raghavan")) {
-            return "33333333-3333-3333-3333-333333333333";
-        }
-        if (identifier.contains("66666666") || identifier.contains("meera")) {
-            return "66666666-6666-6666-6666-666666666666";
-        }
-        if (identifier.contains("77777777") || identifier.contains("ananya")) {
-            return "77777777-7777-7777-7777-777777777777";
-        }
-        if (identifier.contains("88888888") || identifier.contains("vikram")) {
-            return "88888888-8888-8888-8888-888888888888";
-        }
-        if (identifier.contains("22222222") || identifier.contains("rajesh")) {
-            return "22222222-2222-2222-2222-222222222222";
-        }
-        return identifier;
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AvailabilitySlotResponse> getAvailableSlotsForLawyer(String lawyerUserPublicId) {
-        String resolvedId = resolveLawyerUserPublicId(lawyerUserPublicId);
         List<AvailabilitySlot> slots = slotRepository
                 .findByLawyerUserPublicIdAndSlotStatusAndStartTimeAfterOrderByStartTimeAsc(
-                        resolvedId, SlotStatus.AVAILABLE, Instant.now());
-
-        if (slots.isEmpty()) {
-            slots = autoGenerateUpcomingSlots(resolvedId);
-        }
+                        lawyerUserPublicId, SlotStatus.AVAILABLE, Instant.now());
         return slots.stream().map(AvailabilitySlotResponse::fromEntity).toList();
-    }
-
-    private List<AvailabilitySlot> autoGenerateUpcomingSlots(String lawyerUserPublicId) {
-        List<AvailabilitySlot> newSlots = new ArrayList<>();
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.ZoneId zone = java.time.ZoneId.of("Asia/Kolkata");
-
-        // Generate 1-hour slots for 7 days (Morning, Afternoon, Evening)
-        int[][] timeWindows = {
-                {10, 0},  // Morning 10:00 - 11:00
-                {11, 30}, // Morning 11:30 - 12:30
-                {14, 0},  // Afternoon 14:00 - 15:00
-                {15, 30}, // Afternoon 15:30 - 16:30
-                {17, 0}   // Evening 17:00 - 18:00
-        };
-
-        for (int day = 1; day <= 7; day++) {
-            java.time.LocalDate targetDate = today.plusDays(day);
-            // Skip Sunday if desired or include for 7 days
-            for (int[] tw : timeWindows) {
-                java.time.ZonedDateTime zdtStart = targetDate.atTime(tw[0], tw[1]).atZone(zone);
-                java.time.ZonedDateTime zdtEnd = zdtStart.plusHours(1); // Strictly 1-hour duration
-                Instant start = zdtStart.toInstant();
-                Instant end = zdtEnd.toInstant();
-
-                if (start.isAfter(Instant.now())) {
-                    AvailabilitySlot slot = AvailabilitySlot.builder()
-                            .publicId("slot-" + UUID.randomUUID().toString().substring(0, 8))
-                            .lawyerUserPublicId(lawyerUserPublicId)
-                            .startTime(start)
-                            .endTime(end)
-                            .slotStatus(SlotStatus.AVAILABLE)
-                            .build();
-                    newSlots.add(slotRepository.save(slot));
-                }
-            }
-        }
-        log.info("Auto-generated {} upcoming 1-hour availability slots across 7 days for lawyer {}", newSlots.size(), lawyerUserPublicId);
-        return newSlots;
     }
 
     @Transactional(readOnly = true)

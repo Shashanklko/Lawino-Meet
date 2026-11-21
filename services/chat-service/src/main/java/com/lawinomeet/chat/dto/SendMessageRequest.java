@@ -23,4 +23,10 @@ public class SendMessageRequest {
     @NotBlank(message = "Message content cannot be blank")
     @Size(max = 2000, message = "Message content cannot exceed 2000 characters")
     private String content;
+
+    private String replyToMessagePublicId;
+
+    private String replyToSenderName;
+
+    private String replyToContent;
 }

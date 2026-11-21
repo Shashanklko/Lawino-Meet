@@ -29,7 +29,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/actuator/**",
-                    "/api/notifications/ping"
+                    "/api/notifications/ping",
+                    "/api/notifications/events"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

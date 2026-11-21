@@ -1,5 +1,6 @@
 package com.lawinomeet.meeting.controller;
 
+import com.lawinomeet.meeting.dto.SignalingPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -21,8 +22,8 @@ public class MeetingSignalingController {
      * Broadcasts to: /topic/rooms/{roomPublicId}
      */
     @MessageMapping("/meeting.signal/{roomPublicId}")
-    public void relayWebRtcSignal(@DestinationVariable String roomPublicId, @Payload Object signalPayload) {
-        log.debug("Relaying 1:1 WebRTC signal for room: {}", roomPublicId);
+    public void relayWebRtcSignal(@DestinationVariable String roomPublicId, @Payload SignalingPayload signalPayload) {
+        log.info("Relaying 1:1 WebRTC signal for room {}: {}", roomPublicId, signalPayload != null ? signalPayload.getType() : "null");
         messagingTemplate.convertAndSend("/topic/rooms/" + roomPublicId, signalPayload);
     }
 }

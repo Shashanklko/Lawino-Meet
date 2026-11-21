@@ -7,11 +7,11 @@ export const walletApi = {
       const res = await apiClient.get('/api/wallet/me');
       return res.data;
     } catch (err) {
-      console.warn('Fallback getting wallet:', err);
+      console.warn('Error fetching wallet:', err);
       return {
-        success: true,
+        success: false,
         data: {
-          balance: 5000,
+          balance: 0,
           escrowBalance: 0,
           currency: 'INR',
           recentTransactions: [],

@@ -16,6 +16,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class UserSummaryDto {
     private String publicId;
+    private String shortUid;
     private String username;
     private String email;
     private Role role;
@@ -26,6 +27,7 @@ public class UserSummaryDto {
     public static UserSummaryDto fromEntity(User user) {
         return UserSummaryDto.builder()
                 .publicId(user.getPublicId())
+                .shortUid(user.getShortUid())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())

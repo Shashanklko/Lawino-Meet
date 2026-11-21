@@ -17,6 +17,8 @@ public interface LawyerProfileRepository extends JpaRepository<LawyerProfile, Lo
 
     Optional<LawyerProfile> findByUserPublicId(String userPublicId);
 
+    Optional<LawyerProfile> findByShortUid(String shortUid);
+
     Optional<LawyerProfile> findByUsernameIgnoreCase(String username);
 
     Optional<LawyerProfile> findBySlugIgnoreCase(String slug);

@@ -6,6 +6,7 @@ import { Sidebar } from '../common/Sidebar';
 import { CrmHeader } from './CrmHeader';
 import { MobileBottomNav } from './MobileBottomNav';
 import { FloatingChatWidget } from '../chat/FloatingChatWidget';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 
@@ -73,7 +74,9 @@ export const AppLayout = () => {
                 : 'overflow-y-auto p-3 sm:p-6 pb-28 md:pb-12 w-full max-w-7xl mx-auto'
             }`}
           >
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </main>
         </div>
 

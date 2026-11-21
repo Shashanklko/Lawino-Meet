@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Star,
   ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { useLanguage } from '../../context/LanguageContext';
@@ -58,8 +59,13 @@ export const AppointmentItem = ({
   const isChatActive = isConfirmed && !isCompleted && !isCompletionRequested && !isDisputed && !isCancelled && !isRejected && !isExpired;
 
   const isFirm = appointment.practiceType === 'FIRM';
-  const isOnline = Boolean(appointment.isOnline && !appointment.isChatOnly && !appointment.isInPerson);
-  const isOffline = Boolean(appointment.isInPerson);
+  const isOnline = Boolean(
+    appointment.isOnline ||
+    appointment.consultationType === 'ONLINE' ||
+    (!appointment.isChatOnly && !appointment.isInPerson && appointment.consultationType !== 'IN_PERSON' && appointment.consultationType !== 'CHAT')
+  );
+  const isOffline = Boolean(appointment.isInPerson || appointment.consultationType === 'IN_PERSON');
+  const isChatOnly = Boolean(appointment.isChatOnly || appointment.consultationType === 'CHAT');
 
   const partyName = isClient
     ? appointment.lawyer?.fullName || appointment.lawyerUsername || 'Advocate'
@@ -69,8 +75,16 @@ export const AppointmentItem = ({
     ? appointment.lawyer?.barCouncilNumber || appointment.lawyer?.specialization?.replace('_', ' ') || 'Bar Council Enrolled'
     : appointment.client?.email || appointment.client?.phone || appointment.clientUsername;
 
-  const startDate = appointment.slot?.startTime ? new Date(appointment.slot.startTime) : null;
-  const endDate = appointment.slot?.endTime ? new Date(appointment.slot.endTime) : null;
+  const startDate = appointment.startTime
+    ? new Date(appointment.startTime)
+    : appointment.slot?.startTime
+      ? new Date(appointment.slot.startTime)
+      : null;
+  const endDate = appointment.endTime
+    ? new Date(appointment.endTime)
+    : appointment.slot?.endTime
+      ? new Date(appointment.slot.endTime)
+      : null;
 
   const dateStr = startDate
     ? startDate.toLocaleDateString('en-IN', {
@@ -110,12 +124,12 @@ export const AppointmentItem = ({
   );
 
   // Mode Badge
-  const modeBadge = appointment.isChatOnly ? (
+  const modeBadge = isChatOnly ? (
     <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
       <MessageSquare className="w-2.5 h-2.5" />
       <span>Chat-Only Advisory</span>
     </span>
-  ) : appointment.isInPerson ? (
+  ) : isOffline ? (
     <span className="inline-flex items-center space-x-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
       <Building className="w-2.5 h-2.5" />
       <span>In-Chamber Office</span>
@@ -130,8 +144,8 @@ export const AppointmentItem = ({
   if (viewMode === 'ROW') {
     return (
       <tr className="border-b border-stone-100 hover:bg-stone-50/70 transition text-xs">
-        <td className="py-3 px-4 font-mono text-[11px] text-stone-500">
-          {appointment.appointmentId || appointment.publicId?.slice(0, 12)}
+        <td className="py-3 px-4 font-mono text-[11px] text-stone-700 font-bold">
+          {appointment.shortUid ? `#${appointment.shortUid}` : (appointment.appointmentId || appointment.publicId?.slice(0, 10))}
         </td>
         <td className="py-3 px-4">
           <p className="font-serif font-bold text-stone-900">{partyName}</p>
@@ -328,6 +342,11 @@ export const AppointmentItem = ({
         <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
           <div className="flex items-center space-x-2">
             <StatusBadge status={appointment.status} />
+            {appointment.shortUid && (
+              <span className="text-[10px] font-mono font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                #{appointment.shortUid}
+              </span>
+            )}
             <span className="text-stone-300">•</span>
             {isFirm ? (
               <span className="text-[10px] font-mono font-medium text-blue-700 bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100">
@@ -516,7 +535,7 @@ export const AppointmentItem = ({
         )}
 
         {/* In-Chamber Consultation Address Revealing Mechanism */}
-        {appointment.isInPerson && (
+        {isOffline && (
           <div className="mt-2.5">
             {isConfirmed || isCompletionRequested || isCompleted ? (
               <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 space-y-1.5">

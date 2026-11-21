@@ -76,6 +76,13 @@ public class LawyerService {
         if (request.getCountry() != null) profile.setCountry(request.getCountry().trim());
         if (request.getMessagingEnabled() != null) profile.setMessagingEnabled(request.getMessagingEnabled());
         if (request.getPublicProfileStatus() != null) profile.setPublicProfileStatus(request.getPublicProfileStatus());
+        if (request.getWorkingDays() != null) profile.setWorkingDays(request.getWorkingDays().trim());
+        if (request.getWorkingHoursStart() != null) profile.setWorkingHoursStart(request.getWorkingHoursStart().trim());
+        if (request.getWorkingHoursEnd() != null) profile.setWorkingHoursEnd(request.getWorkingHoursEnd().trim());
+        if (request.getBreakStartTime() != null) profile.setBreakStartTime(request.getBreakStartTime().trim());
+        if (request.getBreakEndTime() != null) profile.setBreakEndTime(request.getBreakEndTime().trim());
+        if (request.getTimeZone() != null) profile.setTimeZone(request.getTimeZone().trim());
+        if (request.getAvailabilityStatus() != null) profile.setAvailabilityStatus(request.getAvailabilityStatus().trim());
 
         if (request.getSpecializationIds() != null) {
             Set<LegalSpecialization> specs = new HashSet<>(specializationRepository.findAllById(request.getSpecializationIds()));
@@ -129,11 +136,30 @@ public class LawyerService {
     @Transactional(readOnly = true)
     public LawyerProfileDto getLawyerPublicProfile(String identifier) {
         LawyerProfile profile = lawyerProfileRepository.findBySlugIgnoreCase(identifier)
-                .or(() -> lawyerProfileRepository.findByUserPublicId(identifier))
                 .or(() -> lawyerProfileRepository.findByUsernameIgnoreCase(identifier))
+                .or(() -> lawyerProfileRepository.findByShortUid(identifier))
+                .or(() -> lawyerProfileRepository.findByUserPublicId(identifier))
                 .orElseThrow(() -> new ApiException("Lawyer profile not found: " + identifier, HttpStatus.NOT_FOUND, "LAWYER_NOT_FOUND"));
 
         return enrichWithFirmInfo(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LegalServiceDto> getLawyerServices(String identifier) {
+        LawyerProfile profile = lawyerProfileRepository.findBySlugIgnoreCase(identifier)
+                .or(() -> lawyerProfileRepository.findByUsernameIgnoreCase(identifier))
+                .or(() -> lawyerProfileRepository.findByShortUid(identifier))
+                .or(() -> lawyerProfileRepository.findByUserPublicId(identifier))
+                .orElse(null);
+
+        if (profile == null) {
+            return List.of();
+        }
+
+        return legalServiceRepository.findAllByLawyerProfileIdAndIsActiveTrue(profile.getId())
+                .stream()
+                .map(LegalServiceDto::fromEntity)
+                .toList();
     }
 
     @Transactional(readOnly = true)

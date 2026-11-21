@@ -180,15 +180,16 @@ public class MeetingService {
     public MeetingRoomResponse endRoom(UserPrincipal principal, String roomPublicId) {
         MeetingRoom room = getRoomOrThrow(roomPublicId, principal);
 
-        boolean isHost = principal.getPublicId().equals(room.getLawyerUserPublicId());
+        boolean isParticipant = principal.getPublicId().equals(room.getLawyerUserPublicId()) ||
+                                principal.getPublicId().equals(room.getClientUserPublicId());
         boolean isAdmin = "PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
                           "ROLE_PLATFORM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
                           "FIRM_ADMIN".equalsIgnoreCase(principal.getRole()) ||
                           "ROLE_FIRM_ADMIN".equalsIgnoreCase(principal.getRole());
 
-        if (!isHost && !isAdmin) {
+        if (!isParticipant && !isAdmin) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
-                    "Only the presiding advocate or platform administrator can end this consultation.");
+                    "Only consultation participants or platform administrators can end this consultation.");
         }
 
         Instant now = Instant.now();
@@ -248,40 +249,59 @@ public class MeetingService {
     }
 
     private MeetingRoom getRoomOrThrow(String roomPublicId, UserPrincipal principal) {
-        Optional<MeetingRoom> byPublicId = roomRepository.findByPublicId(roomPublicId);
+        if (roomPublicId == null || roomPublicId.isBlank()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "Meeting room public ID cannot be blank.");
+        }
+
+        String normalizedId = roomPublicId.trim()
+                .replace('–', '-')
+                .replace('—', '-')
+                .replace("\u2013", "-")
+                .replace("\u2014", "-");
+
+        Optional<MeetingRoom> byPublicId = roomRepository.findByPublicId(normalizedId);
         if (byPublicId.isPresent()) {
             return byPublicId.get();
         }
 
-        String cleanId = roomPublicId != null && roomPublicId.startsWith("chamber_")
-                ? roomPublicId.substring("chamber_".length())
-                : roomPublicId;
-
-        Optional<MeetingRoom> byAptId = roomRepository.findByAppointmentPublicId(cleanId);
-        if (byAptId.isPresent()) {
-            return byAptId.get();
-        }
+        String cleanId = normalizedId.startsWith("chamber_")
+                ? normalizedId.substring("chamber_".length())
+                : normalizedId;
 
         Optional<MeetingRoom> byCleanPublicId = roomRepository.findByPublicId(cleanId);
         if (byCleanPublicId.isPresent()) {
             return byCleanPublicId.get();
         }
 
-        // Auto-provision consultation chamber on-demand for authenticated users
-        if (principal != null && cleanId != null && !cleanId.isBlank()) {
-            String role = principal.getRole() != null ? principal.getRole() : "";
+        Optional<MeetingRoom> byAptId = roomRepository.findByAppointmentPublicId(cleanId);
+        if (byAptId.isPresent()) {
+            return byAptId.get();
+        }
+
+        // Auto-provision consultation chamber on-demand if room doesn't exist yet
+        if (cleanId != null && !cleanId.isBlank()) {
+            String role = (principal != null && principal.getRole() != null) ? principal.getRole() : "";
             boolean isLawyer = role.toUpperCase().contains("LAWYER");
+            String validPublicId = cleanId.length() <= 36 ? cleanId : cleanId.substring(0, 36);
+            String validAptId = cleanId.length() <= 36 ? cleanId : cleanId.substring(0, 36);
+
+            // Double check by validPublicId or validAptId
+            Optional<MeetingRoom> existing = roomRepository.findByPublicId(validPublicId);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+
             MeetingRoom autoRoom = MeetingRoom.builder()
-                    .publicId(cleanId)
-                    .appointmentPublicId(cleanId)
-                    .lawyerUserPublicId(isLawyer ? principal.getPublicId() : null)
-                    .lawyerUsername(isLawyer ? principal.getUsername() : null)
-                    .clientUserPublicId(!isLawyer ? principal.getPublicId() : null)
-                    .clientUsername(!isLawyer ? principal.getUsername() : null)
+                    .publicId(validPublicId)
+                    .appointmentPublicId(validAptId)
+                    .lawyerUserPublicId(isLawyer && principal != null ? principal.getPublicId() : null)
+                    .lawyerUsername(isLawyer && principal != null ? principal.getUsername() : null)
+                    .clientUserPublicId(!isLawyer && principal != null ? principal.getPublicId() : null)
+                    .clientUsername(!isLawyer && principal != null ? principal.getUsername() : null)
                     .roomStatus(RoomStatus.WAITING)
                     .roomToken(UUID.randomUUID().toString().replace("-", ""))
                     .build();
-            log.info("Auto-provisioned consultation chamber {} for user {}", cleanId, principal.getUsername());
+            log.info("Auto-provisioned consultation chamber {} for user {}", validPublicId, principal != null ? principal.getUsername() : "anonymous");
             return roomRepository.save(autoRoom);
         }
 

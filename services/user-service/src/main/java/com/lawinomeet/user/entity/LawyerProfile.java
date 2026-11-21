@@ -14,6 +14,7 @@ import java.util.Set;
 @Entity
 @Table(name = "lawyer_profiles", indexes = {
         @Index(name = "idx_lawyer_user_public_id", columnList = "user_public_id", unique = true),
+        @Index(name = "idx_lawyer_short_uid", columnList = "short_uid", unique = true),
         @Index(name = "idx_lawyer_username", columnList = "username", unique = true),
         @Index(name = "idx_lawyer_slug", columnList = "slug", unique = true),
         @Index(name = "idx_lawyer_city", columnList = "city"),
@@ -32,6 +33,9 @@ public class LawyerProfile {
 
     @Column(name = "user_public_id", nullable = false, unique = true, length = 36, updatable = false)
     private String userPublicId;
+
+    @Column(name = "short_uid", nullable = false, unique = true, length = 7)
+    private String shortUid;
 
     @Column(nullable = false, unique = true, length = 50, updatable = false)
     private String username;
@@ -94,6 +98,34 @@ public class LawyerProfile {
     @Builder.Default
     private Set<LegalSpecialization> specializations = new HashSet<>();
 
+    @Column(name = "working_days", length = 255)
+    @Builder.Default
+    private String workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY";
+
+    @Column(name = "working_hours_start", length = 10)
+    @Builder.Default
+    private String workingHoursStart = "09:00";
+
+    @Column(name = "working_hours_end", length = 10)
+    @Builder.Default
+    private String workingHoursEnd = "18:00";
+
+    @Column(name = "break_start_time", length = 10)
+    @Builder.Default
+    private String breakStartTime = "13:00";
+
+    @Column(name = "break_end_time", length = 10)
+    @Builder.Default
+    private String breakEndTime = "14:00";
+
+    @Column(name = "time_zone", length = 50)
+    @Builder.Default
+    private String timeZone = "Asia/Kolkata";
+
+    @Column(name = "availability_status", length = 30)
+    @Builder.Default
+    private String availabilityStatus = "AVAILABLE";
+
     @OneToMany(mappedBy = "lawyerProfile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<LegalService> services = new ArrayList<>();
@@ -105,4 +137,26 @@ public class LawyerProfile {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (shortUid == null || shortUid.isBlank()) {
+            shortUid = com.lawinomeet.user.util.ShortUidGenerator.generate();
+        }
+        if (workingDays == null || workingDays.isBlank()) {
+            workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY";
+        }
+        if (workingHoursStart == null || workingHoursStart.isBlank()) {
+            workingHoursStart = "09:00";
+        }
+        if (workingHoursEnd == null || workingHoursEnd.isBlank()) {
+            workingHoursEnd = "18:00";
+        }
+        if (timeZone == null || timeZone.isBlank()) {
+            timeZone = "Asia/Kolkata";
+        }
+        if (availabilityStatus == null || availabilityStatus.isBlank()) {
+            availabilityStatus = "AVAILABLE";
+        }
+    }
 }

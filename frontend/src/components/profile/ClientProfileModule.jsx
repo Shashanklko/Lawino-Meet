@@ -11,13 +11,38 @@ import {
   FileText,
   Smartphone,
   Check,
+  Camera,
 } from 'lucide-react';
 import { LevelBadge } from './LevelBadge';
 import { Level2ChangeModal } from './Level2ChangeModal';
 import { ProfileChangeHistory } from './ProfileChangeHistory';
+import { userApi } from '../../api/userApi';
 
 export const ClientProfileModule = ({ user, onSaveToast }) => {
   const [activeTab, setActiveTab] = useState('personal');
+  const [profileImageUrl, setProfileImageUrl] = useState(user?.profileImageUrl || null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = React.useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingPhoto(true);
+      const res = await userApi.uploadClientPhoto(file);
+      const newUrl = res?.data?.profileImageUrl || res?.profileImageUrl;
+      if (newUrl) {
+        setProfileImageUrl(newUrl);
+        onSaveToast('Profile photo updated successfully.');
+      }
+    } catch (err) {
+      console.warn('Failed to upload client photo:', err);
+      setProfileImageUrl(URL.createObjectURL(file));
+      onSaveToast('Profile photo preview updated.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   // Level 2 Modal State
   const [l2ModalOpen, setL2ModalOpen] = useState(false);
@@ -228,6 +253,50 @@ export const ClientProfileModule = ({ user, onSaveToast }) => {
                 </p>
               </div>
               <LevelBadge level={1} visibility="private" />
+            </div>
+
+            {/* Profile Photo */}
+            <div className="flex items-center space-x-4">
+              <input
+                type="file"
+                ref={photoInputRef}
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-stone-800 to-stone-600 text-white flex items-center justify-center font-serif font-bold text-2xl shadow-md overflow-hidden">
+                  {profileImageUrl ? (
+                    <img src={profileImageUrl} alt="Client avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    fullName
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase() || 'RV'
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="absolute inset-0 bg-black/50 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 rounded-2xl transition cursor-pointer"
+                  title="Upload New Photograph"
+                >
+                  <Camera className="w-5 h-5 mb-0.5" />
+                  <span className="text-[9px] font-mono">{isUploadingPhoto ? 'Uploading...' : 'Change'}</span>
+                </button>
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h4 className="font-semibold text-stone-900 text-sm">Profile Avatar</h4>
+                  <LevelBadge level={1} visibility="private" />
+                </div>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  Private avatar displayed on privileged consultation threads.
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -22,8 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -50,17 +52,36 @@ public class ChatService {
                         sender.getPublicId(), sender.getUsername(),
                         request.getRecipientUserPublicId(), request.getRecipientUsername());
 
-        return saveAndDispatchMessage(sender, conversation, request.getRecipientUserPublicId(), request.getRecipientUsername(), request.getContent());
+        return saveAndDispatchMessage(
+                sender, conversation,
+                request.getRecipientUserPublicId(), request.getRecipientUsername(),
+                request.getContent(),
+                request.getReplyToMessagePublicId(),
+                request.getReplyToSenderName(),
+                request.getReplyToContent()
+        );
     }
 
     @Transactional
     public ChatMessageResponse sendMessageToConversation(UserPrincipal sender, String conversationPublicId, String content) {
+        return sendMessageToConversation(sender, conversationPublicId, content, null, null, null);
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessageToConversation(
+            UserPrincipal sender, String conversationPublicId, String content,
+            String replyToMessagePublicId, String replyToSenderName, String replyToContent) {
         Conversation conversation = conversationRepository.findByPublicId(conversationPublicId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation not found."));
 
         if (!conversation.isParticipant(sender.getPublicId())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
                     "You are not a participant in this conversation.");
+        }
+
+        if (conversation.isClosed()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CONSULTATION_CONCLUDED",
+                    "This consultation session has concluded. Please book a reappointment to continue messaging.");
         }
 
         String recipientPublicId = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
@@ -71,13 +92,39 @@ public class ChatService {
                 ? conversation.getParticipantTwoUsername()
                 : conversation.getParticipantOneUsername();
 
-        return saveAndDispatchMessage(sender, conversation, recipientPublicId, recipientUsername, content);
+        return saveAndDispatchMessage(
+                sender, conversation, recipientPublicId, recipientUsername, content,
+                replyToMessagePublicId, replyToSenderName, replyToContent
+        );
     }
 
     private ChatMessageResponse saveAndDispatchMessage(
             UserPrincipal sender, Conversation conversation,
             String recipientPublicId, String recipientUsername, String content) {
+        return saveAndDispatchMessage(sender, conversation, recipientPublicId, recipientUsername, content, null, null, null);
+    }
+
+    private ChatMessageResponse saveAndDispatchMessage(
+            UserPrincipal sender, Conversation conversation,
+            String recipientPublicId, String recipientUsername, String content,
+            String replyToMessagePublicId, String replyToSenderName, String replyToContent) {
+        if (conversation.isClosed()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CONSULTATION_CONCLUDED",
+                    "This consultation session has concluded. Please book a reappointment to continue messaging.");
+        }
         Instant now = Instant.now();
+
+        // Debounce deduplication: if exact same content from same sender within 2.5 seconds, return existing
+        Optional<ChatMessage> recent = messageRepository.findTopByConversationIdAndSenderUserPublicIdOrderByCreatedAtDesc(
+                conversation.getId(), sender.getPublicId());
+        if (recent.isPresent()) {
+            ChatMessage r = recent.get();
+            if (content.equals(r.getContent()) && java.time.Duration.between(r.getCreatedAt(), now).toMillis() < 2500) {
+                log.info("Duplicate chat message suppressed for sender {} in conversation {}", sender.getUsername(), conversation.getPublicId());
+                return ChatMessageResponse.fromEntity(r, sender.getPublicId());
+            }
+        }
+
         String snippet = content.length() > 450 ? content.substring(0, 450) + "..." : content;
         conversation.setLastMessageContent(snippet);
         conversation.setLastMessageAt(now);
@@ -91,11 +138,14 @@ public class ChatService {
                 .recipientUserPublicId(recipientPublicId)
                 .recipientUsername(recipientUsername)
                 .content(content)
+                .replyToMessagePublicId(replyToMessagePublicId)
+                .replyToSenderName(replyToSenderName)
+                .replyToContent(replyToContent)
                 .isRead(false)
                 .build();
 
         ChatMessage saved = messageRepository.save(message);
-        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved);
+        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved, sender.getPublicId());
 
         try {
             messagingTemplate.convertAndSendToUser(
@@ -149,6 +199,11 @@ public class ChatService {
         if (!conversation.isParticipant(sender.getPublicId())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
                     "You are not a participant in this conversation.");
+        }
+
+        if (conversation.isClosed()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CONSULTATION_CONCLUDED",
+                    "This consultation session has concluded. Please book a reappointment to continue messaging.");
         }
 
         String recipientPublicId = sender.getPublicId().equals(conversation.getParticipantOnePublicId())
@@ -235,11 +290,114 @@ public class ChatService {
         Page<ChatMessage> pageResult = messageRepository
                 .findByConversationIdOrderByCreatedAtDesc(conversation.getId(), pageable);
 
-        List<ChatMessageResponse> messages = new ArrayList<>(
-                pageResult.map(ChatMessageResponse::fromEntity).getContent());
+        List<ChatMessageResponse> messages = new ArrayList<>();
+        for (ChatMessage msg : pageResult.getContent()) {
+            ChatMessageResponse resp = ChatMessageResponse.fromEntity(msg, principal.getPublicId());
+            if (resp != null && !resp.isDeletedForMe()) {
+                messages.add(resp);
+            }
+        }
         // Reverse so that messages are returned in chronological order
         Collections.reverse(messages);
         return messages;
+    }
+
+    @Transactional
+    public ChatMessageResponse deleteMessage(UserPrincipal principal, String messagePublicId, String deleteType) {
+        ChatMessage message = messageRepository.findByPublicId(messagePublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND", "Message not found."));
+
+        Conversation conv = message.getConversation();
+        if (!conv.isParticipant(principal.getPublicId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "You are not a participant in this conversation.");
+        }
+
+        if ("EVERYONE".equalsIgnoreCase(deleteType)) {
+            if (!principal.getPublicId().equals(message.getSenderUserPublicId())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Only the message sender can delete a message for everyone.");
+            }
+            message.setDeletedForEveryone(true);
+            message.setContent("This message was deleted");
+            message.setAttachmentUrl(null);
+            message.setAttachmentName(null);
+            message.setAttachmentType(null);
+            message.setAttachmentSize(null);
+            message.setMessageType("DELETED");
+        } else {
+            // Delete for self (current user only)
+            String current = message.getDeletedForUserIds();
+            if (current == null || current.isBlank()) {
+                message.setDeletedForUserIds(principal.getPublicId());
+            } else {
+                List<String> ids = new ArrayList<>(Arrays.asList(current.split(",")));
+                if (!ids.contains(principal.getPublicId())) {
+                    ids.add(principal.getPublicId());
+                    message.setDeletedForUserIds(String.join(",", ids));
+                }
+            }
+        }
+
+        ChatMessage saved = messageRepository.save(message);
+        ChatMessageResponse response = ChatMessageResponse.fromEntity(saved, principal.getPublicId());
+
+        // Broadcast deletion event via WebSocket
+        try {
+            messagingTemplate.convertAndSend("/topic/conversations/" + conv.getPublicId(), response);
+            messagingTemplate.convertAndSend("/topic/users/" + message.getRecipientUserPublicId() + "/messages", response);
+            messagingTemplate.convertAndSend("/topic/users/" + message.getSenderUserPublicId() + "/messages", response);
+        } catch (Exception e) {
+            log.warn("WebSocket broadcast failed for delete message: {}", e.getMessage());
+        }
+
+        return response;
+    }
+
+    @Transactional
+    public ConversationResponse closeConversation(UserPrincipal principal, String conversationPublicId) {
+        Conversation conversation = conversationRepository.findByPublicId(conversationPublicId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation not found."));
+
+        if (!conversation.isParticipant(principal.getPublicId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                    "You are not a participant in this conversation.");
+        }
+
+        conversation.setClosed(true);
+        Conversation saved = conversationRepository.save(conversation);
+        log.info("Conversation {} marked concluded and closed by user {}", conversationPublicId, principal.getUsername());
+        long unreadCount = messageRepository.countByConversationIdAndRecipientUserPublicIdAndIsReadFalse(saved.getId(), principal.getPublicId());
+        return ConversationResponse.fromEntity(saved, principal.getPublicId(), unreadCount);
+    }
+
+    @Transactional
+    public void closeConversationByAppointment(String appointmentPublicId) {
+        if (appointmentPublicId == null || appointmentPublicId.isBlank()) return;
+        conversationRepository.findByAppointmentPublicId(appointmentPublicId).ifPresent(c -> {
+            c.setClosed(true);
+            conversationRepository.save(c);
+            log.info("Closed chat conversation {} for appointment {}", c.getPublicId(), appointmentPublicId);
+        });
+    }
+
+    @Transactional
+    public void reopenConversationByAppointment(String appointmentPublicId, String clientPublicId, String lawyerPublicId) {
+        if (appointmentPublicId != null && !appointmentPublicId.isBlank()) {
+            conversationRepository.findByAppointmentPublicId(appointmentPublicId).ifPresent(c -> {
+                c.setClosed(false);
+                conversationRepository.save(c);
+                log.info("Reopened chat conversation {} for appointment {}", c.getPublicId(), appointmentPublicId);
+            });
+        }
+        if (clientPublicId != null && lawyerPublicId != null) {
+            conversationRepository.findConversationBetween(clientPublicId, lawyerPublicId).ifPresent(c -> {
+                c.setClosed(false);
+                if (appointmentPublicId != null && !appointmentPublicId.isBlank()) {
+                    c.setAppointmentPublicId(appointmentPublicId);
+                }
+                conversationRepository.save(c);
+                log.info("Reopened chat conversation {} between {} and {}", c.getPublicId(), clientPublicId, lawyerPublicId);
+            });
+        }
     }
 
     @Transactional
@@ -270,15 +428,28 @@ public class ChatService {
         if (appointmentPublicId != null && !appointmentPublicId.isBlank()) {
             var existingByApt = conversationRepository.findByAppointmentPublicId(appointmentPublicId);
             if (existingByApt.isPresent()) {
-                return existingByApt.get();
+                Conversation c = existingByApt.get();
+                if (c.isClosed()) {
+                    c.setClosed(false);
+                    conversationRepository.save(c);
+                }
+                return c;
             }
         }
 
         var existingBetween = conversationRepository.findConversationBetween(user1Id, user2Id);
         if (existingBetween.isPresent()) {
             Conversation conv = existingBetween.get();
+            boolean saveNeeded = false;
             if (appointmentPublicId != null && !appointmentPublicId.isBlank() && conv.getAppointmentPublicId() == null) {
                 conv.setAppointmentPublicId(appointmentPublicId);
+                saveNeeded = true;
+            }
+            if (appointmentPublicId != null && !appointmentPublicId.isBlank() && conv.isClosed()) {
+                conv.setClosed(false);
+                saveNeeded = true;
+            }
+            if (saveNeeded) {
                 conversationRepository.save(conv);
             }
             return conv;

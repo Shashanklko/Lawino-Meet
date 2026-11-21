@@ -15,8 +15,10 @@ import java.util.UUID;
     name = "appointments",
     indexes = {
         @Index(name = "idx_appointment_public_id", columnList = "public_id", unique = true),
+        @Index(name = "idx_appointment_short_uid", columnList = "short_uid", unique = true),
         @Index(name = "idx_appointment_client", columnList = "client_user_public_id"),
         @Index(name = "idx_appointment_lawyer", columnList = "lawyer_user_public_id"),
+        @Index(name = "idx_appointment_time_range", columnList = "lawyer_user_public_id, start_time, end_time"),
         @Index(name = "idx_appointment_firm", columnList = "firm_public_id"),
         @Index(name = "idx_appointment_status", columnList = "appointment_status"),
         @Index(name = "idx_appointment_deadline", columnList = "response_deadline"),
@@ -36,6 +38,9 @@ public class Appointment {
 
     @Column(name = "public_id", nullable = false, unique = true, length = 36)
     private String publicId;
+
+    @Column(name = "short_uid", nullable = false, unique = true, length = 7)
+    private String shortUid;
 
     @Column(name = "client_user_public_id", nullable = false, length = 36)
     private String clientUserPublicId;
@@ -60,8 +65,14 @@ public class Appointment {
     private BigDecimal fee = new BigDecimal("1500.00");
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "slot_id", nullable = false)
+    @JoinColumn(name = "slot_id", nullable = true)
     private AvailabilitySlot slot;
+
+    @Column(name = "start_time")
+    private Instant startTime;
+
+    @Column(name = "end_time")
+    private Instant endTime;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "consultation_type", nullable = false, length = 20)
@@ -160,8 +171,11 @@ public class Appointment {
 
     @PrePersist
     public void prePersist() {
-        if (this.publicId == null) {
+        if (this.publicId == null || this.publicId.isBlank()) {
             this.publicId = UUID.randomUUID().toString();
+        }
+        if (this.shortUid == null || this.shortUid.isBlank()) {
+            this.shortUid = com.lawinomeet.appointment.util.ShortUidGenerator.generate();
         }
         if (this.appointmentStatus == null) {
             this.appointmentStatus = AppointmentStatus.PENDING;

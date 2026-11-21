@@ -6,6 +6,9 @@ export default defineConfig({
   define: {
     global: 'window',
   },
+  build: {
+    sourcemap: true,
+  },
   server: {
     port: 3000,
     proxy: {

@@ -23,8 +23,20 @@ export const chatApi = {
     });
     return res.data;
   },
-  sendMessage: async (conversationPublicId, content) => {
-    const res = await apiClient.post(`/api/chat/conversations/${conversationPublicId}/messages`, { content });
+  sendMessage: async (conversationPublicId, content, reply = null) => {
+    const payload = { content };
+    if (reply) {
+      payload.replyToMessagePublicId = reply.replyToMessagePublicId || reply.publicId;
+      payload.replyToSenderName = reply.replyToSenderName || reply.senderName;
+      payload.replyToContent = reply.replyToContent || reply.content;
+    }
+    const res = await apiClient.post(`/api/chat/conversations/${conversationPublicId}/messages`, payload);
+    return res.data;
+  },
+  deleteMessage: async (messagePublicId, deleteType = 'SELF') => {
+    const res = await apiClient.delete(`/api/chat/messages/${messagePublicId}`, {
+      params: { deleteType },
+    });
     return res.data;
   },
   uploadAttachment: async (conversationPublicId, file, caption = '') => {
@@ -38,6 +50,10 @@ export const chatApi = {
   },
   markConversationAsRead: async (conversationPublicId) => {
     const res = await apiClient.patch(`/api/chat/conversations/${conversationPublicId}/read`);
+    return res.data;
+  },
+  closeConversation: async (conversationPublicId) => {
+    const res = await apiClient.post(`/api/chat/conversations/${conversationPublicId}/close`);
     return res.data;
   },
   getUnreadCount: async () => {

@@ -87,7 +87,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-lawino_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lawino_password}
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-this-in-production-min-256-bits-length}
-      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-43200000}
       JWT_ISSUER: ${JWT_ISSUER:-lawino-meet}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq

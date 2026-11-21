@@ -10,6 +10,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "client_profiles", indexes = {
         @Index(name = "idx_client_user_public_id", columnList = "user_public_id", unique = true),
+        @Index(name = "idx_client_short_uid", columnList = "short_uid", unique = true),
         @Index(name = "idx_client_username", columnList = "username", unique = true)
 })
 @Getter
@@ -25,6 +26,9 @@ public class ClientProfile {
 
     @Column(name = "user_public_id", nullable = false, unique = true, length = 36, updatable = false)
     private String userPublicId;
+
+    @Column(name = "short_uid", nullable = false, unique = true, length = 7)
+    private String shortUid;
 
     @Column(nullable = false, unique = true, length = 50, updatable = false)
     private String username;
@@ -55,4 +59,11 @@ public class ClientProfile {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (shortUid == null || shortUid.isBlank()) {
+            shortUid = com.lawinomeet.user.util.ShortUidGenerator.generate();
+        }
+    }
 }

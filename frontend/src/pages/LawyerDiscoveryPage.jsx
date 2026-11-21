@@ -75,11 +75,12 @@ const normalizeLawyer = (adv) => {
   const bio = adv.biography || adv.bio || 'Advocate practicing before High Courts and tribunals.';
   const specialization = adv.specialization || (adv.specializations?.[0]?.code) || 'CIVIL_LITIGATION';
   const barCouncilNumber = adv.barCouncilNumber || adv.qualification || 'Bar Council Enrolled';
-  const publicId = adv.slug || adv.userPublicId || adv.publicId;
+  const publicId = adv.username || adv.slug || adv.userPublicId || adv.publicId;
 
   return {
     ...adv,
     publicId,
+    shortUid: adv.shortUid || '',
     userPublicId: adv.userPublicId || adv.publicId,
     fullName: adv.fullName || adv.username,
     barCouncilNumber,
@@ -733,7 +734,7 @@ export const LawyerDiscoveryPage = () => {
                           <MessageSquare className="w-3.5 h-3.5 text-[#831826]" />
                         </button>
                         <Link
-                          to={`/lawyers/${adv.publicId}`}
+                          to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                           className="px-3.5 py-2 rounded-xl bg-[#831826] hover:bg-[#6c131f] text-white text-xs font-serif font-medium shadow-xs hover:shadow transition flex items-center space-x-1"
                         >
                           <span>Consult</span>
@@ -803,7 +804,7 @@ export const LawyerDiscoveryPage = () => {
                         <MessageSquare className="w-3.5 h-3.5 text-[#831826]" />
                       </button>
                       <Link
-                        to={`/lawyers/${adv.publicId}`}
+                        to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                         className="px-4 py-2 rounded-xl bg-[#831826] hover:bg-[#6c131f] text-white text-xs font-serif font-medium shadow-xs transition"
                       >
                         Consult

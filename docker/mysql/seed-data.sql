@@ -1,17 +1,24 @@
 -- =========================================================================
--- LawinoMeet - Initial Seed Data for Testing & Demo Personas
--- All test accounts share the universal demo password: Password123!
+-- LawinoMeet - Minimal Production-Ready Seed Data
+-- Strict Entity Requirement:
+--   1. One Client (rohit_client / CLT1001)
+--   2. One Super Admin (platform_admin / ADM1001)
+--   3. Two Lawyers (adv_raghavan / LAW1001, adv_meera / LAW1002)
+--   4. One Law Firm (Lex Veritas Legal LLP / FRM1001)
+-- Universal password for seeded accounts: Password123!
 -- BCrypt Hash: $2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK
+-- ZERO dummy appointments, chats, notifications, transactions, or static slots.
 -- =========================================================================
 
 -- =========================================================================
--- 1. AUTH SERVICE SEED (auth_db.users)
+-- 1. AUTH SERVICE SCHEMA & SEED (auth_db)
 -- =========================================================================
 USE `auth_db`;
 
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `short_uid` VARCHAR(7) NOT NULL UNIQUE,
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `email` VARCHAR(150) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
@@ -19,27 +26,28 @@ CREATE TABLE IF NOT EXISTS `users` (
     `account_status` VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
     `email_verified` BOOLEAN NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_users_public_id` (`public_id`),
+    INDEX `idx_users_short_uid` (`short_uid`),
+    INDEX `idx_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `users` (`id`, `public_id`, `username`, `email`, `password_hash`, `role`, `account_status`, `email_verified`)
+INSERT INTO `users` (`id`, `public_id`, `short_uid`, `username`, `email`, `password_hash`, `role`, `account_status`, `email_verified`)
 VALUES
-(1, '11111111-1111-1111-1111-111111111111', 'rohit_client', 'rohit.verma@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'CLIENT', 'ACTIVE', 1),
-(2, '22222222-2222-2222-2222-222222222222', 'adv_meera', 'meera.deshmukh@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
-(3, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'raghavan.nambiar@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
-(4, '44444444-4444-4444-4444-444444444444', 'firm_admin', 'admin@lexveritas.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'FIRM_ADMIN', 'ACTIVE', 1),
-(5, '55555555-5555-5555-5555-555555555555', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1),
-(6, '66666666-6666-6666-6666-666666666666', 'adv_ananya', 'ananya.sengupta@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
-(7, '77777777-7777-7777-7777-777777777777', 'adv_vikram', 'vikram.rathore@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
-(8, '88888888-8888-8888-8888-888888888888', 'adv_rohan', 'rohan.kulkarni@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1)
-ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'rohit.verma@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'CLIENT', 'ACTIVE', 1),
+(2, '55555555-5555-5555-5555-555555555555', 'ADM1001', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1),
+(3, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'raghavan.nambiar@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
+(4, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'meera.deshmukh@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1)
+ON DUPLICATE KEY UPDATE 
+    `password_hash` = VALUES(`password_hash`),
+    `short_uid` = VALUES(`short_uid`);
 
 -- =========================================================================
--- 2. USER & PROFILE SERVICE SEED (user_db)
+-- 2. USER & PROFILE SERVICE SCHEMA & SEED (user_db)
 -- =========================================================================
 USE `user_db`;
 
--- Legal Specializations Table & Seed
+-- Legal Specializations Reference Table
 CREATE TABLE IF NOT EXISTS `legal_specializations` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL UNIQUE,
@@ -63,6 +71,7 @@ ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 CREATE TABLE IF NOT EXISTS `client_profiles` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `user_public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `short_uid` VARCHAR(7) NOT NULL UNIQUE,
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `full_name` VARCHAR(150),
     `phone` VARCHAR(25),
@@ -71,18 +80,20 @@ CREATE TABLE IF NOT EXISTS `client_profiles` (
     `state` VARCHAR(100),
     `country` VARCHAR(100) DEFAULT 'India',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_client_short_uid` (`short_uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `client_profiles` (`user_public_id`, `username`, `full_name`, `phone`, `city`, `state`, `country`)
+INSERT INTO `client_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `full_name`, `phone`, `city`, `state`, `country`)
 VALUES
-('11111111-1111-1111-1111-111111111111', 'rohit_client', 'Rohit Verma', '+91 98102 33491', 'Delhi', 'Delhi', 'India')
-ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
+(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'Rohit Verma', '+91 98102 33491', 'Delhi', 'Delhi', 'India')
+ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`), `short_uid` = VALUES(`short_uid`);
 
 -- Law Firms
 CREATE TABLE IF NOT EXISTS `law_firms` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `short_uid` VARCHAR(7) NOT NULL UNIQUE,
     `admin_user_public_id` VARCHAR(36) NOT NULL,
     `firm_name` VARCHAR(200) NOT NULL UNIQUE,
     `slug` VARCHAR(150) NOT NULL UNIQUE,
@@ -96,20 +107,21 @@ CREATE TABLE IF NOT EXISTS `law_firms` (
     `country` VARCHAR(100) DEFAULT 'India',
     `verification_status` VARCHAR(30) DEFAULT 'VERIFIED',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_firm_short_uid` (`short_uid`),
+    INDEX `idx_firm_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `law_firms` (`public_id`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`)
+INSERT INTO `law_firms` (`id`, `public_id`, `short_uid`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`)
 VALUES
-('firm-001-lex-veritas', '44444444-4444-4444-4444-444444444444', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED'),
-('firm-002-shardul-partners', '44444444-4444-4444-4444-444444444444', 'Shardul & Chambers Legal LLP', 'shardul-chambers-legal-llp', 'Boutique dispute resolution and appellate practice firm specializing in Supreme Court litigation and NCLT matters.', 'contact@shardullegal.com', '+91 11 2338 9911', 'Barakhamba Road, Connaught Place', 'New Delhi', 'Delhi', 'VERIFIED'),
-('firm-003-crest-law-partners', '44444444-4444-4444-4444-444444444444', 'Crestline Law Partners LLP', 'crestline-law-partners-llp', 'Technology, IPR, venture capital structuring and corporate compliance counsel across India.', 'advisory@crestlinelegal.com', '+91 80 4120 7700', 'MG Road, Central Business District', 'Bengaluru', 'Karnataka', 'VERIFIED')
-ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`);
+(1, '44444444-4444-4444-4444-444444444444', 'FRM1001', '33333333-3333-3333-3333-333333333333', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED')
+ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`), `short_uid` = VALUES(`short_uid`);
 
--- Lawyer Profiles
+-- Lawyer Profiles (Dynamic availability configuration; no predefined static slots)
 CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `user_public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `short_uid` VARCHAR(7) NOT NULL UNIQUE,
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `slug` VARCHAR(100) NOT NULL UNIQUE,
     `full_name` VARCHAR(150) NOT NULL,
@@ -125,18 +137,45 @@ CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
     `messaging_enabled` BOOLEAN DEFAULT 1,
     `verification_status` VARCHAR(30) DEFAULT 'VERIFIED',
     `public_profile_status` VARCHAR(30) DEFAULT 'PUBLISHED',
+    `working_days` VARCHAR(255) DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY',
+    `working_hours_start` VARCHAR(10) DEFAULT '09:00',
+    `working_hours_end` VARCHAR(10) DEFAULT '18:00',
+    `break_start_time` VARCHAR(10) DEFAULT '13:00',
+    `break_end_time` VARCHAR(10) DEFAULT '14:00',
+    `time_zone` VARCHAR(50) DEFAULT 'Asia/Kolkata',
+    `availability_status` VARCHAR(30) DEFAULT 'AVAILABLE',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_lawyer_short_uid` (`short_uid`),
+    INDEX `idx_lawyer_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `lawyer_profiles` (`id`, `user_public_id`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `state`, `messaging_enabled`, `verification_status`, `public_profile_status`)
+INSERT INTO `lawyer_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `state`, `messaging_enabled`, `verification_status`, `public_profile_status`, `working_days`, `working_hours_start`, `working_hours_end`, `break_start_time`, `break_end_time`, `time_zone`, `availability_status`)
 VALUES
-(1, '22222222-2222-2222-2222-222222222222', 'adv_meera', 'adv-meera-deshmukh', 'Adv. Meera Deshmukh', 'Independent counsel specializing in criminal defense, anticipatory bail, and Section 420 IPC matters.', 'B.A. LL.B (Hons), Bar Council of Delhi (D/1842/2012)', 12, '+91 98200 11223', 'meera.deshmukh@example.com', 'New Delhi', 'Delhi', 1, 'VERIFIED', 'PUBLISHED'),
-(2, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED'),
-(3, '66666666-6666-6666-6666-666666666666', 'adv_ananya', 'adv-ananya-sengupta', 'Adv. Ananya Sengupta', 'Technology contracts specialist, startup cross-border incorporation, SaaS agreements, and venture seed financing.', 'B.A. LL.B, National Law School of India University (KAR/3920/2014)', 10, '+91 98450 44556', 'ananya.sengupta@example.com', 'Bengaluru', 'Karnataka', 1, 'VERIFIED', 'PUBLISHED'),
-(4, '77777777-7777-7777-7777-777777777777', 'adv_vikram', 'adv-vikram-rathore', 'Adv. Vikramaditya Rathore', 'Family and matrimonial litigator handling mutual consent divorce, child custody, maintenance petitions, and mediation.', 'LL.B, Campus Law Centre, Delhi University (D/892/2011)', 13, '+91 98101 55667', 'vikram.rathore@example.com', 'Delhi NCR', 'Delhi', 1, 'VERIFIED', 'PUBLISHED'),
-(5, '88888888-8888-8888-8888-888888888888', 'adv_rohan', 'adv-rohan-kulkarni', 'Adv. Rohan Kulkarni', 'Cybercrime and IT Act counsel specializing in online financial fraud, identity theft, data privacy, and digital forensics.', 'LL.M (Cyber Law), Mumbai University (MAH/1042/2016)', 8, '+91 98210 66778', 'rohan.kulkarni@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED')
-ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
+(1, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '09:00', '18:00', '13:00', '14:00', 'Asia/Kolkata', 'AVAILABLE'),
+(2, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'adv-meera-deshmukh', 'Adv. Meera Deshmukh', 'Independent counsel specializing in criminal defense, anticipatory bail, and Section 420 IPC matters.', 'B.A. LL.B (Hons), Bar Council of Delhi (D/1842/2012)', 12, '+91 98200 11223', 'meera.deshmukh@example.com', 'New Delhi', 'Delhi', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '10:00', '19:00', '13:30', '14:30', 'Asia/Kolkata', 'AVAILABLE')
+ON DUPLICATE KEY UPDATE 
+    `full_name` = VALUES(`full_name`),
+    `short_uid` = VALUES(`short_uid`),
+    `slug` = VALUES(`slug`),
+    `working_days` = VALUES(`working_days`),
+    `working_hours_start` = VALUES(`working_hours_start`),
+    `working_hours_end` = VALUES(`working_hours_end`);
+
+-- Lawyer Specializations Join Table
+CREATE TABLE IF NOT EXISTS `lawyer_specializations` (
+    `lawyer_profile_id` BIGINT NOT NULL,
+    `specialization_id` BIGINT NOT NULL,
+    PRIMARY KEY (`lawyer_profile_id`, `specialization_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `lawyer_specializations` (`lawyer_profile_id`, `specialization_id`)
+VALUES
+(1, 2), -- Adv Raghavan -> Corporate
+(1, 8), -- Adv Raghavan -> Constitutional
+(2, 1), -- Adv Meera -> Criminal
+(2, 6)  -- Adv Meera -> Cyber
+ON DUPLICATE KEY UPDATE `specialization_id` = VALUES(`specialization_id`);
 
 -- Firm Members Link
 CREATE TABLE IF NOT EXISTS `firm_members` (
@@ -147,7 +186,8 @@ CREATE TABLE IF NOT EXISTS `firm_members` (
     `status` VARCHAR(30) NOT NULL DEFAULT 'ACCEPTED',
     `invited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_firm_member` (`firm_id`, `lawyer_user_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `firm_role`, `status`)
@@ -162,21 +202,64 @@ CREATE TABLE IF NOT EXISTS `legal_services` (
     `title` VARCHAR(150) NOT NULL,
     `description` TEXT,
     `mode` VARCHAR(30) NOT NULL,
-    `duration_minutes` INT NOT NULL DEFAULT 30,
+    `duration_minutes` INT NOT NULL DEFAULT 60,
     `price` DECIMAL(10, 2) NOT NULL,
     `is_active` BOOLEAN DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `title`, `description`, `mode`, `duration_minutes`, `price`, `is_active`)
+INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `firm_id`, `title`, `description`, `mode`, `duration_minutes`, `price`, `is_active`)
 VALUES
-(1, 1, 'Emergency Anticipatory Bail Consultation', 'Immediate defense strategy and bail petition briefing.', 'ONLINE', 30, 1800.00, 1),
-(2, 1, 'Chamber Consultation (Physical)', 'In-person meeting at chamber complex with document review.', 'OFFLINE', 45, 2000.00, 1),
-(3, 1, 'Legal Chat Advisory', 'Encrypted 1-on-1 direct messaging and case opinion.', 'ONLINE', 30, 800.00, 1)
-ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);
+(1, 1, 1, 'Corporate Legal Advisory', 'Comprehensive commercial advisory, contracts, and cross-border arbitration briefing.', 'ONLINE', 60, 2500.00, 1),
+(2, 2, NULL, 'Anticipatory Bail & Criminal Defense', 'Immediate defense strategy, bail petition analysis, and litigation review.', 'ONLINE', 60, 1800.00, 1)
+ON DUPLICATE KEY UPDATE `price` = VALUES(`price`);
+
+-- Wallets Table (Strict ₹0 initial balance)
+CREATE TABLE IF NOT EXISTS `wallets` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `user_public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `username` VARCHAR(50) NOT NULL,
+    `user_role` VARCHAR(30) NOT NULL,
+    `balance` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    `escrow_balance` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    `currency` VARCHAR(10) NOT NULL DEFAULT 'INR',
+    `version` BIGINT DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_wallet_public_id` (`public_id`),
+    INDEX `idx_wallet_user` (`user_public_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `wallets` (`id`, `public_id`, `user_public_id`, `username`, `user_role`, `balance`, `escrow_balance`)
+VALUES
+(1, 'wlt-clt-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'CLIENT', 0.00, 0.00),
+(2, 'wlt-law-001', '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'LAWYER', 0.00, 0.00),
+(3, 'wlt-law-002', '22222222-2222-2222-2222-222222222222', 'adv_meera', 'LAWYER', 0.00, 0.00)
+ON DUPLICATE KEY UPDATE `username` = VALUES(`username`);
+
+-- Wallet Transactions Table (Zero dummy transactions seeded)
+CREATE TABLE IF NOT EXISTS `wallet_transactions` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `wallet_id` BIGINT NOT NULL,
+    `user_public_id` VARCHAR(36) NOT NULL,
+    `amount` DECIMAL(12, 2) NOT NULL,
+    `type` VARCHAR(30) NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
+    `reference_id` VARCHAR(100),
+    `description` VARCHAR(300),
+    `payment_method` VARCHAR(50),
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_wtx_public_id` (`public_id`),
+    INDEX `idx_wtx_user` (`user_public_id`),
+    INDEX `idx_wtx_ref` (`reference_id`),
+    INDEX `idx_wtx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================================
--- 3. APPOINTMENT SERVICE SEED (appointment_db)
+-- 3. APPOINTMENT SERVICE SCHEMA (appointment_db)
+-- Zero predefined static slots or dummy appointments seeded.
 -- =========================================================================
 USE `appointment_db`;
 
@@ -189,52 +272,64 @@ CREATE TABLE IF NOT EXISTS `availability_slots` (
     `slot_status` VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
     `version` BIGINT DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_slot_lawyer_time` (`lawyer_user_public_id`, `start_time`, `end_time`),
+    INDEX `idx_slot_status` (`slot_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `availability_slots` (`id`, `public_id`, `lawyer_user_public_id`, `start_time`, `end_time`, `slot_status`)
-VALUES
-(1, 'slot-001', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 11 HOUR, 'AVAILABLE'),
-(2, 'slot-002', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 14 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 15 HOUR, 'AVAILABLE'),
-(3, 'slot-003', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 11 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 12 HOUR, 'AVAILABLE'),
-(4, 'slot-004', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 15 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 16 HOUR, 'AVAILABLE'),
-(5, 'slot-005', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 10 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 11 HOUR, 'AVAILABLE'),
-(6, 'slot-006', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 16 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY) + INTERVAL 17 HOUR, 'AVAILABLE'),
-(7, 'slot-007', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 4 DAY) + INTERVAL 11 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 4 DAY) + INTERVAL 12 HOUR, 'AVAILABLE'),
-(8, 'slot-008', '33333333-3333-3333-3333-333333333333', DATE_ADD(CURRENT_DATE, INTERVAL 5 DAY) + INTERVAL 15 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 5 DAY) + INTERVAL 16 HOUR, 'AVAILABLE'),
-(9, 'slot-009', '66666666-6666-6666-6666-666666666666', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 10 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 11 HOUR, 'AVAILABLE'),
-(10, 'slot-010', '66666666-6666-6666-6666-666666666666', DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 16 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY) + INTERVAL 17 HOUR, 'AVAILABLE'),
-(11, 'slot-011', '77777777-7777-7777-7777-777777777777', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 12 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 13 HOUR, 'AVAILABLE'),
-(12, 'slot-012', '88888888-8888-8888-8888-888888888888', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 15 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 16 HOUR, 'AVAILABLE'),
-(13, 'slot-013', '22222222-2222-2222-2222-222222222222', DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 11 HOUR, DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY) + INTERVAL 12 HOUR, 'AVAILABLE')
-ON DUPLICATE KEY UPDATE `slot_status` = VALUES(`slot_status`), `start_time` = VALUES(`start_time`), `end_time` = VALUES(`end_time`);
 
 CREATE TABLE IF NOT EXISTS `appointments` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `short_uid` VARCHAR(7) NOT NULL UNIQUE,
     `client_user_public_id` VARCHAR(36) NOT NULL,
     `client_username` VARCHAR(50) NOT NULL,
     `lawyer_user_public_id` VARCHAR(36) NOT NULL,
     `lawyer_username` VARCHAR(50),
     `firm_public_id` VARCHAR(36),
     `service_id` BIGINT,
-    `slot_id` BIGINT NOT NULL,
+    `fee` DECIMAL(10, 2) NOT NULL DEFAULT 1500.00,
+    `slot_id` BIGINT NULL,
+    `start_time` TIMESTAMP NULL,
+    `end_time` TIMESTAMP NULL,
     `consultation_type` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',
     `consultation_reason` TEXT,
-    `appointment_status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    `appointment_status` VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    `payment_status` VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
+    `payment_method` VARCHAR(30) DEFAULT 'WALLET',
+    `paid_at` TIMESTAMP NULL,
+    `meeting_room_public_id` VARCHAR(100),
+    `chat_conversation_public_id` VARCHAR(100),
+    `alternative_slot_public_id` VARCHAR(100),
+    `preferred_slots_json` VARCHAR(1000),
+    `chamber_address` VARCHAR(500),
+    `directions_instructions` VARCHAR(500),
+    `rejection_reason` VARCHAR(500),
+    `cancellation_reason` VARCHAR(500),
     `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `response_deadline` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `accepted_at` TIMESTAMP NULL,
+    `rejected_at` TIMESTAMP NULL,
+    `cancelled_at` TIMESTAMP NULL,
+    `completion_requested_at` TIMESTAMP NULL,
+    `completed_at` TIMESTAMP NULL,
+    `client_confirmed_at` TIMESTAMP NULL,
+    `settled_at` TIMESTAMP NULL,
+    `settlement_status` VARCHAR(30) DEFAULT 'UNSETTLED',
+    `response_deadline` TIMESTAMP NULL,
+    `auto_release_at` TIMESTAMP NULL,
+    `version` BIGINT DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_apt_public_id` (`public_id`),
+    INDEX `idx_apt_short_uid` (`short_uid`),
+    INDEX `idx_apt_client` (`client_user_public_id`),
+    INDEX `idx_apt_lawyer` (`lawyer_user_public_id`),
+    INDEX `idx_apt_time_range` (`lawyer_user_public_id`, `start_time`, `end_time`),
+    INDEX `idx_apt_status` (`appointment_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `appointments` (`id`, `public_id`, `client_user_public_id`, `client_username`, `lawyer_user_public_id`, `lawyer_username`, `slot_id`, `consultation_type`, `consultation_reason`, `appointment_status`)
-VALUES
-(1, 'apt-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', '22222222-2222-2222-2222-222222222222', 'adv_meera', 1, 'ONLINE', 'FIR registered under Section 420 IPC in Gurugram. Police visited residence today morning. Urgently need bail strategy before arrest.', 'PENDING')
-ON DUPLICATE KEY UPDATE `appointment_status` = VALUES(`appointment_status`);
-
 -- =========================================================================
--- 4. CHAT SERVICE SEED (chat_db)
+-- 4. CHAT SERVICE SCHEMA (chat_db)
+-- Zero dummy conversations or messages seeded.
 -- =========================================================================
 USE `chat_db`;
 
@@ -249,13 +344,11 @@ CREATE TABLE IF NOT EXISTS `chat_conversations` (
     `last_message_content` VARCHAR(500),
     `last_message_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_conv_public_id` (`public_id`),
+    INDEX `idx_conv_p1` (`participant_one_public_id`),
+    INDEX `idx_conv_p2` (`participant_two_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `chat_conversations` (`id`, `public_id`, `participant_one_public_id`, `participant_one_username`, `participant_two_public_id`, `participant_two_username`, `last_message_content`)
-VALUES
-(1, 'conv-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'Please keep a clear photo or scan of the summons notice ready.')
-ON DUPLICATE KEY UPDATE `last_message_content` = VALUES(`last_message_content`);
 
 CREATE TABLE IF NOT EXISTS `chat_messages` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -269,18 +362,21 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
     `attachment_url` VARCHAR(500),
     `attachment_name` VARCHAR(255),
     `is_read` BOOLEAN DEFAULT 0,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `reply_to_message_public_id` VARCHAR(36) NULL,
+    `reply_to_sender_name` VARCHAR(100) NULL,
+    `reply_to_content` VARCHAR(500) NULL,
+    `deleted_for_everyone` BOOLEAN NOT NULL DEFAULT 0,
+    `deleted_for_user_ids` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_msg_public_id` (`public_id`),
+    INDEX `idx_msg_conv` (`conversation_id`),
+    INDEX `idx_msg_sender` (`sender_user_public_id`),
+    INDEX `idx_msg_recipient` (`recipient_user_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `chat_messages` (`id`, `public_id`, `conversation_id`, `sender_user_public_id`, `sender_username`, `recipient_user_public_id`, `recipient_username`, `content`, `is_read`)
-VALUES
-(1, 'msg-001', 1, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'Namaste Rohit, I have received your case overview regarding the police summons.', 1),
-(2, 'msg-002', 1, '11111111-1111-1111-1111-111111111111', 'rohit_client', '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'Thank you Advocate. What documents should I have ready for the video consultation today?', 1),
-(3, 'msg-003', 1, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'Please keep a clear photo or scan of the summons notice, the date it was delivered, and any bank transaction records.', 0)
-ON DUPLICATE KEY UPDATE `content` = VALUES(`content`);
-
 -- =========================================================================
--- 5. NOTIFICATION SERVICE SEED (notification_db)
+-- 5. NOTIFICATION SERVICE SCHEMA (notification_db)
+-- Zero dummy notifications seeded.
 -- =========================================================================
 USE `notification_db`;
 
@@ -292,12 +388,53 @@ CREATE TABLE IF NOT EXISTS `notifications` (
     `notification_type` VARCHAR(30) NOT NULL,
     `title` VARCHAR(255) NOT NULL,
     `message` TEXT NOT NULL,
+    `reference_type` VARCHAR(50),
+    `reference_id` VARCHAR(100),
     `is_read` BOOLEAN DEFAULT 0,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `read_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_notif_public_id` (`public_id`),
+    INDEX `idx_notif_recipient` (`recipient_user_public_id`, `is_read`),
+    INDEX `idx_notif_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `notifications` (`public_id`, `recipient_user_public_id`, `recipient_username`, `notification_type`, `title`, `message`, `is_read`)
-VALUES
-('notif-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'APPOINTMENT_REQUESTED', 'Consultation Request Dispatched', 'Your emergency anticipatory bail consultation request was sent to Adv. Meera Deshmukh.', 0),
-('notif-002', '22222222-2222-2222-2222-222222222222', 'adv_meera', 'APPOINTMENT_REQUESTED', 'New Consultation Request Received', 'Rohit Verma requested an emergency anticipatory bail consultation for today.', 0)
-ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);
+-- =========================================================================
+-- 6. MEETING SERVICE SCHEMA (meeting_db)
+-- Zero dummy rooms or participants seeded.
+-- =========================================================================
+USE `meeting_db`;
+
+CREATE TABLE IF NOT EXISTS `meeting_rooms` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `appointment_public_id` VARCHAR(36) NOT NULL,
+    `client_user_public_id` VARCHAR(36) NOT NULL,
+    `client_username` VARCHAR(50),
+    `lawyer_user_public_id` VARCHAR(36) NOT NULL,
+    `lawyer_username` VARCHAR(50),
+    `room_status` VARCHAR(20) NOT NULL DEFAULT 'WAITING',
+    `room_token` VARCHAR(64) NOT NULL,
+    `started_at` TIMESTAMP NULL,
+    `ended_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_mroom_public_id` (`public_id`),
+    INDEX `idx_mroom_appointment` (`appointment_public_id`),
+    INDEX `idx_mroom_client` (`client_user_public_id`),
+    INDEX `idx_mroom_lawyer` (`lawyer_user_public_id`),
+    INDEX `idx_mroom_status` (`room_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `meeting_participants` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `public_id` VARCHAR(36) NOT NULL UNIQUE,
+    `room_id` BIGINT NOT NULL,
+    `user_public_id` VARCHAR(36) NOT NULL,
+    `username` VARCHAR(50),
+    `role` VARCHAR(20) NOT NULL DEFAULT 'CLIENT',
+    `joined_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `left_at` TIMESTAMP NULL,
+    INDEX `idx_mpart_public_id` (`public_id`),
+    INDEX `idx_mpart_room` (`room_id`),
+    INDEX `idx_mpart_user` (`user_public_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -33,29 +33,13 @@ public class WalletService {
                             .userPublicId(userPublicId)
                             .username(username != null ? username : "user")
                             .userRole(role != null ? role : "CLIENT")
-                            .balance(new BigDecimal("5000.00")) // Give default promotional opening balance of ₹5,000 for seamless testing
+                            .balance(BigDecimal.ZERO)
                             .escrowBalance(BigDecimal.ZERO)
                             .currency("INR")
                             .build();
                     Wallet saved = walletRepository.save(newWallet);
-                    log.info("Initialized default wallet for user {} ({}) with initial promotional balance ₹5,000",
+                    log.info("Initialized wallet for user {} ({}) with opening balance ₹0.00",
                             username, userPublicId);
-
-                    // Record initial deposit transaction
-                    WalletTransaction initialTx = WalletTransaction.builder()
-                            .publicId(UUID.randomUUID().toString())
-                            .wallet(saved)
-                            .userPublicId(userPublicId)
-                            .amount(new BigDecimal("5000.00"))
-                            .type(TransactionType.DEPOSIT)
-                            .status(TransactionStatus.SUCCESS)
-                            .referenceId("PROMO-INIT-" + UUID.randomUUID().toString().substring(0, 8))
-                            .description("Opening promotional balance credit")
-                            .paymentMethod("SYSTEM_PROMO")
-                            .balanceAfter(new BigDecimal("5000.00"))
-                            .build();
-                    transactionRepository.save(initialTx);
-
                     return saved;
                 });
     }
@@ -119,23 +103,26 @@ public class WalletService {
             }
         }
 
-        Wallet wallet = walletRepository.findByUserPublicIdForUpdate(request.getClientUserPublicId())
+        // 1. Client Wallet Deduction
+        Wallet clientWallet = walletRepository.findByUserPublicIdForUpdate(request.getClientUserPublicId())
                 .orElseGet(() -> getOrCreateWalletEntity(request.getClientUserPublicId(), "client", "CLIENT"));
 
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+        if (clientWallet.getBalance().compareTo(request.getAmount()) < 0) {
             throw new ApiException(
                     String.format("Insufficient wallet balance (Current: ₹%s, Required: ₹%s). Please add funds to proceed.",
-                            wallet.getBalance().toPlainString(), request.getAmount().toPlainString()),
+                            clientWallet.getBalance().toPlainString(), request.getAmount().toPlainString()),
                     HttpStatus.BAD_REQUEST, "INSUFFICIENT_WALLET_BALANCE");
         }
 
-        BigDecimal newBalance = wallet.getBalance().subtract(request.getAmount());
-        wallet.setBalance(newBalance);
-        Wallet savedWallet = walletRepository.save(wallet);
+        BigDecimal newClientBalance = clientWallet.getBalance().subtract(request.getAmount());
+        clientWallet.setBalance(newClientBalance);
+        BigDecimal currentClientEscrow = clientWallet.getEscrowBalance() != null ? clientWallet.getEscrowBalance() : BigDecimal.ZERO;
+        clientWallet.setEscrowBalance(currentClientEscrow.add(request.getAmount()));
+        Wallet savedClientWallet = walletRepository.save(clientWallet);
 
-        WalletTransaction tx = WalletTransaction.builder()
+        WalletTransaction clientTx = WalletTransaction.builder()
                 .publicId(UUID.randomUUID().toString())
-                .wallet(savedWallet)
+                .wallet(savedClientWallet)
                 .userPublicId(request.getClientUserPublicId())
                 .amount(request.getAmount().negate())
                 .type(TransactionType.PAYMENT_DEDUCTION)
@@ -143,14 +130,42 @@ public class WalletService {
                 .referenceId(request.getAppointmentPublicId())
                 .description(request.getDescription() != null ? request.getDescription() : "Retainer payment for consultation")
                 .paymentMethod("WALLET")
-                .balanceAfter(newBalance)
+                .balanceAfter(newClientBalance)
                 .build();
+        WalletTransaction savedClientTx = transactionRepository.save(clientTx);
 
-        WalletTransaction savedTx = transactionRepository.save(tx);
+        // 2. Lawyer Wallet: Credit Consultation Fee into Non-Withdrawable Escrow
+        if (request.getLawyerUserPublicId() != null && !request.getLawyerUserPublicId().isBlank()) {
+            Wallet lawyerWallet = walletRepository.findByUserPublicIdForUpdate(request.getLawyerUserPublicId())
+                    .orElseGet(() -> getOrCreateWalletEntity(request.getLawyerUserPublicId(), "lawyer", "LAWYER"));
+
+            BigDecimal currentLawyerEscrow = lawyerWallet.getEscrowBalance() != null ? lawyerWallet.getEscrowBalance() : BigDecimal.ZERO;
+            BigDecimal newLawyerEscrow = currentLawyerEscrow.add(request.getAmount());
+            lawyerWallet.setEscrowBalance(newLawyerEscrow);
+            Wallet savedLawyerWallet = walletRepository.save(lawyerWallet);
+
+            WalletTransaction lawyerTx = WalletTransaction.builder()
+                    .publicId(UUID.randomUUID().toString())
+                    .wallet(savedLawyerWallet)
+                    .userPublicId(request.getLawyerUserPublicId())
+                    .amount(request.getAmount())
+                    .type(TransactionType.ESCROW_HOLD)
+                    .status(TransactionStatus.SUCCESS)
+                    .referenceId(request.getAppointmentPublicId())
+                    .description("Consultation fee held in non-withdrawable escrow #" + request.getAppointmentPublicId().substring(0, Math.min(8, request.getAppointmentPublicId().length())))
+                    .paymentMethod("ESCROW_HOLD")
+                    .balanceAfter(savedLawyerWallet.getBalance())
+                    .build();
+            transactionRepository.save(lawyerTx);
+
+            log.info("Credited ₹{} to non-withdrawable escrow for lawyer {}. Total escrow: ₹{}",
+                    request.getAmount(), request.getLawyerUserPublicId(), newLawyerEscrow);
+        }
+
         log.info("Deducted ₹{} from client {} for appointment {}. New balance: ₹{}",
-                request.getAmount(), request.getClientUserPublicId(), request.getAppointmentPublicId(), newBalance);
+                request.getAmount(), request.getClientUserPublicId(), request.getAppointmentPublicId(), newClientBalance);
 
-        return WalletTransactionResponse.fromEntity(savedTx);
+        return WalletTransactionResponse.fromEntity(savedClientTx);
     }
 
     @Transactional
@@ -165,16 +180,24 @@ public class WalletService {
             }
         }
 
-        Wallet wallet = walletRepository.findByUserPublicIdForUpdate(request.getLawyerUserPublicId())
+        // 1. Lawyer Wallet Settlement: Move from Escrow to Withdrawable Balance
+        Wallet lawyerWallet = walletRepository.findByUserPublicIdForUpdate(request.getLawyerUserPublicId())
                 .orElseGet(() -> getOrCreateWalletEntity(request.getLawyerUserPublicId(), "lawyer", "LAWYER"));
 
-        BigDecimal newBalance = wallet.getBalance().add(request.getAmount());
-        wallet.setBalance(newBalance);
-        Wallet savedWallet = walletRepository.save(wallet);
+        BigDecimal currentLawyerEscrow = lawyerWallet.getEscrowBalance() != null ? lawyerWallet.getEscrowBalance() : BigDecimal.ZERO;
+        BigDecimal newLawyerEscrow = currentLawyerEscrow.subtract(request.getAmount());
+        if (newLawyerEscrow.compareTo(BigDecimal.ZERO) < 0) {
+            newLawyerEscrow = BigDecimal.ZERO;
+        }
+        lawyerWallet.setEscrowBalance(newLawyerEscrow);
 
-        WalletTransaction tx = WalletTransaction.builder()
+        BigDecimal newLawyerBalance = lawyerWallet.getBalance().add(request.getAmount());
+        lawyerWallet.setBalance(newLawyerBalance);
+        Wallet savedLawyerWallet = walletRepository.save(lawyerWallet);
+
+        WalletTransaction lawyerTx = WalletTransaction.builder()
                 .publicId(UUID.randomUUID().toString())
-                .wallet(savedWallet)
+                .wallet(savedLawyerWallet)
                 .userPublicId(request.getLawyerUserPublicId())
                 .amount(request.getAmount())
                 .type(TransactionType.ESCROW_RELEASE)
@@ -182,14 +205,87 @@ public class WalletService {
                 .referenceId(request.getAppointmentPublicId())
                 .description(request.getDescription() != null ? request.getDescription() : "Settlement fee released for completed consultation")
                 .paymentMethod("ESCROW_SETTLEMENT")
-                .balanceAfter(newBalance)
+                .balanceAfter(newLawyerBalance)
                 .build();
+        WalletTransaction savedLawyerTx = transactionRepository.save(lawyerTx);
 
-        WalletTransaction savedTx = transactionRepository.save(tx);
-        log.info("Settled ₹{} to lawyer {} for appointment {}. New balance: ₹{}",
-                request.getAmount(), request.getLawyerUserPublicId(), request.getAppointmentPublicId(), newBalance);
+        // 2. Client Wallet: Clear corresponding Escrow hold
+        if (request.getClientUserPublicId() != null && !request.getClientUserPublicId().isBlank()) {
+            walletRepository.findByUserPublicIdForUpdate(request.getClientUserPublicId()).ifPresent(clientWallet -> {
+                BigDecimal currentClientEscrow = clientWallet.getEscrowBalance() != null ? clientWallet.getEscrowBalance() : BigDecimal.ZERO;
+                BigDecimal newClientEscrow = currentClientEscrow.subtract(request.getAmount());
+                if (newClientEscrow.compareTo(BigDecimal.ZERO) < 0) {
+                    newClientEscrow = BigDecimal.ZERO;
+                }
+                clientWallet.setEscrowBalance(newClientEscrow);
+                walletRepository.save(clientWallet);
+            });
+        }
 
-        return WalletTransactionResponse.fromEntity(savedTx);
+        log.info("Settled ₹{} to lawyer {} for appointment {}. New balance: ₹{}, Remaining escrow: ₹{}",
+                request.getAmount(), request.getLawyerUserPublicId(), request.getAppointmentPublicId(), newLawyerBalance, newLawyerEscrow);
+
+        return WalletTransactionResponse.fromEntity(savedLawyerTx);
+    }
+
+    @Transactional
+    public WalletTransactionResponse refundForAppointment(RefundFundsRequest request) {
+        // Idempotency: Check if already refunded
+        List<WalletTransaction> existing = transactionRepository.findByReferenceId(request.getAppointmentPublicId());
+        for (WalletTransaction tx : existing) {
+            if (tx.getType() == TransactionType.REFUND && tx.getStatus() == TransactionStatus.SUCCESS) {
+                log.info("Refund already processed for appointment {}. Returning existing transaction {}.",
+                        request.getAppointmentPublicId(), tx.getPublicId());
+                return WalletTransactionResponse.fromEntity(tx);
+            }
+        }
+
+        // 1. Client Wallet: Restore balance, release escrow
+        Wallet clientWallet = walletRepository.findByUserPublicIdForUpdate(request.getClientUserPublicId())
+                .orElseGet(() -> getOrCreateWalletEntity(request.getClientUserPublicId(), "client", "CLIENT"));
+
+        BigDecimal currentClientEscrow = clientWallet.getEscrowBalance() != null ? clientWallet.getEscrowBalance() : BigDecimal.ZERO;
+        BigDecimal newClientEscrow = currentClientEscrow.subtract(request.getAmount());
+        if (newClientEscrow.compareTo(BigDecimal.ZERO) < 0) {
+            newClientEscrow = BigDecimal.ZERO;
+        }
+        clientWallet.setEscrowBalance(newClientEscrow);
+
+        BigDecimal newClientBalance = clientWallet.getBalance().add(request.getAmount());
+        clientWallet.setBalance(newClientBalance);
+        Wallet savedClientWallet = walletRepository.save(clientWallet);
+
+        WalletTransaction refundTx = WalletTransaction.builder()
+                .publicId(UUID.randomUUID().toString())
+                .wallet(savedClientWallet)
+                .userPublicId(request.getClientUserPublicId())
+                .amount(request.getAmount())
+                .type(TransactionType.REFUND)
+                .status(TransactionStatus.SUCCESS)
+                .referenceId(request.getAppointmentPublicId())
+                .description(request.getDescription() != null ? request.getDescription() : "Refund for cancelled consultation #" + request.getAppointmentPublicId().substring(0, Math.min(8, request.getAppointmentPublicId().length())))
+                .paymentMethod("WALLET_REFUND")
+                .balanceAfter(newClientBalance)
+                .build();
+        WalletTransaction savedRefundTx = transactionRepository.save(refundTx);
+
+        // 2. Lawyer Wallet: Remove escrow hold if still pending
+        if (request.getLawyerUserPublicId() != null && !request.getLawyerUserPublicId().isBlank()) {
+            walletRepository.findByUserPublicIdForUpdate(request.getLawyerUserPublicId()).ifPresent(lawyerWallet -> {
+                BigDecimal currentLawyerEscrow = lawyerWallet.getEscrowBalance() != null ? lawyerWallet.getEscrowBalance() : BigDecimal.ZERO;
+                BigDecimal newLawyerEscrow = currentLawyerEscrow.subtract(request.getAmount());
+                if (newLawyerEscrow.compareTo(BigDecimal.ZERO) < 0) {
+                    newLawyerEscrow = BigDecimal.ZERO;
+                }
+                lawyerWallet.setEscrowBalance(newLawyerEscrow);
+                walletRepository.save(lawyerWallet);
+            });
+        }
+
+        log.info("Refunded ₹{} to client {} for cancelled appointment {}. New balance: ₹{}",
+                request.getAmount(), request.getClientUserPublicId(), request.getAppointmentPublicId(), newClientBalance);
+
+        return WalletTransactionResponse.fromEntity(savedRefundTx);
     }
 
     @Transactional

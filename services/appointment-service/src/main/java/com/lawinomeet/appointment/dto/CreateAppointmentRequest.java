@@ -19,6 +19,12 @@ public class CreateAppointmentRequest {
     // Primary slot (existing or created)
     private String slotPublicId;
 
+    // Dynamic 1-hour appointment booking parameters
+    private Instant startTime;
+    private Instant endTime;
+    private String appointmentDate;
+    private String appointmentTime;
+
     // Alternative slot (minimum 2 slots required from client)
     private String alternativeSlotPublicId;
 

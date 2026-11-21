@@ -82,48 +82,27 @@ export const adminApi = {
     try {
       const res = await apiClient.get('/api/admin/clients');
       const list = Array.isArray(res.data?.data) ? res.data.data : (res.data?.data?.content || []);
-      if (list.length > 0) {
-        const mapped = list.map((c) => ({
-          publicId: c.userPublicId || c.publicId || `client-${c.id}`,
-          clientId: c.publicId ? `CLT-${c.publicId.slice(0, 8).toUpperCase()}` : `CLT-${String(c.id || 1).padStart(3, '0')}`,
-          fullName: c.fullName || c.username || 'Rohit Verma',
-          username: c.username || 'rohit_client',
-          email: c.email || `${c.username || 'rohit_client'}@example.com`,
-          phone: c.phone || '+91 98102 33491',
-          city: c.city || 'Delhi',
-          verificationLevel: 'TIER 1 (KYC VERIFIED)',
-          status: 'ACTIVE',
-          registeredDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '2026-11-17',
-          totalAppointments: 1,
-          totalBookings: 1,
-          totalSpent: 1500,
-          walletBalance: 15000,
-        }));
-        return { success: true, data: mapped };
-      }
-      throw new Error('Empty backend clients list');
+      const mapped = list.map((c) => ({
+        publicId: c.userPublicId || c.publicId || `client-${c.id}`,
+        shortUid: c.shortUid || '',
+        clientId: c.shortUid ? `CLT-${c.shortUid}` : (c.publicId ? `CLT-${c.publicId.slice(0, 8).toUpperCase()}` : `CLT-${String(c.id || 1).padStart(3, '0')}`),
+        fullName: c.fullName || c.username || 'Client',
+        username: c.username || '',
+        email: c.email || '',
+        phone: c.phone || '',
+        city: c.city || 'Delhi',
+        verificationLevel: 'TIER 1 (KYC VERIFIED)',
+        status: 'ACTIVE',
+        registeredDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '',
+        totalAppointments: c.totalAppointments || 0,
+        totalBookings: c.totalBookings || 0,
+        totalSpent: c.totalSpent || 0,
+        walletBalance: c.walletBalance || 0,
+      }));
+      return { success: true, data: mapped };
     } catch (err) {
-      console.warn('Failed to load admin clients, using active platform clients:', err);
-      // Fallback platform verified client data
-      const fallback = [
-        {
-          publicId: '11111111-1111-1111-1111-111111111111',
-          clientId: 'CLT-11111111',
-          fullName: 'Rohit Verma',
-          username: 'rohit_client',
-          email: 'rohit.verma@example.com',
-          phone: '+91 98102 33491',
-          city: 'Delhi',
-          verificationLevel: 'TIER 1 (KYC VERIFIED)',
-          status: 'ACTIVE',
-          registeredDate: '19/11/2026',
-          totalAppointments: 2,
-          totalBookings: 2,
-          totalSpent: 3000,
-          walletBalance: 15000,
-        },
-      ];
-      return { success: true, data: fallback };
+      console.warn('Failed to load admin clients:', err);
+      return { success: true, data: [] };
     }
   },
 
@@ -392,22 +371,22 @@ export const adminApi = {
     try {
       const apptsRes = await adminApi.getAppointments();
       const appts = apptsRes.data || [];
-      const totalVolume = appts.reduce((sum, a) => sum + (a.fee || 1500), 0) || 4500;
+      const totalVolume = appts.reduce((sum, a) => sum + (Number(a.fee) || 0), 0);
       const totalCommission = Math.round(totalVolume * 0.1);
       const gatewayFees = Math.round(totalVolume * 0.02);
 
       const transactions = appts.map((a, idx) => ({
-        id: `TXN-2026-${String(idx + 101).padStart(4, '0')}`,
+        id: a.shortUid ? `TXN-${a.shortUid}` : `TXN-2026-${String(idx + 101).padStart(4, '0')}`,
         date: new Date(a.scheduledDate || a.requestedAt).toLocaleDateString('en-IN'),
         client: a.client?.fullName || a.clientUsername || 'Client',
         beneficiary: a.advocate?.fullName || a.lawyerUsername || 'Counsel',
         channel: a.bookingChannel || 'INDEPENDENT',
-        grossAmount: a.fee || 1500,
-        platformCommission: a.platformCommission || 150,
-        netBeneficiary: (a.fee || 1500) - (a.platformCommission || 150),
+        grossAmount: Number(a.fee) || 0,
+        platformCommission: Math.round((Number(a.fee) || 0) * 0.1),
+        netBeneficiary: (Number(a.fee) || 0) - Math.round((Number(a.fee) || 0) * 0.1),
         gateway: 'Razorpay / UPI',
         gatewayRef: `pay_${a.publicId?.slice(0, 10) || 'live'}`,
-        status: a.status === 'COMPLETED' ? 'SETTLED' : 'ESCROW_HELD',
+        status: a.status === 'COMPLETED' ? 'SETTLED' : (a.status === 'CONFIRMED' ? 'ESCROW_HELD' : 'PENDING'),
       }));
 
       const disputedAppts = appts.filter((a) => a.status === 'DISPUTED');
@@ -417,7 +396,7 @@ export const adminApi = {
         client: a.client?.fullName || a.clientUsername,
         beneficiary: a.advocate?.fullName || a.lawyerUsername,
         reason: a.consultationReason || 'Advocate unreached or technical failure',
-        amount: a.fee || 1500,
+        amount: Number(a.fee) || 0,
         status: 'PENDING_APPROVAL',
       }));
 
@@ -426,17 +405,15 @@ export const adminApi = {
         data: {
           platformRevenue: {
             totalCommissionEarned: totalCommission,
-            commissionThisMonth: Math.round(totalCommission * 0.8),
+            commissionThisMonth: totalCommission,
             grossConsultationVolume: totalVolume,
             paymentGatewayProcessingFees: gatewayFees,
-            monthlyTrends: [
-              { month: 'Oct 2026', gross: Math.round(totalVolume * 0.4), commission: Math.round(totalCommission * 0.4) },
-              { month: 'Nov 2026 (MTD)', gross: totalVolume, commission: totalCommission },
-            ],
-            revenueByChannel: [
-              { channel: 'Independent Advocates', share: '75%', amount: Math.round(totalVolume * 0.75) },
-              { channel: 'Law Firm Retainers', share: '25%', amount: Math.round(totalVolume * 0.25) },
-            ],
+            monthlyTrends: totalVolume > 0 ? [
+              { month: 'Current Period', gross: totalVolume, commission: totalCommission },
+            ] : [],
+            revenueByChannel: totalVolume > 0 ? [
+              { channel: 'Consultations', share: '100%', amount: totalVolume },
+            ] : [],
           },
           transactions,
           refunds,

@@ -72,6 +72,22 @@ public class ChatMessage {
     @Column(name = "read_at")
     private Instant readAt;
 
+    @Column(name = "reply_to_message_public_id", length = 36)
+    private String replyToMessagePublicId;
+
+    @Column(name = "reply_to_sender_name", length = 100)
+    private String replyToSenderName;
+
+    @Column(name = "reply_to_content", length = 500)
+    private String replyToContent;
+
+    @Column(name = "deleted_for_everyone", nullable = false)
+    @Builder.Default
+    private boolean deletedForEveryone = false;
+
+    @Column(name = "deleted_for_user_ids", columnDefinition = "TEXT")
+    private String deletedForUserIds;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

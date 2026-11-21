@@ -158,7 +158,16 @@ export const AdminClientsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-800/80">
-              {filteredClients.map((client) => {
+              {filteredClients.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-stone-500 font-sans">
+                    <Users className="w-8 h-8 mx-auto text-stone-600 mb-2 opacity-50" />
+                    <p className="font-semibold text-stone-400">No client accounts match your criteria</p>
+                    <p className="text-[11px] text-stone-600 mt-0.5">Try adjusting search filters or status parameters.</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredClients.map((client) => {
                 const isRestricted = client.status === 'RESTRICTED';
                 const isSuspended = client.status === 'SUSPENDED';
 
@@ -226,7 +235,7 @@ export const AdminClientsPage = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
@@ -240,7 +249,7 @@ export const AdminClientsPage = () => {
               <div>
                 <h3 className="font-serif font-bold text-base text-cream-50">{selectedClient.fullName}</h3>
                 <p className="text-[11px] font-mono text-stone-400">
-                  {selectedClient.clientId} • Registered {new Date(selectedClient.registrationDate).toLocaleDateString()}
+                  {selectedClient.clientId} • Registered {new Date(selectedClient.registrationDate || selectedClient.registeredDate || Date.now()).toLocaleDateString('en-IN')}
                 </p>
               </div>
               <button

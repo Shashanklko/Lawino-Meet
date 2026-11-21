@@ -13,6 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "law_firms", indexes = {
         @Index(name = "idx_firm_public_id", columnList = "public_id", unique = true),
+        @Index(name = "idx_firm_short_uid", columnList = "short_uid", unique = true),
         @Index(name = "idx_firm_admin_public_id", columnList = "admin_user_public_id"),
         @Index(name = "idx_firm_slug", columnList = "slug", unique = true),
         @Index(name = "idx_firm_city", columnList = "city"),
@@ -32,6 +33,9 @@ public class LawFirm {
     @Column(name = "public_id", nullable = false, unique = true, length = 36, updatable = false)
     @Builder.Default
     private String publicId = UUID.randomUUID().toString();
+
+    @Column(name = "short_uid", nullable = false, unique = true, length = 7)
+    private String shortUid;
 
     @Column(name = "admin_user_public_id", nullable = false, length = 36)
     private String adminUserPublicId;
@@ -92,6 +96,9 @@ public class LawFirm {
     public void ensurePublicId() {
         if (this.publicId == null || this.publicId.isBlank()) {
             this.publicId = UUID.randomUUID().toString();
+        }
+        if (this.shortUid == null || this.shortUid.isBlank()) {
+            this.shortUid = com.lawinomeet.user.util.ShortUidGenerator.generate();
         }
     }
 }

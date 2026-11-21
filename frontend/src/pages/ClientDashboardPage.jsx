@@ -39,6 +39,12 @@ import { userApi } from '../api/userApi';
 import { meetingApi } from '../api/meetingApi';
 import { walletApi } from '../api/walletApi';
 import { useChat } from '../context/ChatContext';
+import { PageHeader } from '../components/dashboard/PageHeader';
+import { MetricCard } from '../components/dashboard/MetricCard';
+import { StatusTabs } from '../components/dashboard/StatusTabs';
+import { AppointmentItem } from '../components/dashboard/AppointmentItem';
+import { EmptyState } from '../components/dashboard/EmptyState';
+import { StatusBadge } from '../components/common/StatusBadge';
 
 const formatAdvocateName = (name) => {
   if (!name) return 'Counsel';
@@ -66,45 +72,41 @@ const normalizeFirmItem = (f) => {
 };
 
 const normalizeLawyerItem = (adv) => {
-  const hourlyRate = Number(adv.hourlyRate) || adv.services?.[0]?.consultationFee || 1500;
+  const hourlyRate = Number(adv.hourlyRate) || adv.services?.[0]?.price || adv.services?.[0]?.consultationFee || 1500;
   const experienceYears = Number(adv.experienceYears || adv.yearsOfExperience) || 10;
   const bio = adv.biography || adv.bio || 'Advocate practicing before High Courts and tribunals.';
-  const specialization = adv.specialization || adv.specializations?.[0]?.code || 'CORPORATE';
+  const specialization = adv.specialization || adv.specializations?.[0]?.name || adv.specializations?.[0]?.code || 'CORPORATE';
   const barCouncilNumber = adv.barCouncilNumber || adv.qualification || 'Bar Council Enrolled';
 
-  // Resolve canonical userPublicId (UUID)
-  let userPublicId = adv.userPublicId || adv.publicId;
-  const uname = adv.username || '';
-  if (uname === 'adv_raghavan' || adv.slug?.includes('raghavan')) userPublicId = '33333333-3333-3333-3333-333333333333';
-  else if (uname === 'adv_meera' || adv.slug?.includes('meera')) userPublicId = '66666666-6666-6666-6666-666666666666';
-  else if (uname === 'adv_ananya' || adv.slug?.includes('ananya')) userPublicId = '77777777-7777-7777-7777-777777777777';
-  else if (uname === 'adv_vikram' || adv.slug?.includes('vikram')) userPublicId = '88888888-8888-8888-8888-888888888888';
-  else if (uname === 'adv_rajesh' || adv.slug?.includes('rajesh')) userPublicId = '22222222-2222-2222-2222-222222222222';
+  const userPublicId = adv.userPublicId || adv.publicId;
+  const shortUid = adv.shortUid || '';
+  const workingDays = adv.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY';
+  const workingHours = (adv.workingHoursStart && adv.workingHoursEnd)
+    ? `${adv.workingHoursStart} – ${adv.workingHoursEnd}`
+    : '09:00 AM – 06:00 PM';
 
-  const weeklyAvailabilityDays = adv.weeklyAvailabilityDays || (
-    uname === 'adv_meera' ? 6 :
-    uname === 'adv_ananya' ? 4 :
-    uname === 'adv_vikram' ? 7 : 5
-  );
-
+  const daysCount = workingDays.split(',').length;
   const availableDaysText = 
-    weeklyAvailabilityDays === 7 ? 'Available All 7 Days (Mon – Sun)' :
-    weeklyAvailabilityDays === 6 ? 'Available 6 Days (Mon – Sat)' :
-    weeklyAvailabilityDays === 4 ? 'Available 4 Days (Mon – Thu)' :
-    'Available 5 Days (Mon – Fri)';
-
-  const workingHours = adv.workingHours || '10:00 AM – 06:00 PM';
+    daysCount >= 7 ? 'Available All 7 Days (Mon – Sun)' :
+    daysCount === 6 ? 'Available 6 Days (Mon – Sat)' :
+    `Available ${daysCount} Days (${workingDays.split(',').map(d => d.trim().slice(0, 3)).join(', ')})`;
 
   return {
     ...adv,
-    publicId: adv.slug || userPublicId,
+    publicId: adv.username || adv.slug || userPublicId,
     userPublicId,
+    shortUid,
     fullName: adv.fullName || adv.username,
     barCouncilNumber,
     specialization,
     hourlyRate,
     yearsOfExperience: experienceYears,
-    weeklyAvailabilityDays,
+    workingDays,
+    workingHoursStart: adv.workingHoursStart || '09:00',
+    workingHoursEnd: adv.workingHoursEnd || '18:00',
+    breakStartTime: adv.breakStartTime || '13:00',
+    breakEndTime: adv.breakEndTime || '14:00',
+    timeZone: adv.timeZone || 'Asia/Kolkata',
     availableDaysText,
     workingHours,
     city: adv.city || 'Delhi NCR',
@@ -112,23 +114,17 @@ const normalizeLawyerItem = (adv) => {
     availableOnline: adv.messagingEnabled !== false,
     availableOffline: true,
     rating: adv.rating || 4.9,
-    consultationsCount: adv.consultationsCount || 120,
+    consultationsCount: adv.consultationsCount || 0,
     firmAffiliation: adv.associatedFirmName
       ? {
           firmName: adv.associatedFirmName,
-          designation: 'Managing Partner',
-          firmPublicId: adv.associatedFirmPublicId || 'firm-001',
+          designation: 'Partner',
+          firmPublicId: adv.associatedFirmSlug || 'lex-veritas-legal-llp',
         }
       : null,
     practiceArrangement: adv.associatedFirmName ? 'FIRM_AND_INDEPENDENT' : 'INDEPENDENT',
   };
 };
-import { PageHeader } from '../components/dashboard/PageHeader';
-import { MetricCard } from '../components/dashboard/MetricCard';
-import { StatusTabs } from '../components/dashboard/StatusTabs';
-import { AppointmentItem } from '../components/dashboard/AppointmentItem';
-import { EmptyState } from '../components/dashboard/EmptyState';
-import { StatusBadge } from '../components/common/StatusBadge';
 
 const calculateEndTime = (timeStr) => {
   if (!timeStr) return '';
@@ -224,7 +220,11 @@ export const ClientDashboardPage = () => {
     setLoading(true);
     try {
       const res = await appointmentApi.getMyAppointments();
-      const list = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+      const rawList = res?.data?.content || (Array.isArray(res?.data) ? res.data : []);
+      const list = rawList.map(a => ({
+        ...a,
+        status: a.status || a.appointmentStatus,
+      }));
       setAppointments(list);
     } catch {
       setAppointments([]);
@@ -404,50 +404,16 @@ export const ClientDashboardPage = () => {
         const res = await appointmentApi.getLawyerSlots(lawyerId, { status: 'AVAILABLE' });
         const list = Array.isArray(res?.data) ? res.data : (res?.data?.content || []);
         const now = new Date();
-        let validSlots = list.filter(
+        const validSlots = list.filter(
           (s) => new Date(s.startTime) > now && (s.slotStatus === 'AVAILABLE' || s.status === 'AVAILABLE')
         );
 
-        // If no pre-listed slots exist in database, provide standard 1-hour availability slots across counsel's active weekly days
-        if (validSlots.length === 0) {
-          const daysCount = selectedLawyerModal.weeklyAvailabilityDays || 5;
-          const generated = [];
-          for (let d = 1; d <= daysCount; d++) {
-            const dateObj = new Date();
-            dateObj.setDate(dateObj.getDate() + d);
-            const dateStr = dateObj.toISOString().split('T')[0];
-            const slotTimes = [
-              { h: '10:00', end: '11:00' },
-              { h: '11:30', end: '12:30' },
-              { h: '14:00', end: '15:00' },
-              { h: '15:30', end: '16:30' },
-              { h: '17:00', end: '18:00' },
-            ];
-            slotTimes.forEach((st) => {
-              generated.push({
-                publicId: `gen-${dateStr}-${st.h.replace(':', '')}`,
-                startTime: `${dateStr}T${st.h}:00`,
-                endTime: `${dateStr}T${st.end}:00`,
-                slotStatus: 'AVAILABLE',
-                isAutoGenerated: true,
-              });
-            });
-          }
-          validSlots = generated;
-        }
-
-        // Sort ascending
         validSlots.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
         setModalSlots(validSlots);
         if (validSlots.length > 0) {
           setSelectedSlotId(validSlots[0].publicId);
-          if (validSlots.length > 1) {
-            setSelectedAlternativeSlotId(validSlots[1].publicId);
-          } else {
-            setSelectedAlternativeSlotId(null);
-          }
-          const firstDate = validSlots[0].startTime.split('T')[0];
-          setActiveSlotDateTab(firstDate);
+          setSelectedAlternativeSlotId(validSlots[1]?.publicId || null);
+          setActiveSlotDateTab(validSlots[0].startTime.split('T')[0]);
           setBookingTimeMode('CALENDAR');
         } else {
           setBookingTimeMode('CUSTOM');
@@ -455,6 +421,7 @@ export const ClientDashboardPage = () => {
       } catch (err) {
         console.warn('Could not load advocate slots:', err);
         setModalSlots([]);
+        setBookingTimeMode('CUSTOM');
       } finally {
         setModalSlotsLoading(false);
       }
@@ -514,27 +481,75 @@ export const ClientDashboardPage = () => {
     let payload = {};
     const reason = consultationNotes || `[${selectedConsultMode}] Requested 1-hour consultation via ${channel} channel.`;
 
-    if (bookingTimeMode === 'CUSTOM') {
-      if (!customDate1 || !customTime1 || !customDate2 || !customTime2) {
-        setRequestErrorMessage('Please propose at least 2 custom 1-hour time slots (Option 1 & Option 2) so counsel has scheduling flexibility.');
+    if (selectedConsultMode === 'CHAT') {
+      if (!consultationNotes.trim()) {
+        setRequestErrorMessage('Please provide a brief description of your legal query or matter so counsel can review your request.');
+        return;
+      }
+      payload = {
+        lawyerUserPublicId: lawyer.userPublicId || lawyer.publicId,
+        consultationType: 'CHAT',
+        consultationReason: consultationNotes.trim(),
+        fee: Math.round((Number(lawyer.hourlyRate) || 1500) * 0.6),
+        firmPublicId: channel === 'FIRM' ? (lawyer.firmPublicId || null) : null,
+      };
+    } else {
+      if (!customDate1 || !customTime1) {
+        setRequestErrorMessage('Please select an appointment date and preferred start time.');
         return;
       }
       const start1 = new Date(`${customDate1}T${customTime1}:00`);
-      const end1 = new Date(start1.getTime() + 60 * 60 * 1000); // Strictly 1-hour
-      const start2 = new Date(`${customDate2}T${customTime2}:00`);
-      const end2 = new Date(start2.getTime() + 60 * 60 * 1000); // Strictly 1-hour
+      const end1 = new Date(start1.getTime() + 60 * 60 * 1000); // Automatically calculated + 60 minutes
 
-      if (start1 <= new Date() || start2 <= new Date()) {
-        setRequestErrorMessage('Proposed custom consultation times must be scheduled in the future.');
+      if (start1 <= new Date()) {
+        setRequestErrorMessage('Proposed appointment time must be scheduled in the future.');
         return;
       }
 
+      // Validate working day
+      const dayOfWeek = start1.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+      const workingDays = (lawyer.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY').toUpperCase();
+      if (!workingDays.includes(dayOfWeek)) {
+        setRequestErrorMessage(`Counsel does not take consultations on ${dayOfWeek}s. Configured working days: ${lawyer.workingDays}`);
+        return;
+      }
+
+      // Validate working hours
+      const workStart = lawyer.workingHoursStart || '09:00';
+      const workEnd = lawyer.workingHoursEnd || '18:00';
+      const [th, tm] = customTime1.split(':').map(Number);
+      const endH = th + 1;
+      const endTimeStr = `${String(endH).padStart(2, '0')}:${String(tm || 0).padStart(2, '0')}`;
+      if (customTime1 < workStart || endTimeStr > workEnd) {
+        setRequestErrorMessage(`Requested time (${customTime1} – ${endTimeStr}) falls outside counsel's working hours (${workStart} – ${workEnd}).`);
+        return;
+      }
+
+      // Validate break times
+      const breakStart = lawyer.breakStartTime || '13:00';
+      const breakEnd = lawyer.breakEndTime || '14:00';
+      if (customTime1 < breakEnd && endTimeStr > breakStart) {
+        setRequestErrorMessage(`Requested time conflicts with counsel's break time (${breakStart} – ${breakEnd}).`);
+        return;
+      }
+
+      let start2 = null;
+      let end2 = null;
+      if (customDate2 && customTime2) {
+        start2 = new Date(`${customDate2}T${customTime2}:00`);
+        end2 = new Date(start2.getTime() + 60 * 60 * 1000);
+      }
+
       payload = {
+        lawyerUserPublicId: lawyer.userPublicId || lawyer.publicId,
+        startTime: start1.toISOString(),
+        endTime: end1.toISOString(),
+        appointmentDate: customDate1,
+        appointmentTime: customTime1,
         customStartTime1: start1.toISOString(),
         customEndTime1: end1.toISOString(),
-        customStartTime2: start2.toISOString(),
-        customEndTime2: end2.toISOString(),
-        lawyerUserPublicId: lawyer.userPublicId || lawyer.publicId,
+        customStartTime2: start2 ? start2.toISOString() : null,
+        customEndTime2: end2 ? end2.toISOString() : null,
         preferredSlotsJson: JSON.stringify([
           {
             label: 'Slot Option 1 (Primary)',
@@ -542,62 +557,18 @@ export const ClientDashboardPage = () => {
             endTime: end1.toISOString(),
             formatted: `${start1.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start1.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end1.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
           },
-          {
+          ...(start2 ? [{
             label: 'Slot Option 2 (Alternative)',
             startTime: start2.toISOString(),
             endTime: end2.toISOString(),
             formatted: `${start2.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
-          }
+          }] : [])
         ]),
         consultationType: (selectedConsultMode === 'OFFLINE' || selectedConsultMode === 'IN_PERSON') ? 'IN_PERSON' : (selectedConsultMode || 'ONLINE'),
         consultationReason: reason,
-        firmPublicId: channel === 'FIRM' ? (lawyer.firmPublicId || null) : null,
-      };
-    } else {
-      if (!selectedSlotId || !selectedAlternativeSlotId) {
-        setRequestErrorMessage('Please choose at least 2 slot preferences (Primary & Alternative) so the advocate has flexibility to confirm.');
-        return;
-      }
-      const slot1 = modalSlots.find((s) => s.publicId === selectedSlotId);
-      const slot2 = modalSlots.find((s) => s.publicId === selectedAlternativeSlotId);
-      if (!slot1 || !slot2) {
-        setRequestErrorMessage('Please select two valid open slots from the calendar.');
-        return;
-      }
-      const start1 = new Date(slot1.startTime);
-      const end1 = new Date(slot1.endTime);
-      const start2 = new Date(slot2.startTime);
-      const end2 = new Date(slot2.endTime);
-
-      const isSlot1Gen = selectedSlotId.startsWith('gen-');
-      const isSlot2Gen = selectedAlternativeSlotId.startsWith('gen-');
-
-      payload = {
-        slotPublicId: isSlot1Gen ? null : selectedSlotId,
-        alternativeSlotPublicId: isSlot2Gen ? null : selectedAlternativeSlotId,
-        customStartTime1: isSlot1Gen ? start1.toISOString() : null,
-        customEndTime1: isSlot1Gen ? end1.toISOString() : null,
-        customStartTime2: isSlot2Gen ? start2.toISOString() : null,
-        customEndTime2: isSlot2Gen ? end2.toISOString() : null,
-        lawyerUserPublicId: lawyer.userPublicId || lawyer.publicId,
-        preferredSlotsJson: JSON.stringify([
-          {
-            label: 'Slot Option 1 (Primary)',
-            slotId: selectedSlotId,
-            startTime: slot1.startTime,
-            endTime: slot1.endTime,
-            formatted: `${start1.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start1.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end1.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
-          },
-          {
-            label: 'Slot Option 2 (Alternative)',
-            slotId: selectedAlternativeSlotId,
-            startTime: slot2.startTime,
-            endTime: slot2.endTime,
-            formatted: `${start2.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • ${start2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} (1 hr)`
-          }
-        ]),
-        consultationType: (selectedConsultMode === 'OFFLINE' || selectedConsultMode === 'IN_PERSON') ? 'IN_PERSON' : (selectedConsultMode || 'ONLINE'),
-        consultationReason: reason,
+        fee: (selectedConsultMode === 'OFFLINE' || selectedConsultMode === 'IN_PERSON')
+          ? Math.round((Number(lawyer.hourlyRate) || 1500) * 1.2)
+          : Number(lawyer.hourlyRate) || 1500,
         firmPublicId: channel === 'FIRM' ? (lawyer.firmPublicId || null) : null,
       };
     }
@@ -698,7 +669,7 @@ export const ClientDashboardPage = () => {
   // Next Upcoming Appointment for Overview
   const nextAppointment = appointments
     .filter((a) => a.status === 'CONFIRMED')
-    .sort((a, b) => new Date(a.slot?.startTime) - new Date(b.slot?.startTime))[0];
+    .sort((a, b) => new Date(a.startTime || a.slot?.startTime) - new Date(b.startTime || b.slot?.startTime))[0];
 
   // Filtered Advocates for Discover Advocates
   const filteredAdvocates = advocates.filter((l) => {
@@ -879,14 +850,14 @@ export const ClientDashboardPage = () => {
 
                       <div className="sm:text-right">
                         <p className="text-sm font-semibold text-stone-900">
-                          {new Date(nextAppointment.slot?.startTime).toLocaleDateString('en-IN', {
+                          {new Date(nextAppointment.startTime || nextAppointment.slot?.startTime || Date.now()).toLocaleDateString('en-IN', {
                             weekday: 'short',
                             day: 'numeric',
                             month: 'short',
                           })}
                         </p>
                         <p className="text-xs text-stone-500 font-sans">
-                          {new Date(nextAppointment.slot?.startTime).toLocaleTimeString('en-IN', {
+                          {new Date(nextAppointment.startTime || nextAppointment.slot?.startTime || Date.now()).toLocaleTimeString('en-IN', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -1223,7 +1194,7 @@ export const ClientDashboardPage = () => {
                     {/* Advocate Profile Core */}
                     <div className="flex items-start space-x-3 mb-3">
                       <Link
-                        to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                        to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                         className="w-11 h-11 rounded-xl bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-base shadow-xs shrink-0 hover:opacity-90 transition"
                         title="View Full Profile"
                       >
@@ -1231,7 +1202,7 @@ export const ClientDashboardPage = () => {
                       </Link>
                       <div className="overflow-hidden">
                         <Link
-                          to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                          to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                           className="font-serif font-bold text-sm text-stone-900 truncate block hover:text-[var(--bg-primary)] hover:underline transition"
                           title="View Full Profile"
                         >
@@ -1289,7 +1260,7 @@ export const ClientDashboardPage = () => {
                       <div className="space-y-1.5">
                         <div className="grid grid-cols-5 gap-1.5">
                           <Link
-                            to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                            to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                             className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
                           >
                             <span>View Details</span>
@@ -1313,7 +1284,7 @@ export const ClientDashboardPage = () => {
                       <div className="space-y-1.5">
                         <div className="grid grid-cols-5 gap-1.5">
                           <Link
-                            to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                            to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                             className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
                           >
                             <span>View Details</span>
@@ -1333,7 +1304,7 @@ export const ClientDashboardPage = () => {
                     ) : (
                       <div className="grid grid-cols-5 gap-1.5">
                         <Link
-                          to={`/lawyers/${adv.userPublicId || adv.publicId || adv.slug}`}
+                          to={`/lawyers/${adv.username || adv.slug || adv.publicId}`}
                           className="col-span-2 py-2 px-2 rounded-lg border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 font-semibold text-xs flex items-center justify-center space-x-1 transition shadow-xs text-center cursor-pointer"
                         >
                           <span>View Details</span>
@@ -1633,34 +1604,42 @@ export const ClientDashboardPage = () => {
           MODAL: BOOK CONSULTATION MODAL (Independent vs Firm)
       ====================================================================== */}
       {selectedLawyerModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[var(--border-cream)] shadow-2xl animate-in fade-in zoom-in-95 text-xs">
-            <div className="flex items-start justify-between pb-3 border-b border-stone-100 mb-4">
-              <div>
-                <h3 className="font-serif font-bold text-base text-stone-900">
-                  Request Legal Consultation
-                </h3>
-                <p className="text-xs text-stone-500">
-                  With {selectedLawyerModal.fullName} ({selectedLawyerModal.barCouncilNumber})
-                </p>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] border border-stone-200 shadow-2xl flex flex-col overflow-hidden text-xs">
+            {/* STICKY MODAL HEADER */}
+            <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-primary)]/10 text-[var(--bg-primary)] flex items-center justify-center font-bold text-sm">
+                  ⚖
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900 leading-tight">
+                    Request Legal Consultation
+                  </h3>
+                  <p className="text-[11px] text-stone-500 font-sans">
+                    With {formatAdvocateName(selectedLawyerModal.fullName)} ({selectedLawyerModal.barCouncilNumber || 'Bar Council of India'})
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedLawyerModal(null)}
-                className="text-stone-400 hover:text-stone-700 text-sm font-bold"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 hover:text-stone-950 flex items-center justify-center text-sm font-bold transition shadow-2xs cursor-pointer"
+                title="Close dialog"
               >
                 ✕
               </button>
             </div>
 
             {requestSuccessMessage ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center font-medium my-4 space-y-1">
-                <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
-                <p className="font-serif font-bold text-sm text-stone-900">Request Dispatched Successfully</p>
-                <p className="text-xs text-emerald-800">{requestSuccessMessage}</p>
+              <div className="p-8 text-center my-auto space-y-2">
+                <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-600 mb-2" />
+                <h4 className="font-serif font-bold text-base text-stone-900">Request Dispatched Successfully</h4>
+                <p className="text-xs text-emerald-800 font-sans max-w-md mx-auto">{requestSuccessMessage}</p>
               </div>
             ) : (
               <form
+                id="consultationBookingForm"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleBookConsultation(
@@ -1668,518 +1647,410 @@ export const ClientDashboardPage = () => {
                     selectedLawyerModal.forcedChannel || 'INDEPENDENT'
                   );
                 }}
-                className="space-y-4"
+                className="flex flex-col flex-1 overflow-hidden"
               >
-                {requestErrorMessage && (
-                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start space-x-2.5">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-rose-900">Schedule Notice</p>
-                      <p className="text-rose-700 leading-relaxed text-[11px]">{requestErrorMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Advocate Availability & Schedule Information */}
-                <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-amber-950 flex items-center space-x-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Weekly Availability: {selectedLawyerModal.availableDaysText || 'Available 5 Days (Mon – Fri)'}</span>
-                    </span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded">
-                      {selectedLawyerModal.workingHours || '10:00 AM – 06:00 PM'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-amber-900 leading-relaxed font-sans">
-                    Each consultation session is strictly <strong>1 hour</strong>. Please choose <strong>2 preferred time slots</strong> (Primary &amp; Alternative). {formatAdvocateName(selectedLawyerModal.fullName)} will confirm or propose a convenient adjustment.
-                  </p>
-                </div>
-
-                {/* Channel Indicator */}
-                <div className="p-2.5 rounded-lg bg-[var(--bg-cream-soft)] border border-[var(--border-cream)]">
-                  <span className="text-[10px] font-mono text-stone-500 uppercase">
-                    Authorized Booking Channel
-                  </span>
-                  <p className="font-semibold text-stone-900">
-                    {selectedLawyerModal.forcedChannel === 'FIRM'
-                      ? `Through Firm: ${selectedLawyerModal.firmAffiliation?.firmName || 'Lex Veritas Legal LLP'}`
-                      : 'Independent Chamber Practice'}
-                  </p>
-                </div>
-
-                {/* Consultation Schedule Preferences: Minimum 2 Slots, Strictly 1-Hour Duration */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
-                      Consultation Schedule Preference
-                    </label>
-                    <span className="text-[10px] text-amber-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                      Strictly 1-Hour Slots • 2 Preferred Times
-                    </span>
-                  </div>
-
-                  {/* Mode Toggle Switch */}
-                  <div className="flex items-center space-x-1.5 p-1 bg-stone-100 rounded-xl mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setBookingTimeMode('CALENDAR')}
-                      disabled={modalSlots.length === 0}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center space-x-1.5 ${
-                        bookingTimeMode === 'CALENDAR'
-                          ? 'bg-white text-stone-900 shadow-2xs'
-                          : modalSlots.length === 0
-                          ? 'text-stone-400 cursor-not-allowed opacity-50'
-                          : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Select Open Slots {modalSlots.length > 0 ? `(${modalSlots.length})` : ''}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBookingTimeMode('CUSTOM')}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center space-x-1.5 ${
-                        bookingTimeMode === 'CUSTOM'
-                          ? 'bg-white text-stone-900 shadow-2xs'
-                          : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Propose Custom 1-Hr Times</span>
-                    </button>
-                  </div>
-
-                  {modalSlotsLoading ? (
-                    <div className="py-6 text-center text-stone-400 text-xs">
-                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-stone-500" />
-                      <span>Checking advocate schedule availability...</span>
-                    </div>
-                  ) : bookingTimeMode === 'CUSTOM' ? (
-                    /* CUSTOM 1-HOUR SLOTS PROPOSAL MODE */
-                    <div className="space-y-3">
-                      {modalSlots.length === 0 && (
-                        <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start space-x-2.5">
-                          <Calendar className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5">
-                            <p className="font-semibold text-amber-900">Custom Scheduling Available</p>
-                            <p className="text-[11px] text-amber-800 leading-relaxed">
-                              {formatAdvocateName(selectedLawyerModal.fullName)} currently has no pre-listed calendar slots. You can propose 2 preferred 1-hour consultation times below, and counsel will review and confirm your session.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <p className="text-[11px] text-stone-500">
-                        Propose <strong>2 preferred 1-hour time slots</strong>. Each consultation slot is strictly 1 hour. Counsel can accept either or offer a modified time.
-                      </p>
-
-                      {/* Option 1: Primary Preference */}
-                      <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-emerald-950 flex items-center space-x-1.5">
-                            <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                            <span>Slot Option 1 (Primary Preference – 1 Hour)</span>
-                          </span>
-                          {customTime1 && (
-                            <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-bold">
-                              1-Hr Duration
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] font-semibold text-stone-600 mb-1">Date</label>
-                            <input
-                              type="date"
-                              min={new Date().toISOString().split('T')[0]}
-                              value={customDate1}
-                              onChange={(e) => setCustomDate1(e.target.value)}
-                              className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-emerald-600"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-stone-600 mb-1">Start Time (1 Hour Session)</label>
-                            <input
-                              type="time"
-                              value={customTime1}
-                              onChange={(e) => setCustomTime1(e.target.value)}
-                              className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-emerald-600"
-                            />
-                          </div>
-                        </div>
-                        {customDate1 && customTime1 && (
-                          <div className="text-[11px] font-mono text-emerald-900 bg-white/80 p-2 rounded-lg border border-emerald-200 flex items-center justify-between">
-                            <span>Scheduled Window: <strong>{formatTime12h(customTime1)} – {calculateEndTime(customTime1)}</strong> (60 mins)</span>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Option 2: Alternative Preference */}
-                      <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-blue-950 flex items-center space-x-1.5">
-                            <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
-                            <span>Slot Option 2 (Alternative Preference – 1 Hour)</span>
-                          </span>
-                          {customTime2 && (
-                            <span className="text-[10px] font-mono text-blue-800 bg-blue-100 px-2 py-0.5 rounded font-bold">
-                              1-Hr Duration
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] font-semibold text-stone-600 mb-1">Date</label>
-                            <input
-                              type="date"
-                              min={new Date().toISOString().split('T')[0]}
-                              value={customDate2}
-                              onChange={(e) => setCustomDate2(e.target.value)}
-                              className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold text-stone-600 mb-1">Start Time (1 Hour Session)</label>
-                            <input
-                              type="time"
-                              value={customTime2}
-                              onChange={(e) => setCustomTime2(e.target.value)}
-                              className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                            />
-                          </div>
-                        </div>
-                        {customDate2 && customTime2 && (
-                          <div className="text-[11px] font-mono text-blue-900 bg-white/80 p-2 rounded-lg border border-blue-200 flex items-center justify-between">
-                            <span>Scheduled Window: <strong>{formatTime12h(customTime2)} – {calculateEndTime(customTime2)}</strong> (60 mins)</span>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* CALENDAR SLOTS PICKER */
-                    <div className="space-y-3">
-                      <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200 text-[11px] text-stone-600">
-                        Choose <strong>2 slots</strong> (Option 1 Primary &amp; Option 2 Alternative) by clicking the time chips below.
-                      </div>
-                      {/* Horizontal Date Navigation Pills */}
-                      <div>
-                        <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider block mb-1">
-                          Available Consultation Dates ({Object.keys(groupedModalSlots).length} Days Open)
-                        </span>
-                        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1.5">
-                          {Object.keys(groupedModalSlots).map((dateKey) => {
-                            const grp = groupedModalSlots[dateKey];
-                            const totalSlots =
-                              grp.morning.length + grp.afternoon.length + grp.evening.length;
-                            const isActive = activeSlotDateTab === dateKey;
-                            return (
-                              <button
-                                key={dateKey}
-                                type="button"
-                                onClick={() => setActiveSlotDateTab(dateKey)}
-                                className={`px-2.5 py-1.5 rounded-xl border text-xs whitespace-nowrap transition cursor-pointer flex items-center space-x-1.5 ${
-                                  isActive
-                                    ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] text-stone-900 font-bold ring-1 ring-[var(--bg-primary)] shadow-2xs'
-                                    : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
-                                }`}
-                              >
-                                <span>{grp.label}</span>
-                                <span
-                                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                    isActive
-                                      ? 'bg-[var(--bg-primary)] text-white'
-                                      : 'bg-stone-100 text-stone-600'
-                                  }`}
-                                >
-                                  {totalSlots}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Time Slots for Selected Date */}
-                      {groupedModalSlots[activeSlotDateTab] && (
-                        <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
-                          {['morning', 'afternoon', 'evening'].map((period) => {
-                            const periodSlots = groupedModalSlots[activeSlotDateTab][period];
-                            if (!periodSlots || periodSlots.length === 0) return null;
-                            const labelMap = {
-                              morning: { icon: '🌅 Morning', color: 'text-amber-800' },
-                              afternoon: { icon: '☀️ Afternoon', color: 'text-orange-800' },
-                              evening: { icon: '🌙 Evening', color: 'text-indigo-900' },
-                            };
-                            return (
-                              <div key={period}>
-                                <div className={`text-[10px] font-semibold ${labelMap[period].color} uppercase tracking-wider mb-1 flex items-center space-x-1`}>
-                                  <span>{labelMap[period].icon}</span>
-                                  <span className="text-stone-400 font-normal">({periodSlots.length})</span>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                                  {periodSlots.map((slot) => {
-                                    const start = new Date(slot.startTime);
-                                    const end = new Date(slot.endTime);
-                                    const isPrimary = selectedSlotId === slot.publicId;
-                                    const isAlternative = selectedAlternativeSlotId === slot.publicId;
-
-                                    return (
-                                      <button
-                                        key={slot.publicId}
-                                        type="button"
-                                        onClick={() => {
-                                          if (isPrimary) {
-                                            // Primary clicked
-                                          } else if (isAlternative) {
-                                            setSelectedAlternativeSlotId(null);
-                                          } else if (!selectedSlotId) {
-                                            setSelectedSlotId(slot.publicId);
-                                          } else if (!selectedAlternativeSlotId) {
-                                            setSelectedAlternativeSlotId(slot.publicId);
-                                          } else {
-                                            setSelectedAlternativeSlotId(slot.publicId);
-                                          }
-                                        }}
-                                        className={`p-2 rounded-lg border text-center transition cursor-pointer text-xs relative ${
-                                          isPrimary
-                                            ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold ring-1 ring-emerald-600 shadow-2xs'
-                                            : isAlternative
-                                            ? 'border-blue-600 bg-blue-50 text-blue-950 font-bold ring-1 ring-blue-600 shadow-2xs'
-                                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                                        }`}
-                                      >
-                                        <div className="font-mono text-[11px]">
-                                          {start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}{' '}–{' '}
-                                          {end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                        {isPrimary && (
-                                          <span className="text-[9px] text-emerald-700 font-bold block mt-0.5">
-                                            ① Option 1 (Primary)
-                                          </span>
-                                        )}
-                                        {isAlternative && (
-                                          <span className="text-[9px] text-blue-700 font-bold block mt-0.5">
-                                            ② Option 2 (Alternative)
-                                          </span>
-                                        )}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Selected Slots Badges */}
-                      <div className="space-y-1.5 pt-1">
-                        {(() => {
-                          const s1 = modalSlots.find((s) => s.publicId === selectedSlotId);
-                          if (!s1) return null;
-                          const st = new Date(s1.startTime);
-                          const en = new Date(s1.endTime);
-                          return (
-                            <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex items-center justify-between">
-                              <span className="font-semibold flex items-center space-x-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>① Primary: {st.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • {st.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} – {en.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                              </span>
-                              <span className="text-[9px] font-mono font-bold bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded">1 hr</span>
-                            </div>
-                          );
-                        })()}
-                        {(() => {
-                          const s2 = modalSlots.find((s) => s.publicId === selectedAlternativeSlotId);
-                          if (!s2) return (
-                            modalSlots.length > 1 && (
-                              <p className="text-[10px] text-blue-700 italic pl-1">
-                                Tip: Click a second slot to provide an Alternative Option for counsel.
-                              </p>
-                            )
-                          );
-                          const st = new Date(s2.startTime);
-                          const en = new Date(s2.endTime);
-                          return (
-                            <div className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-950 text-xs flex items-center justify-between">
-                              <span className="font-semibold flex items-center space-x-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                                <span>② Alternative: {st.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} • {st.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} – {en.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                              </span>
-                              <span className="text-[9px] font-mono font-bold bg-blue-200/80 text-blue-900 px-1.5 py-0.2 rounded">1 hr</span>
-                            </div>
-                          );
-                        })()}
+                {/* SCROLLABLE MODAL BODY */}
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                  {requestErrorMessage && (
+                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start space-x-2.5">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-rose-900">Schedule Notice</p>
+                        <p className="text-rose-700 leading-relaxed text-[11px]">{requestErrorMessage}</p>
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Consultation Mode */}
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1.5">
-                    Select Consultation Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedConsultMode('ONLINE')}
-                      className={`p-2.5 rounded-xl border text-left transition ${
-                        selectedConsultMode === 'ONLINE'
-                          ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900'
-                          : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-                      }`}
-                    >
-                      <Video className="w-4 h-4 mb-1 text-emerald-700" />
-                      <p className="text-xs">Encrypted WebRTC</p>
-                      <p className="text-[10px] text-stone-500 font-normal">Remote 1:1 video hearing</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedConsultMode('IN_PERSON')}
-                      className={`p-2.5 rounded-xl border text-left transition ${
-                        selectedConsultMode === 'IN_PERSON' || selectedConsultMode === 'OFFLINE'
-                          ? 'border-[var(--bg-primary)] bg-[var(--bg-cream-card)] font-bold text-stone-900'
-                          : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-                      }`}
-                    >
-                      <Building className="w-4 h-4 mb-1 text-stone-700" />
-                      <p className="text-xs">Chamber Visit</p>
-                      <p className="text-[10px] text-stone-500 font-normal">In-person court chamber</p>
-                    </button>
+                  {/* Channel Indicator */}
+                  <div className="p-2.5 rounded-lg bg-[var(--bg-cream-soft)] border border-[var(--border-cream)] flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] font-mono text-stone-500 uppercase block">
+                        Authorized Booking Channel
+                      </span>
+                      <p className="font-semibold text-stone-900 text-xs">
+                        {selectedLawyerModal.forcedChannel === 'FIRM'
+                          ? `Through Firm: ${selectedLawyerModal.firmAffiliation?.firmName || 'Lex Veritas Legal LLP'}`
+                          : 'Independent Chamber Practice'}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                      VERIFIED COUNSEL
+                    </span>
                   </div>
-                </div>
 
-                {/* Brief Notes */}
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                    Matter Description / Brief Note
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Briefly state your legal issue, FIR number, contract type, or relief sought..."
-                    value={consultationNotes}
-                    onChange={(e) => setConsultationNotes(e.target.value)}
-                    required
-                    className="w-full p-2.5 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[var(--bg-primary)]"
-                  />
-                  <p className="text-[10px] text-stone-400 mt-0.5">
-                    Protected by advocate-client legal privilege.
-                  </p>
-                </div>
+                  {/* 1. Consultation Mode Grid: 3 Options */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-800 uppercase tracking-wider mb-2">
+                      1. Select Consultation Mode
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Mode 1: Online Video */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedConsultMode('ONLINE')}
+                        className={`p-2.5 sm:p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                          selectedConsultMode === 'ONLINE'
+                            ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600 text-stone-900 shadow-2xs'
+                            : 'border-stone-200 hover:border-stone-300 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <Video className="w-4 h-4 text-emerald-700" />
+                            <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">1 Hr</span>
+                          </div>
+                          <p className="font-bold text-xs text-stone-900">WebRTC Video</p>
+                          <p className="text-[10px] text-stone-500 font-sans leading-tight mt-0.5">1:1 remote video</p>
+                        </div>
+                        <p className="text-[11px] font-bold text-stone-800 font-mono mt-2">
+                          ₹{(Number(selectedLawyerModal?.hourlyRate) || 1500).toLocaleString('en-IN')}
+                        </p>
+                      </button>
 
-                {/* Retainer Fee Disclosure */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-cream-card)] border border-[var(--border-cream)]">
-                  <span className="text-xs font-semibold text-stone-700">
-                    Consultation Retainer
-                  </span>
-                  <span className="text-sm font-serif font-bold text-stone-900">
-                    ₹{(Number(selectedLawyerModal?.hourlyRate) || 1500).toLocaleString('en-IN')}
-                  </span>
-                </div>
+                      {/* Mode 2: Chamber Visit */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedConsultMode('IN_PERSON')}
+                        className={`p-2.5 sm:p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                          selectedConsultMode === 'IN_PERSON' || selectedConsultMode === 'OFFLINE'
+                            ? 'border-amber-600 bg-amber-50/70 ring-1 ring-amber-600 text-stone-900 shadow-2xs'
+                            : 'border-stone-200 hover:border-stone-300 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <Building className="w-4 h-4 text-amber-700" />
+                            <span className="text-[9px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">Chamber</span>
+                          </div>
+                          <p className="font-bold text-xs text-stone-900">Chamber Visit</p>
+                          <p className="text-[10px] text-stone-500 font-sans leading-tight mt-0.5">In-person court chamber</p>
+                        </div>
+                        <p className="text-[11px] font-bold text-stone-800 font-mono mt-2">
+                          ₹{(Math.round((Number(selectedLawyerModal?.hourlyRate) || 1500) * 1.2)).toLocaleString('en-IN')}
+                        </p>
+                      </button>
 
-                <div className="pt-2 flex items-center justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedLawyerModal(null)}
-                    className="px-3 py-2 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 font-medium"
-                  >
-                    Cancel
-                  </button>
+                      {/* Mode 3: Legal Chat Advisory */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedConsultMode('CHAT')}
+                        className={`p-2.5 sm:p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                          selectedConsultMode === 'CHAT'
+                            ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 text-stone-900 shadow-2xs'
+                            : 'border-stone-200 hover:border-stone-300 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <MessageSquare className="w-4 h-4 text-indigo-700" />
+                            <span className="text-[9px] font-mono font-bold text-indigo-800 bg-indigo-100 px-1.5 py-0.2 rounded">Instant</span>
+                          </div>
+                          <p className="font-bold text-xs text-stone-900">Legal Chat</p>
+                          <p className="text-[10px] text-stone-500 font-sans leading-tight mt-0.5">Encrypted advisory thread</p>
+                        </div>
+                        <p className="text-[11px] font-bold text-stone-800 font-mono mt-2">
+                          ₹{(Math.round((Number(selectedLawyerModal?.hourlyRate) || 1500) * 0.6)).toLocaleString('en-IN')}
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* FLOW 1: ENCRYPTED LEGAL CHAT ADVISORY FLOW */}
+                  {selectedConsultMode === 'CHAT' ? (
+                    <div className="p-4 rounded-xl bg-indigo-50/90 border border-indigo-200 space-y-2.5">
+                      <div className="flex items-center space-x-2 text-indigo-950 font-bold text-xs">
+                        <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span>Instant 1-on-1 Legal Chat Advisory Flow</span>
+                      </div>
+                      <p className="text-[11px] text-indigo-900 leading-relaxed font-sans">
+                        No calendar scheduling required. Once submitted, your advisory request routes directly to {formatAdvocateName(selectedLawyerModal.fullName)}'s verified desk. Upon acceptance, your encrypted message thread unlocks immediately with direct document sharing.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-200/80 text-[10px] font-mono text-indigo-900">
+                        <div className="flex items-center space-x-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span>24-Hour Active Advisory Turnaround</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span>Protected Client-Advocate Privilege</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* FLOW 2: SCHEDULED VIDEO HEARING / CHAMBER VISIT FLOW */
+                    <div className="space-y-3 pt-1">
+                      {/* Advocate Availability & Schedule Information */}
+                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-amber-950 flex items-center space-x-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Weekly Availability: {selectedLawyerModal.availableDaysText || 'Available 5 Days (Mon – Fri)'}</span>
+                          </span>
+                          <span className="text-[10px] font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded">
+                            {selectedLawyerModal.workingHours || '10:00 AM – 06:00 PM'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-900 leading-relaxed font-sans">
+                          Each consultation session is strictly <strong>1 hour</strong>. Please choose <strong>2 preferred time slots</strong> (Primary &amp; Alternative). {formatAdvocateName(selectedLawyerModal.fullName)} will confirm or propose a convenient adjustment.
+                        </p>
+                      </div>
+
+                      {/* Consultation Schedule: Dynamic 1-Hour Duration */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+                            2. Preferred Consultation Schedule (1-Hour Session)
+                          </label>
+                          <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            Dynamic 1-Hour Consultation
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {/* Option 1: Primary Preference */}
+                          <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-emerald-950 flex items-center space-x-1.5">
+                                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                                <span>Preferred Consultation Date &amp; Start Time</span>
+                              </span>
+                              {customTime1 && (
+                                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-bold">
+                                  1-Hour Duration
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-semibold text-stone-600 mb-1">Select Working Day</label>
+                                <input
+                                  type="date"
+                                  min={new Date().toISOString().split('T')[0]}
+                                  value={customDate1}
+                                  onChange={(e) => setCustomDate1(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold text-stone-600 mb-1">Enter Preferred Start Time</label>
+                                <input
+                                  type="time"
+                                  value={customTime1}
+                                  onChange={(e) => setCustomTime1(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                                />
+                              </div>
+                            </div>
+                            {customDate1 && customTime1 && (
+                              <div className="text-[11px] font-mono text-emerald-900 bg-white/90 p-2.5 rounded-lg border border-emerald-200 flex items-center justify-between">
+                                <span>Calculated Session Window: <strong>{formatTime12h(customTime1)} – {calculateEndTime(customTime1)}</strong> (Strictly 60 Mins)</span>
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Option 2: Alternative Preference (Optional Backup) */}
+                          <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/60 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-stone-800 flex items-center space-x-1.5">
+                                <span className="w-5 h-5 rounded-full bg-stone-400 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                                <span>Alternative Backup Option (Optional)</span>
+                              </span>
+                              {customTime2 && (
+                                <span className="text-[10px] font-mono text-stone-600 bg-stone-200 px-2 py-0.5 rounded font-bold">
+                                  1-Hour Duration
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-semibold text-stone-600 mb-1">Alternative Date</label>
+                                <input
+                                  type="date"
+                                  min={new Date().toISOString().split('T')[0]}
+                                  value={customDate2}
+                                  onChange={(e) => setCustomDate2(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold text-stone-600 mb-1">Alternative Start Time</label>
+                                <input
+                                  type="time"
+                                  value={customTime2}
+                                  onChange={(e) => setCustomTime2(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                                />
+                              </div>
+                            </div>
+                            {customDate2 && customTime2 && (
+                              <div className="text-[11px] font-mono text-stone-800 bg-white/90 p-2.5 rounded-lg border border-stone-200 flex items-center justify-between">
+                                <span>Alternative Window: <strong>{formatTime12h(customTime2)} – {calculateEndTime(customTime2)}</strong> (60 Mins)</span>
+                                <CheckCircle2 className="w-4 h-4 text-stone-500" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+            {/* Matter Description / Brief Note */}
+            <div>
+              <label className="block text-[11px] font-bold text-stone-800 uppercase tracking-wider mb-1">
+                {selectedConsultMode === 'CHAT' ? '2. Legal Query / Matter Brief' : '3. Matter Description / Brief Note'}
+              </label>
+              <textarea
+                rows={3}
+                placeholder={
+                  selectedConsultMode === 'CHAT'
+                    ? "State your legal dispute, FIR section, court notice details, or question for advocate advisory..."
+                    : "Briefly state your legal issue, FIR number, contract type, or relief sought..."
+                }
+                value={consultationNotes}
+                onChange={(e) => setConsultationNotes(e.target.value)}
+                required
+                className="w-full p-2.5 rounded-lg border border-stone-300 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[var(--bg-primary)] bg-white"
+              />
+              <p className="text-[10px] text-stone-400 mt-0.5">
+                Protected under Section 126 of the Indian Evidence Act (Advocate-Client Privilege).
+              </p>
+            </div>
+          </div>
+
+          {/* STICKY MODAL FOOTER */}
+          <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-t border-stone-200 bg-stone-50 shrink-0 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono text-stone-500 uppercase block">Consultation Retainer</span>
+              <span className="text-base font-serif font-bold text-stone-900">
+                ₹{(
+                  selectedConsultMode === 'CHAT'
+                    ? Math.round((Number(selectedLawyerModal?.hourlyRate) || 1500) * 0.6)
+                    : selectedConsultMode === 'IN_PERSON' || selectedConsultMode === 'OFFLINE'
+                    ? Math.round((Number(selectedLawyerModal?.hourlyRate) || 1500) * 1.2)
+                    : Number(selectedLawyerModal?.hourlyRate) || 1500
+                ).toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setSelectedLawyerModal(null)}
+                className="px-3.5 py-2 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-100 font-medium transition cursor-pointer text-xs"
+              >
+                Cancel
+              </button>
+              {(() => {
+                const isSubmitDisabled =
+                  selectedConsultMode === 'CHAT'
+                    ? !consultationNotes.trim()
+                    : !customDate1 || !customTime1;
+
+                return (
                   <button
                     type="submit"
-                    disabled={
-                      bookingTimeMode === 'CUSTOM'
-                        ? !customDate1 || !customTime1 || !customDate2 || !customTime2
-                        : !selectedSlotId || (!selectedAlternativeSlotId && modalSlots.length > 1)
-                    }
-                    className={`px-4 py-2 rounded-lg text-white font-semibold transition shadow-xs ${
-                      (bookingTimeMode === 'CUSTOM'
-                        ? !customDate1 || !customTime1 || !customDate2 || !customTime2
-                        : !selectedSlotId || (!selectedAlternativeSlotId && modalSlots.length > 1))
+                    disabled={isSubmitDisabled}
+                    className={`px-4 py-2 rounded-xl text-white font-semibold transition shadow-xs text-xs cursor-pointer ${
+                      isSubmitDisabled
                         ? 'bg-stone-400 cursor-not-allowed opacity-60'
-                        : 'bg-[var(--bg-primary)] hover:opacity-90 cursor-pointer'
+                        : 'bg-[var(--bg-primary)] hover:opacity-90'
                     }`}
                   >
-                    Submit 2 Consultation Preferences
+                    {selectedConsultMode === 'CHAT'
+                      ? 'Initiate Legal Chat Advisory'
+                      : 'Submit Consultation Request (1 Hour)'}
                   </button>
-                </div>
-              </form>
-            )}
+                );
+              })()}
+            </div>
           </div>
-        </div>
+        </form>
       )}
+    </div>
+  </div>
+)}
 
       {/* =====================================================================
           MODAL: REQUEST FIRM CONSULTATION MODAL
       ====================================================================== */}
       {firmRequestModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-[var(--border-cream)] shadow-2xl animate-in fade-in zoom-in-95 text-xs">
-            <div className="flex items-start justify-between pb-3 border-b border-stone-100 mb-4">
-              <div>
-                <h3 className="font-serif font-bold text-base text-stone-900">
-                  Request Law Firm Consultation
-                </h3>
-                <p className="text-xs text-stone-500">
-                  To {firmRequestModal.name} ({firmRequestModal.registrationNumber})
-                </p>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] border border-stone-200 shadow-2xl flex flex-col overflow-hidden text-xs">
+            {/* Sticky Header */}
+            <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-primary)]/10 text-[var(--bg-primary)] flex items-center justify-center font-bold text-sm">
+                  🏢
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900 leading-tight">
+                    Request Law Firm Consultation
+                  </h3>
+                  <p className="text-[11px] text-stone-500 font-sans">
+                    To {firmRequestModal.name} ({firmRequestModal.registrationNumber || 'LLP Practice'})
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setFirmRequestModal(null)}
-                className="text-stone-400 hover:text-stone-700 text-sm font-bold"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 hover:text-stone-950 flex items-center justify-center text-sm font-bold transition shadow-2xs cursor-pointer"
+                title="Close dialog"
               >
                 ✕
               </button>
             </div>
 
             {requestSuccessMessage ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center font-medium my-4">
-                <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
-                {requestSuccessMessage}
+              <div className="p-8 text-center my-auto space-y-2">
+                <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-600 mb-2" />
+                <h4 className="font-serif font-bold text-base text-stone-900">Brief Dispatched Successfully</h4>
+                <p className="text-xs text-emerald-800 font-sans max-w-md mx-auto">{requestSuccessMessage}</p>
               </div>
             ) : (
-              <form onSubmit={handleFirmRequestSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                    Select Practice Area
-                  </label>
-                  <select className="w-full p-2.5 rounded-lg border border-[var(--border-cream)] bg-[var(--bg-cream-soft)] text-xs text-stone-800">
-                    {firmRequestModal.practiceAreas.map((pa, i) => (
-                      <option key={i} value={pa}>{pa}</option>
-                    ))}
-                  </select>
+              <form onSubmit={handleFirmRequestSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-800 uppercase tracking-wider mb-1.5">
+                      Select Practice Area
+                    </label>
+                    <select className="w-full p-2.5 rounded-lg border border-stone-300 bg-white text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[var(--bg-primary)]">
+                      {(firmRequestModal.practiceAreas || ['Corporate Law', 'Litigation', 'Arbitration']).map((pa, i) => (
+                        <option key={i} value={pa}>{pa}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-800 uppercase tracking-wider mb-1.5">
+                      Matter Scope / Retainer Brief
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Describe your dispute, contract size, or regulatory matter for the managing partner to assign the lead advocate..."
+                      value={consultationNotes}
+                      onChange={(e) => setConsultationNotes(e.target.value)}
+                      required
+                      className="w-full p-2.5 rounded-lg border border-stone-300 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[var(--bg-primary)] bg-white"
+                    />
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      Privileged law firm intake review. A managing partner will contact you within 24 hours.
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                    Matter Scope / Retainer Brief
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Describe your dispute, contract size, or regulatory matter for the managing partner to assign the lead advocate..."
-                    value={consultationNotes}
-                    onChange={(e) => setConsultationNotes(e.target.value)}
-                    required
-                    className="w-full p-2.5 rounded-lg border border-[var(--border-cream)] text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[var(--bg-primary)]"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-end space-x-2">
+                {/* Sticky Footer */}
+                <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-t border-stone-200 bg-stone-50 shrink-0 flex items-center justify-end space-x-2">
                   <button
                     type="button"
                     onClick={() => setFirmRequestModal(null)}
-                    className="px-3 py-2 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 font-medium"
+                    className="px-3.5 py-2 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-100 font-medium transition cursor-pointer text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold transition shadow-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[var(--bg-primary)] hover:opacity-90 text-white font-semibold transition shadow-xs cursor-pointer text-xs"
                   >
                     Submit to Firm Intake
                   </button>

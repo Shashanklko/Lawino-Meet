@@ -177,7 +177,7 @@ export const FundsBillingPage = () => {
         const rawTxs = res.data.recentTransactions || [];
         const txs = rawTxs.map((t, idx) => ({
           id: t.publicId || `TXN-${idx + 101}`,
-          type: t.type === 'DEPOSIT' ? 'DEPOSIT' : t.type === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'ESCROW_HOLD',
+          type: t.type || 'DEPOSIT',
           description: t.description || 'Wallet transaction',
           date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : 'Today',
           amount: Math.abs(Number(t.amount || 0)),
@@ -195,7 +195,7 @@ export const FundsBillingPage = () => {
           walletBalance: bal,
           nonWithdrawableEscrow: escrow,
           totalDeposited: txs.filter((t) => t.type === 'DEPOSIT').reduce((s, t) => s + t.amount, 0),
-          totalSpent: txs.filter((t) => t.type === 'ESCROW_HOLD').reduce((s, t) => s + t.amount, 0),
+          totalSpent: txs.filter((t) => t.type === 'PAYMENT_DEDUCTION' || t.type === 'ESCROW_HOLD').reduce((s, t) => s + t.amount, 0),
           transactions: txs,
         }));
 
@@ -341,29 +341,33 @@ export const FundsBillingPage = () => {
         name: 'Lawino Meet',
         description: 'Legal Retainer Wallet Pre-fund',
         image: '/logo.jpg',
-        handler: function (response) {
+        handler: async function (response) {
           const paymentId = response.razorpay_payment_id || `pay_rzp_${Date.now()}`;
-          const newTxn = {
-            id: `CW-${Math.floor(800 + Math.random() * 200)}`,
-            date: 'Just now',
-            type: 'DEPOSIT',
-            description: `Top-up via Razorpay Gateway (Payment ID: ${paymentId})`,
-            amount: amount,
-            status: 'SUCCESS',
-          };
-          setClientWallet((prev) => ({
-            ...prev,
-            walletBalance: prev.walletBalance + amount,
-            totalDeposited: prev.totalDeposited + amount,
-            transactions: [newTxn, ...prev.transactions],
-          }));
-          setIsAddFundsModalOpen(false);
-          setAddFundsAmount('2500');
+          try {
+            setAddFundsLoading(true);
+            await walletApi.addFunds({
+              amount,
+              paymentMethod: 'RAZORPAY',
+              transactionReference: paymentId,
+            });
+            await fetchWalletData();
+            setAddFundsSuccess(true);
+            setTimeout(() => {
+              setAddFundsSuccess(false);
+              setIsAddFundsModalOpen(false);
+              setAddFundsAmount('2500');
+            }, 1200);
+          } catch (err) {
+            console.error('Error adding funds to wallet:', err);
+            alert(err?.response?.data?.message || err?.message || 'Deposit failed');
+          } finally {
+            setAddFundsLoading(false);
+          }
         },
         prefill: {
-          name: 'Rohit Verma',
-          email: 'client@lawinomeet.com',
-          contact: '+919876543210'
+          name: user?.fullName || user?.username || 'Client',
+          email: user?.email || 'client@lawinomeet.com',
+          contact: user?.phoneNumber || '+919876543210'
         },
         theme: {
           color: '#0C2340'
@@ -1344,7 +1348,7 @@ export const FundsBillingPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              {fundsData.payoutHistory.map((p) => (
+              {(fundsData.payoutHistory || []).map((p) => (
                 <div
                   key={p.payoutId}
                   className="p-3.5 rounded-xl border border-[var(--border-cream)] bg-[var(--bg-cream-soft)] space-y-1.5"

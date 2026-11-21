@@ -17,10 +17,17 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -44,8 +51,12 @@ public class AppointmentService {
 
     @Transactional
     public AppointmentResponse bookAppointment(UserPrincipal client, CreateAppointmentRequest request) {
-        AvailabilitySlot slot;
         Instant now = Instant.now();
+        Instant startTime;
+        Instant endTime;
+        AvailabilitySlot slot = null;
+        String lawyerPublicId;
+        String lawyerUsername = null;
 
         if (request.getSlotPublicId() != null && !request.getSlotPublicId().isBlank()) {
             slot = slotRepository.findByPublicId(request.getSlotPublicId())
@@ -59,12 +70,10 @@ public class AppointmentService {
                 throw new ApiException(HttpStatus.CONFLICT, "SLOT_NOT_AVAILABLE", "Selected slot is no longer available.");
             }
 
-            // Prevent client from booking appointment with themselves
             if (slot.getLawyerUserPublicId().equals(client.getPublicId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_BOOKING", "You cannot book an appointment with yourself.");
             }
 
-            // ATOMIC SLOT RESERVATION: Race condition safe update
             int updatedRows = slotRepository.updateSlotStatusConditionally(
                     slot.getPublicId(), SlotStatus.AVAILABLE, SlotStatus.PENDING, now);
 
@@ -75,36 +84,79 @@ public class AppointmentService {
 
             slot.setSlotStatus(SlotStatus.PENDING);
             slot.setUpdatedAt(now);
-        } else if (request.getCustomStartTime1() != null) {
-            String targetLawyerId = AvailabilityService.resolveLawyerUserPublicId(request.getLawyerUserPublicId());
-            if (targetLawyerId == null || targetLawyerId.isBlank()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "MISSING_LAWYER", "Lawyer ID is required for custom consultation.");
+            startTime = slot.getStartTime();
+            endTime = slot.getEndTime();
+            lawyerPublicId = slot.getLawyerUserPublicId();
+        } else {
+            String rawLawyerId = request.getLawyerUserPublicId();
+            if (rawLawyerId == null || rawLawyerId.isBlank()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "MISSING_LAWYER", "Lawyer identifier is required for booking.");
             }
-            if (targetLawyerId.equals(client.getPublicId())) {
+
+            Map<String, Object> lawyerData = fetchLawyerProfile(rawLawyerId);
+            if (lawyerData != null && lawyerData.get("userPublicId") != null) {
+                lawyerPublicId = (String) lawyerData.get("userPublicId");
+                lawyerUsername = (String) lawyerData.get("username");
+            } else {
+                lawyerPublicId = rawLawyerId;
+            }
+
+            if (lawyerPublicId != null && lawyerPublicId.equals(client.getPublicId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_BOOKING", "You cannot book an appointment with yourself.");
             }
-            Instant start1 = request.getCustomStartTime1();
-            Instant end1 = request.getCustomEndTime1() != null ? request.getCustomEndTime1() : start1.plus(1, ChronoUnit.HOURS);
-            slot = AvailabilitySlot.builder()
-                    .publicId(UUID.randomUUID().toString())
-                    .lawyerUserPublicId(targetLawyerId)
-                    .startTime(start1)
-                    .endTime(end1)
-                    .slotStatus(SlotStatus.PENDING)
-                    .build();
-            slot = slotRepository.save(slot);
-        } else {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "SLOT_REQUIRED", "Please select or propose consultation slots (minimum 2 slots required).");
+
+            if (request.getStartTime() != null) {
+                startTime = request.getStartTime();
+            } else if (request.getAppointmentDate() != null && request.getAppointmentTime() != null) {
+                String timeZone = (lawyerData != null && lawyerData.get("timeZone") != null)
+                        ? lawyerData.get("timeZone").toString()
+                        : "Asia/Kolkata";
+                ZoneId zone;
+                try {
+                    zone = ZoneId.of(timeZone);
+                } catch (Exception e) {
+                    zone = ZoneId.of("Asia/Kolkata");
+                }
+                try {
+                    LocalDate d = LocalDate.parse(request.getAppointmentDate().trim());
+                    LocalTime t = parseLocalTime(request.getAppointmentTime());
+                    startTime = ZonedDateTime.of(d, t, zone).toInstant();
+                } catch (Exception e) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DATE_TIME", "Invalid appointment date or time: " + e.getMessage());
+                }
+            } else if (request.getCustomStartTime1() != null) {
+                startTime = request.getCustomStartTime1();
+            } else if (request.getConsultationType() == ConsultationType.CHAT) {
+                startTime = now;
+            } else {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "TIME_REQUIRED", "Preferred consultation date and start time are required.");
+            }
+
+            endTime = (request.getEndTime() != null && request.getEndTime().isAfter(startTime))
+                    ? request.getEndTime()
+                    : startTime.plus(1, ChronoUnit.HOURS);
+
+            if (request.getConsultationType() != ConsultationType.CHAT && !startTime.isAfter(now)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "PAST_TIME", "Appointment start time must be in the future.");
+            }
+
+            if (lawyerData != null && request.getConsultationType() != ConsultationType.CHAT) {
+                validateLawyerWorkingSchedule(lawyerData, startTime, endTime);
+            }
+
+            boolean hasConflict = appointmentRepository.hasLawyerActiveAppointmentConflict(lawyerPublicId, startTime, endTime);
+            if (hasConflict) {
+                throw new ApiException(HttpStatus.CONFLICT, "SLOT_NOT_AVAILABLE", "Selected consultation hour is already booked or reserved.");
+            }
         }
 
-        // Alternative Slot handling (minimum 2 slots required from client)
         String altSlotId = request.getAlternativeSlotPublicId();
         if (altSlotId == null && request.getCustomStartTime2() != null) {
             Instant start2 = request.getCustomStartTime2();
             Instant end2 = request.getCustomEndTime2() != null ? request.getCustomEndTime2() : start2.plus(1, ChronoUnit.HOURS);
             AvailabilitySlot altSlot = AvailabilitySlot.builder()
                     .publicId(UUID.randomUUID().toString())
-                    .lawyerUserPublicId(slot.getLawyerUserPublicId())
+                    .lawyerUserPublicId(lawyerPublicId)
                     .startTime(start2)
                     .endTime(end2)
                     .slotStatus(SlotStatus.PENDING)
@@ -130,9 +182,13 @@ public class AppointmentService {
 
         Appointment appointment = Appointment.builder()
                 .publicId(UUID.randomUUID().toString())
+                .shortUid(com.lawinomeet.appointment.util.ShortUidGenerator.generate())
+                .startTime(startTime)
+                .endTime(endTime)
                 .clientUserPublicId(client.getPublicId())
                 .clientUsername(client.getUsername())
-                .lawyerUserPublicId(slot.getLawyerUserPublicId())
+                .lawyerUserPublicId(lawyerPublicId)
+                .lawyerUsername(lawyerUsername)
                 .firmPublicId(request.getFirmPublicId())
                 .serviceId(request.getServiceId())
                 .fee(fee)
@@ -146,18 +202,18 @@ public class AppointmentService {
                 .chamberAddress(chamberAddr)
                 .directionsInstructions(directions)
                 .requestedAt(now)
-                .responseDeadline(now.plus(24, ChronoUnit.HOURS))
+                .responseDeadline(now.plus(48, ChronoUnit.HOURS))
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
-        log.info("Client {} requested appointment {} for slot {} (Alt Slot: {}, Mode: {}, Fee: ₹{})",
-                client.getUsername(), saved.getPublicId(), slot.getPublicId(), altSlotId, consultType, fee);
+        log.info("Client {} requested appointment {} (#{}) for lawyer {} at {} (Mode: {}, Fee: ₹{})",
+                client.getUsername(), saved.getPublicId(), saved.getShortUid(), lawyerPublicId, startTime, consultType, fee);
 
         dispatchNotification(
                 saved.getLawyerUserPublicId(),
                 "APPOINTMENT_REQUESTED",
                 "New Consultation Request",
-                "Client " + client.getUsername() + " has requested a " + consultType + " consultation proposing 2 preferred slots. Please review and accept.",
+                "Client " + client.getUsername() + " has requested a " + consultType + " consultation. Please review and accept.",
                 saved.getPublicId()
         );
 
@@ -200,15 +256,16 @@ public class AppointmentService {
                 AvailabilitySlot altSlot = slotRepository.findByPublicId(appointment.getAlternativeSlotPublicId()).orElse(null);
                 if (altSlot != null) {
                     AvailabilitySlot oldSlot = appointment.getSlot();
-                    if (!oldSlot.getPublicId().equals(altSlot.getPublicId())) {
+                    if (oldSlot != null && !oldSlot.getPublicId().equals(altSlot.getPublicId())) {
                         oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
                         slotRepository.save(oldSlot);
-
-                        altSlot.setSlotStatus(SlotStatus.PENDING);
-                        slotRepository.save(altSlot);
-                        appointment.setSlot(altSlot);
-                        log.info("Lawyer {} agreed to Option 2 slot {} for appointment {}", lawyer.getUsername(), altSlot.getPublicId(), appointmentPublicId);
                     }
+                    altSlot.setSlotStatus(SlotStatus.PENDING);
+                    slotRepository.save(altSlot);
+                    appointment.setSlot(altSlot);
+                    appointment.setStartTime(altSlot.getStartTime());
+                    appointment.setEndTime(altSlot.getEndTime());
+                    log.info("Lawyer {} agreed to Option 2 slot {} for appointment {}", lawyer.getUsername(), altSlot.getPublicId(), appointmentPublicId);
                 }
             } else if (request.getNewSlotPublicId() != null && !request.getNewSlotPublicId().isBlank()) {
                 AvailabilitySlot newSlot = slotRepository.findByPublicId(request.getNewSlotPublicId())
@@ -216,25 +273,31 @@ public class AppointmentService {
                 if (!newSlot.getLawyerUserPublicId().equals(lawyer.getPublicId())) {
                     throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "You can only select your own availability slots.");
                 }
-                if (newSlot.getSlotStatus() != SlotStatus.AVAILABLE && !newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
+                if (newSlot.getSlotStatus() != SlotStatus.AVAILABLE && (appointment.getSlot() == null || !newSlot.getPublicId().equals(appointment.getSlot().getPublicId()))) {
                     throw new ApiException(HttpStatus.CONFLICT, "SLOT_NOT_AVAILABLE", "Selected slot is not available.");
                 }
-                if (!newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
+                if (appointment.getSlot() == null || !newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
                     AvailabilitySlot oldSlot = appointment.getSlot();
-                    oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
-                    slotRepository.save(oldSlot);
+                    if (oldSlot != null) {
+                        oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
+                        slotRepository.save(oldSlot);
+                    }
 
                     newSlot.setSlotStatus(SlotStatus.PENDING);
                     slotRepository.save(newSlot);
                     appointment.setSlot(newSlot);
+                    appointment.setStartTime(newSlot.getStartTime());
+                    appointment.setEndTime(newSlot.getEndTime());
                     log.info("Lawyer {} modified appointment {} slot to {}", lawyer.getUsername(), appointmentPublicId, newSlot.getPublicId());
                 }
             } else if (request.getNewStartTime() != null) {
                 Instant start = request.getNewStartTime();
                 Instant end = request.getNewEndTime() != null ? request.getNewEndTime() : start.plus(1, java.time.temporal.ChronoUnit.HOURS);
                 AvailabilitySlot oldSlot = appointment.getSlot();
-                oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
-                slotRepository.save(oldSlot);
+                if (oldSlot != null) {
+                    oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
+                    slotRepository.save(oldSlot);
+                }
 
                 AvailabilitySlot customSlot = AvailabilitySlot.builder()
                         .publicId(UUID.randomUUID().toString())
@@ -245,6 +308,8 @@ public class AppointmentService {
                         .build();
                 customSlot = slotRepository.save(customSlot);
                 appointment.setSlot(customSlot);
+                appointment.setStartTime(start);
+                appointment.setEndTime(end);
                 log.info("Lawyer {} assigned custom 1-hour slot {} to appointment {}", lawyer.getUsername(), customSlot.getPublicId(), appointmentPublicId);
             }
         }
@@ -307,24 +372,30 @@ public class AppointmentService {
             if (!newSlot.getLawyerUserPublicId().equals(appointment.getLawyerUserPublicId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_SLOT", "Slot must belong to the assigned counsel.");
             }
-            if (newSlot.getSlotStatus() != SlotStatus.AVAILABLE && !newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
+            if (newSlot.getSlotStatus() != SlotStatus.AVAILABLE && (appointment.getSlot() == null || !newSlot.getPublicId().equals(appointment.getSlot().getPublicId()))) {
                 throw new ApiException(HttpStatus.CONFLICT, "SLOT_NOT_AVAILABLE", "Selected slot is no longer available.");
             }
-            if (!newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
+            if (appointment.getSlot() == null || !newSlot.getPublicId().equals(appointment.getSlot().getPublicId())) {
                 AvailabilitySlot oldSlot = appointment.getSlot();
-                oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
-                slotRepository.save(oldSlot);
+                if (oldSlot != null) {
+                    oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
+                    slotRepository.save(oldSlot);
+                }
 
                 newSlot.setSlotStatus(targetStatus);
                 slotRepository.save(newSlot);
                 appointment.setSlot(newSlot);
+                appointment.setStartTime(newSlot.getStartTime());
+                appointment.setEndTime(newSlot.getEndTime());
             }
         } else if (request.getNewStartTime() != null) {
             Instant start = request.getNewStartTime();
             Instant end = request.getNewEndTime() != null ? request.getNewEndTime() : start.plus(1, java.time.temporal.ChronoUnit.HOURS);
             AvailabilitySlot oldSlot = appointment.getSlot();
-            oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
-            slotRepository.save(oldSlot);
+            if (oldSlot != null) {
+                oldSlot.setSlotStatus(SlotStatus.AVAILABLE);
+                slotRepository.save(oldSlot);
+            }
 
             AvailabilitySlot customSlot = AvailabilitySlot.builder()
                     .publicId(UUID.randomUUID().toString())
@@ -335,17 +406,20 @@ public class AppointmentService {
                     .build();
             customSlot = slotRepository.save(customSlot);
             appointment.setSlot(customSlot);
+            appointment.setStartTime(start);
+            appointment.setEndTime(end);
         }
 
         Appointment updated = appointmentRepository.save(appointment);
         log.info("Appointment {} rescheduled by {}", appointmentPublicId, principal.getUsername());
 
         String notifyUser = isLawyer ? updated.getClientUserPublicId() : updated.getLawyerUserPublicId();
+        Instant displayTime = updated.getStartTime() != null ? updated.getStartTime() : (updated.getSlot() != null ? updated.getSlot().getStartTime() : null);
         dispatchNotification(
                 notifyUser,
                 "APPOINTMENT_RESCHEDULED",
                 "Consultation Slot Rescheduled",
-                "Consultation time has been adjusted to " + updated.getSlot().getStartTime() + (request.getRescheduleReason() != null ? ". Reason: " + request.getRescheduleReason() : ""),
+                "Consultation time has been adjusted to " + displayTime + (request.getRescheduleReason() != null ? ". Reason: " + request.getRescheduleReason() : ""),
                 appointmentPublicId
         );
 
@@ -374,8 +448,8 @@ public class AppointmentService {
 
         BigDecimal fee = appointment.getFee() != null ? appointment.getFee() : new BigDecimal("1500.00");
 
-        // 1. Deduct funds from Client Wallet
-        deductWalletFunds(client.getPublicId(), fee, appointmentPublicId);
+        // 1. Deduct funds from Client Wallet and credit Lawyer Escrow
+        deductWalletFunds(client.getPublicId(), appointment.getLawyerUserPublicId(), fee, appointmentPublicId);
 
         Instant now = Instant.now();
         appointment.setAppointmentStatus(AppointmentStatus.CONFIRMED);
@@ -401,12 +475,17 @@ public class AppointmentService {
         }
 
         // 3. Mark Slot as BOOKED
-        slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BOOKED, now);
-        appointment.getSlot().setSlotStatus(SlotStatus.BOOKED);
+        if (appointment.getSlot() != null) {
+            slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BOOKED, now);
+            appointment.getSlot().setSlotStatus(SlotStatus.BOOKED);
+        }
 
         Appointment updated = appointmentRepository.save(appointment);
         log.info("Client {} verified retainer payment of ₹{} for appointment {}. Mode: {}. Status updated to CONFIRMED.",
                 client.getUsername(), fee, appointmentPublicId, appointment.getConsultationType());
+
+        // Reopen chat session in chat-service so messages are unblocked immediately
+        reopenChatConversation(updated.getPublicId(), updated.getClientUserPublicId(), updated.getLawyerUserPublicId());
 
         // Notify lawyer
         dispatchNotification(
@@ -448,12 +527,14 @@ public class AppointmentService {
         appointment.setRejectionReason(request != null ? request.getReason() : null);
 
         // Release slot back to AVAILABLE if start time is in future
-        if (appointment.getSlot().getStartTime().isAfter(now)) {
-            slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.AVAILABLE, now);
-            appointment.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
-        } else {
-            slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BLOCKED, now);
-            appointment.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+        if (appointment.getSlot() != null) {
+            if (appointment.getSlot().getStartTime().isAfter(now)) {
+                slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.AVAILABLE, now);
+                appointment.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
+            } else {
+                slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BLOCKED, now);
+                appointment.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+            }
         }
 
         Appointment updated = appointmentRepository.save(appointment);
@@ -496,13 +577,21 @@ public class AppointmentService {
         appointment.setCancelledAt(now);
         appointment.setCancellationReason(request != null ? request.getReason() : null);
 
+        if ("PAID".equalsIgnoreCase(appointment.getPaymentStatus())) {
+            BigDecimal fee = appointment.getFee() != null ? appointment.getFee() : new BigDecimal("1500.00");
+            refundWalletFunds(appointment.getClientUserPublicId(), appointment.getLawyerUserPublicId(), fee, appointmentPublicId);
+            appointment.setPaymentStatus("REFUNDED");
+        }
+
         // Release slot if future
-        if (appointment.getSlot().getStartTime().isAfter(now)) {
-            slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.AVAILABLE, now);
-            appointment.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
-        } else {
-            slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BLOCKED, now);
-            appointment.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+        if (appointment.getSlot() != null) {
+            if (appointment.getSlot().getStartTime().isAfter(now)) {
+                slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.AVAILABLE, now);
+                appointment.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
+            } else {
+                slotRepository.updateSlotStatusById(appointment.getSlot().getId(), SlotStatus.BLOCKED, now);
+                appointment.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+            }
         }
 
         Appointment updated = appointmentRepository.save(appointment);
@@ -569,15 +658,17 @@ public class AppointmentService {
         appointment.setClientConfirmedAt(now);
         appointment.setCompletedAt(now);
 
-        // Settle funds to lawyer
+        // Settle funds to lawyer and release client escrow
         BigDecimal fee = appointment.getFee() != null ? appointment.getFee() : new BigDecimal("1500.00");
-        settleWalletFunds(appointment.getLawyerUserPublicId(), fee, appointmentPublicId);
+        settleWalletFunds(appointment.getLawyerUserPublicId(), appointment.getClientUserPublicId(), fee, appointmentPublicId);
         appointment.setSettledAt(now);
         appointment.setSettlementStatus("SETTLED");
 
         Appointment updated = appointmentRepository.save(appointment);
         log.info("Client {} confirmed completion for appointment {}. Fee ₹{} settled to counsel.",
                 client.getUsername(), appointmentPublicId, fee);
+
+        closeChatConversation(appointmentPublicId);
 
         dispatchNotification(
                 appointment.getLawyerUserPublicId(),
@@ -656,11 +747,12 @@ public class AppointmentService {
                 apt.setClientConfirmedAt(now);
 
                 BigDecimal fee = apt.getFee() != null ? apt.getFee() : new BigDecimal("1500.00");
-                settleWalletFunds(apt.getLawyerUserPublicId(), fee, apt.getPublicId());
+                settleWalletFunds(apt.getLawyerUserPublicId(), apt.getClientUserPublicId(), fee, apt.getPublicId());
                 apt.setSettledAt(now);
                 apt.setSettlementStatus("SETTLED");
 
                 appointmentRepository.save(apt);
+                closeChatConversation(apt.getPublicId());
                 count++;
                 log.info("Auto-confirmed overdue appointment {} after 24h client silence. Settled ₹{} to lawyer.",
                         apt.getPublicId(), fee);
@@ -679,13 +771,14 @@ public class AppointmentService {
         return count;
     }
 
-    private void deductWalletFunds(String clientUserPublicId, BigDecimal amount, String appointmentPublicId) {
+    private void deductWalletFunds(String clientUserPublicId, String lawyerUserPublicId, BigDecimal amount, String appointmentPublicId) {
         try {
             Map<String, Object> req = new HashMap<>();
             req.put("clientUserPublicId", clientUserPublicId);
+            req.put("lawyerUserPublicId", lawyerUserPublicId);
             req.put("amount", amount);
             req.put("appointmentPublicId", appointmentPublicId);
-            req.put("description", "Retainer payment for consultation #" + appointmentPublicId.substring(0, 8));
+            req.put("description", "Retainer payment for consultation #" + appointmentPublicId.substring(0, Math.min(8, appointmentPublicId.length())));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -700,19 +793,25 @@ public class AppointmentService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "INSUFFICIENT_WALLET_BALANCE",
                         "Insufficient wallet balance. Please add funds to your wallet to confirm this appointment.");
             }
-            throw new ApiException(HttpStatus.BAD_REQUEST, "PAYMENT_FAILED", "Failed to process wallet payment: " + e.getMessage());
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PAYMENT_FAILED", "Failed to process wallet payment: " + errorMsg);
+        } catch (HttpStatusCodeException e) {
+            throw new ApiException(HttpStatus.valueOf(e.getStatusCode().value()), "WALLET_SERVICE_ERROR", "Wallet payment deduction failed: " + e.getResponseBodyAsString());
+        } catch (ResourceAccessException e) {
+            log.warn("Wallet service unreachable at {} (proceeding in test/isolated mode): {}", userServiceUrl, e.getMessage());
         } catch (Exception e) {
-            log.warn("Wallet service call skipped or unreachable ({}): {}", userServiceUrl, e.getMessage());
+            log.error("Unexpected error during wallet deduction: {}", e.getMessage(), e);
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "WALLET_ERROR", "Unexpected error processing wallet payment: " + e.getMessage());
         }
     }
 
-    private void settleWalletFunds(String lawyerUserPublicId, BigDecimal amount, String appointmentPublicId) {
+    private void settleWalletFunds(String lawyerUserPublicId, String clientUserPublicId, BigDecimal amount, String appointmentPublicId) {
         try {
             Map<String, Object> req = new HashMap<>();
             req.put("lawyerUserPublicId", lawyerUserPublicId);
+            req.put("clientUserPublicId", clientUserPublicId);
             req.put("amount", amount);
             req.put("appointmentPublicId", appointmentPublicId);
-            req.put("description", "Settlement fee released for consultation #" + appointmentPublicId.substring(0, 8));
+            req.put("description", "Settlement fee released for consultation #" + appointmentPublicId.substring(0, Math.min(8, appointmentPublicId.length())));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -721,8 +820,33 @@ public class AppointmentService {
             restTemplate.postForEntity(userServiceUrl + "/api/wallet/settle-appointment", entity, String.class);
             log.info("Successfully settled ₹{} to wallet of lawyer {} for appointment {}",
                     amount, lawyerUserPublicId, appointmentPublicId);
+        } catch (HttpStatusCodeException e) {
+            throw new ApiException(HttpStatus.valueOf(e.getStatusCode().value()), "SETTLEMENT_ERROR", "Wallet settlement failed: " + e.getResponseBodyAsString());
+        } catch (ResourceAccessException e) {
+            log.warn("Wallet settlement call skipped because user-service is unreachable ({}): {}", userServiceUrl, e.getMessage());
         } catch (Exception e) {
-            log.warn("Wallet settlement call failed ({}): {}", userServiceUrl, e.getMessage());
+            log.error("Wallet settlement error: {}", e.getMessage(), e);
+        }
+    }
+
+    private void refundWalletFunds(String clientUserPublicId, String lawyerUserPublicId, BigDecimal amount, String appointmentPublicId) {
+        try {
+            Map<String, Object> req = new HashMap<>();
+            req.put("clientUserPublicId", clientUserPublicId);
+            req.put("lawyerUserPublicId", lawyerUserPublicId);
+            req.put("amount", amount);
+            req.put("appointmentPublicId", appointmentPublicId);
+            req.put("description", "Refund for cancelled consultation #" + appointmentPublicId.substring(0, Math.min(8, appointmentPublicId.length())));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(req, headers);
+
+            restTemplate.postForEntity(userServiceUrl + "/api/wallet/refund-appointment", entity, String.class);
+            log.info("Successfully refunded ₹{} to wallet of client {} for appointment {}",
+                    amount, clientUserPublicId, appointmentPublicId);
+        } catch (Exception e) {
+            log.error("Wallet refund error: {}", e.getMessage(), e);
         }
     }
 
@@ -780,12 +904,14 @@ public class AppointmentService {
     private void expireSingleAppointment(Appointment apt) {
         Instant now = Instant.now();
         apt.setAppointmentStatus(AppointmentStatus.EXPIRED);
-        if (apt.getSlot().getStartTime().isAfter(now)) {
-            slotRepository.updateSlotStatusById(apt.getSlot().getId(), SlotStatus.AVAILABLE, now);
-            apt.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
-        } else {
-            slotRepository.updateSlotStatusById(apt.getSlot().getId(), SlotStatus.BLOCKED, now);
-            apt.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+        if (apt.getSlot() != null) {
+            if (apt.getSlot().getStartTime().isAfter(now)) {
+                slotRepository.updateSlotStatusById(apt.getSlot().getId(), SlotStatus.AVAILABLE, now);
+                apt.getSlot().setSlotStatus(SlotStatus.AVAILABLE);
+            } else {
+                slotRepository.updateSlotStatusById(apt.getSlot().getId(), SlotStatus.BLOCKED, now);
+                apt.getSlot().setSlotStatus(SlotStatus.BLOCKED);
+            }
         }
         appointmentRepository.save(apt);
         log.info("Expired appointment {} due to passed response deadline", apt.getPublicId());
@@ -794,5 +920,134 @@ public class AppointmentService {
     private Appointment getAppointmentOrThrow(String publicId) {
         return appointmentRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "APPOINTMENT_NOT_FOUND", "Appointment not found."));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fetchLawyerProfile(String lawyerIdentifier) {
+        try {
+            ResponseEntity<Map> resp = restTemplate.getForEntity(userServiceUrl + "/api/lawyers/" + lawyerIdentifier, Map.class);
+            if (resp.getBody() != null && resp.getBody().containsKey("data")) {
+                Object dataObj = resp.getBody().get("data");
+                if (dataObj instanceof Map) {
+                    return (Map<String, Object>) dataObj;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch lawyer profile from user-service for identifier '{}': {}", lawyerIdentifier, e.getMessage());
+        }
+        return null;
+    }
+
+    private void validateLawyerWorkingSchedule(Map<String, Object> lawyerData, Instant start, Instant end) {
+        String timeZone = (String) lawyerData.getOrDefault("timeZone", "Asia/Kolkata");
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(timeZone != null && !timeZone.isBlank() ? timeZone : "Asia/Kolkata");
+        } catch (Exception e) {
+            zone = ZoneId.of("Asia/Kolkata");
+        }
+        ZonedDateTime zdtStart = start.atZone(zone);
+        ZonedDateTime zdtEnd = end.atZone(zone);
+
+        // 1. Working days validation
+        String workingDays = (String) lawyerData.getOrDefault("workingDays", "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY");
+        if (workingDays != null && !workingDays.isBlank()) {
+            String currentDay = zdtStart.getDayOfWeek().name();
+            if (!workingDays.toUpperCase().contains(currentDay)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "NOT_A_WORKING_DAY",
+                        "Counsel does not take consultations on " + currentDay + " (Configured working days: " + workingDays + ").");
+            }
+        }
+
+        // 2. Working hours validation
+        String startHourStr = (String) lawyerData.getOrDefault("workingHoursStart", "09:00");
+        String endHourStr = (String) lawyerData.getOrDefault("workingHoursEnd", "18:00");
+        if (startHourStr != null && endHourStr != null) {
+            try {
+                LocalTime workStart = LocalTime.parse(startHourStr);
+                LocalTime workEnd = LocalTime.parse(endHourStr);
+                LocalTime reqStart = zdtStart.toLocalTime();
+                LocalTime reqEnd = zdtEnd.toLocalTime();
+                if (reqStart.isBefore(workStart) || reqEnd.isAfter(workEnd)) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "OUTSIDE_WORKING_HOURS",
+                            "Requested appointment falls outside counsel's working hours (" + workStart + " - " + workEnd + ").");
+                }
+            } catch (ApiException ae) {
+                throw ae;
+            } catch (Exception e) {
+                log.warn("Error parsing lawyer working hours: {}", e.getMessage());
+            }
+        }
+
+        // 3. Break time validation
+        String breakStartStr = (String) lawyerData.get("breakStartTime");
+        String breakEndStr = (String) lawyerData.get("breakEndTime");
+        if (breakStartStr != null && breakEndStr != null && !breakStartStr.isBlank() && !breakEndStr.isBlank()) {
+            try {
+                LocalTime breakStart = LocalTime.parse(breakStartStr);
+                LocalTime breakEnd = LocalTime.parse(breakEndStr);
+                LocalTime reqStart = zdtStart.toLocalTime();
+                LocalTime reqEnd = zdtEnd.toLocalTime();
+                if (reqStart.isBefore(breakEnd) && reqEnd.isAfter(breakStart)) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "BREAK_TIME_CONFLICT",
+                            "Requested appointment falls within counsel's break time (" + breakStart + " - " + breakEnd + ").");
+                }
+            } catch (ApiException ae) {
+                throw ae;
+            } catch (Exception e) {
+                log.warn("Error parsing lawyer break hours: {}", e.getMessage());
+            }
+        }
+    }
+
+    private LocalTime parseLocalTime(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) {
+            return LocalTime.of(10, 0);
+        }
+        timeStr = timeStr.trim().toUpperCase();
+        try {
+            if (timeStr.contains("AM") || timeStr.contains("PM")) {
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
+                if (timeStr.matches("^\\d{2}:\\d{2}\\s*(AM|PM)$")) {
+                    dtf = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
+                }
+                return LocalTime.parse(timeStr.replaceAll("\\s+", " "), dtf);
+            }
+            if (timeStr.length() == 5) {
+                return LocalTime.parse(timeStr);
+            }
+            if (timeStr.length() == 8) {
+                return LocalTime.parse(timeStr);
+            }
+            return LocalTime.parse(timeStr);
+        } catch (Exception e) {
+            log.warn("Could not parse time string '{}', falling back to 10:00: {}", timeStr, e.getMessage());
+            return LocalTime.of(10, 0);
+        }
+    }
+
+    private void closeChatConversation(String appointmentPublicId) {
+        if (appointmentPublicId == null || appointmentPublicId.isBlank()) return;
+        try {
+            String chatServiceUrl = System.getenv().getOrDefault("CHAT_SERVICE_URL", "http://chat-service:8086");
+            restTemplate.postForEntity(chatServiceUrl + "/api/chat/conversations/close-by-appointment/" + appointmentPublicId, null, String.class);
+            log.info("Requested chat session closure for appointment {}", appointmentPublicId);
+        } catch (Exception e) {
+            log.warn("Failed to close chat conversation via chat-service for appointment {}: {}", appointmentPublicId, e.getMessage());
+        }
+    }
+
+    private void reopenChatConversation(String appointmentPublicId, String clientPublicId, String lawyerPublicId) {
+        if (appointmentPublicId == null || appointmentPublicId.isBlank()) return;
+        try {
+            String chatServiceUrl = System.getenv().getOrDefault("CHAT_SERVICE_URL", "http://chat-service:8086");
+            String url = chatServiceUrl + "/api/chat/conversations/reopen-by-appointment/" + appointmentPublicId
+                    + "?clientId=" + (clientPublicId != null ? clientPublicId : "")
+                    + "&lawyerId=" + (lawyerPublicId != null ? lawyerPublicId : "");
+            restTemplate.postForEntity(url, null, String.class);
+            log.info("Requested chat session reopening for appointment {}", appointmentPublicId);
+        } catch (Exception e) {
+            log.warn("Failed to reopen chat conversation via chat-service for appointment {}: {}", appointmentPublicId, e.getMessage());
+        }
     }
 }

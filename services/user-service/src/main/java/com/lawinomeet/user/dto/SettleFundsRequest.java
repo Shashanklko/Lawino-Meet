@@ -19,6 +19,8 @@ public class SettleFundsRequest {
     @NotBlank(message = "Lawyer user public ID is required")
     private String lawyerUserPublicId;
 
+    private String clientUserPublicId;
+
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "1.00", message = "Amount must be at least ₹1.00")
     private BigDecimal amount;

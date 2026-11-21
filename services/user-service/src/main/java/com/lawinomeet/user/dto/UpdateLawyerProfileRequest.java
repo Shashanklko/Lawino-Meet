@@ -47,5 +47,13 @@ public class UpdateLawyerProfileRequest {
 
     private ProfileStatus publicProfileStatus;
 
+    private String workingDays;
+    private String workingHoursStart;
+    private String workingHoursEnd;
+    private String breakStartTime;
+    private String breakEndTime;
+    private String timeZone;
+    private String availabilityStatus;
+
     private Set<Long> specializationIds;
 }

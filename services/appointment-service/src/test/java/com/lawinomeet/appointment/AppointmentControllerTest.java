@@ -235,20 +235,34 @@ class AppointmentControllerTest {
         String appointmentPublicId = objectMapper.readTree(aptRes.getResponse().getContentAsString())
                 .get("data").get("publicId").asText();
 
-        // Lawyer accepts appointment
+        // Lawyer accepts appointment -> transitions to AWAITING_PAYMENT
         mockMvc.perform(patch("/api/appointments/" + appointmentPublicId + "/accept")
                         .header("Authorization", "Bearer " + lawyerToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.appointmentStatus", is("CONFIRMED")))
+                .andExpect(jsonPath("$.data.appointmentStatus", is("AWAITING_PAYMENT")))
                 .andExpect(jsonPath("$.data.acceptedAt", notNullValue()));
+
+        // Client pays retainer -> transitions to CONFIRMED
+        mockMvc.perform(post("/api/appointments/" + appointmentPublicId + "/pay")
+                        .header("Authorization", "Bearer " + clientToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.appointmentStatus", is("CONFIRMED")))
+                .andExpect(jsonPath("$.data.paidAt", notNullValue()));
 
         // Check slot is now BOOKED
         assertThat(slotRepository.findByPublicId(slotPublicId).orElseThrow().getSlotStatus())
                 .isEqualTo(SlotStatus.BOOKED);
 
-        // Lawyer completes appointment
+        // Lawyer completes appointment (requests completion)
         mockMvc.perform(patch("/api/appointments/" + appointmentPublicId + "/complete")
                         .header("Authorization", "Bearer " + lawyerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.appointmentStatus", is("COMPLETION_REQUESTED")))
+                .andExpect(jsonPath("$.data.completionRequestedAt", notNullValue()));
+
+        // Client confirms completion -> transitions to COMPLETED
+        mockMvc.perform(patch("/api/appointments/" + appointmentPublicId + "/confirm")
+                        .header("Authorization", "Bearer " + clientToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.appointmentStatus", is("COMPLETED")))
                 .andExpect(jsonPath("$.data.completedAt", notNullValue()));

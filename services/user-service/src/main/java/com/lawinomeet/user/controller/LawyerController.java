@@ -40,6 +40,13 @@ public class LawyerController {
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 
+    @GetMapping("/{identifier}/services")
+    public ResponseEntity<ApiResponse<java.util.List<LegalServiceDto>>> getLawyerServices(
+            @PathVariable String identifier) {
+        java.util.List<LegalServiceDto> services = lawyerService.getLawyerServices(identifier);
+        return ResponseEntity.ok(ApiResponse.ok(services));
+    }
+
     @GetMapping("/me")
     @PreAuthorize("hasRole('LAWYER')")
     public ResponseEntity<ApiResponse<LawyerProfileDto>> getMyLawyerProfile(

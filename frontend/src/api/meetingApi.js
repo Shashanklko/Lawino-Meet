@@ -31,6 +31,10 @@ export const meetingApi = {
     const res = await apiClient.patch(`/api/meetings/rooms/${roomPublicId}/end`);
     return res.data;
   },
+  relaySignal: async (roomPublicId, payload) => {
+    const res = await apiClient.post(`/api/meetings/rooms/${roomPublicId}/signal`, payload);
+    return res.data;
+  },
   getIceServers: async () => {
     const res = await apiClient.get('/api/meetings/ice-servers');
     return res.data;

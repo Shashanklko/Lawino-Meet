@@ -16,6 +16,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     Optional<Appointment> findByPublicId(String publicId);
 
+    Optional<Appointment> findByShortUid(String shortUid);
+
     List<Appointment> findByClientUserPublicIdOrderByRequestedAtDesc(String clientUserPublicId);
 
     List<Appointment> findByLawyerUserPublicIdOrderByRequestedAtDesc(String lawyerUserPublicId);
@@ -32,9 +34,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
            "WHERE a.lawyerUserPublicId = :lawyerId " +
            "AND a.appointmentStatus IN (com.lawinomeet.appointment.entity.AppointmentStatus.PENDING, " +
+           "                             com.lawinomeet.appointment.entity.AppointmentStatus.AWAITING_PAYMENT, " +
            "                             com.lawinomeet.appointment.entity.AppointmentStatus.CONFIRMED, " +
            "                             com.lawinomeet.appointment.entity.AppointmentStatus.IN_PROGRESS) " +
-           "AND a.slot.startTime < :endTime AND a.slot.endTime > :startTime")
+           "AND ((a.startTime IS NOT NULL AND a.startTime < :endTime AND a.endTime > :startTime) " +
+           "     OR (a.slot IS NOT NULL AND a.slot.startTime < :endTime AND a.slot.endTime > :startTime))")
     boolean hasLawyerActiveAppointmentConflict(@Param("lawyerId") String lawyerId,
                                                @Param("startTime") Instant startTime,
                                                @Param("endTime") Instant endTime);
@@ -42,9 +46,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT COUNT(a) > 0 FROM Appointment a " +
            "WHERE a.clientUserPublicId = :clientId " +
            "AND a.appointmentStatus IN (com.lawinomeet.appointment.entity.AppointmentStatus.PENDING, " +
+           "                             com.lawinomeet.appointment.entity.AppointmentStatus.AWAITING_PAYMENT, " +
            "                             com.lawinomeet.appointment.entity.AppointmentStatus.CONFIRMED, " +
            "                             com.lawinomeet.appointment.entity.AppointmentStatus.IN_PROGRESS) " +
-           "AND a.slot.startTime < :endTime AND a.slot.endTime > :startTime")
+           "AND ((a.startTime IS NOT NULL AND a.startTime < :endTime AND a.endTime > :startTime) " +
+           "     OR (a.slot IS NOT NULL AND a.slot.startTime < :endTime AND a.slot.endTime > :startTime))")
     boolean hasClientActiveAppointmentConflict(@Param("clientId") String clientId,
                                                @Param("startTime") Instant startTime,
                                                @Param("endTime") Instant endTime);

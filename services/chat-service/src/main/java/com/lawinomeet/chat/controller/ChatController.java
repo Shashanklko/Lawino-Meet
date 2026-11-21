@@ -65,9 +65,47 @@ public class ChatController {
             @PathVariable String conversationPublicId,
             @RequestBody Map<String, String> body) {
         String content = body.get("content");
-        ChatMessageResponse response = chatService.sendMessageToConversation(principal, conversationPublicId, content);
+        String replyToMessagePublicId = body.get("replyToMessagePublicId");
+        String replyToSenderName = body.get("replyToSenderName");
+        String replyToContent = body.get("replyToContent");
+        ChatMessageResponse response = chatService.sendMessageToConversation(
+                principal, conversationPublicId, content,
+                replyToMessagePublicId, replyToSenderName, replyToContent);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Message sent successfully", response));
+    }
+
+    @DeleteMapping("/messages/{messagePublicId}")
+    public ResponseEntity<ApiResponse<ChatMessageResponse>> deleteMessage(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String messagePublicId,
+            @RequestParam(defaultValue = "SELF") String deleteType) {
+        ChatMessageResponse response = chatService.deleteMessage(principal, messagePublicId, deleteType);
+        return ResponseEntity.ok(ApiResponse.ok("Message deleted successfully", response));
+    }
+
+    @PostMapping("/conversations/{conversationPublicId}/close")
+    public ResponseEntity<ApiResponse<ConversationResponse>> closeConversation(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String conversationPublicId) {
+        ConversationResponse response = chatService.closeConversation(principal, conversationPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Consultation session concluded and closed", response));
+    }
+
+    @PostMapping("/conversations/close-by-appointment/{appointmentPublicId}")
+    public ResponseEntity<ApiResponse<String>> closeConversationByAppointment(
+            @PathVariable String appointmentPublicId) {
+        chatService.closeConversationByAppointment(appointmentPublicId);
+        return ResponseEntity.ok(ApiResponse.ok("Conversations for appointment closed successfully", appointmentPublicId));
+    }
+
+    @PostMapping("/conversations/reopen-by-appointment/{appointmentPublicId}")
+    public ResponseEntity<ApiResponse<String>> reopenConversationByAppointment(
+            @PathVariable String appointmentPublicId,
+            @RequestParam(required = false) String clientId,
+            @RequestParam(required = false) String lawyerId) {
+        chatService.reopenConversationByAppointment(appointmentPublicId, clientId, lawyerId);
+        return ResponseEntity.ok(ApiResponse.ok("Conversations for appointment reopened successfully", appointmentPublicId));
     }
 
     @PostMapping(value = "/conversations/{conversationPublicId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

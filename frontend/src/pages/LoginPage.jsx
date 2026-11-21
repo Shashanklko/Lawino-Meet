@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ShieldCheck,
   Lock,
@@ -17,6 +17,7 @@ import {
   Building,
   Sparkles,
   Shield,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,6 +27,9 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get('expired') === '12h' || searchParams.get('sessionExpired') === 'true';
 
   const { login } = useAuth();
   const navigate = useNavigate();

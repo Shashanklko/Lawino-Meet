@@ -44,46 +44,80 @@ export const LawyerProfilePage = () => {
   const [consultationType, setConsultationType] = useState('ONLINE'); // 'ONLINE' | 'OFFLINE' | 'CHAT'
   const [clientNotes, setClientNotes] = useState('');
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingDate, setBookingDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [bookingTime, setBookingTime] = useState('10:00');
 
-  const effectiveServices = services.length > 0
-    ? services.map((s, idx) => ({
-        id: s.id || s.publicId || `srv-${idx}`,
-        code: s.serviceCode || (idx === 0 ? 'ONLINE' : idx === 1 ? 'OFFLINE' : 'DOCUMENT_REVIEW'),
-        title: s.title || 'Legal Advisory Consultation',
-        price: Number(s.price || s.consultationFee) || (Number(lawyer?.hourlyRate) || 1500),
-        duration: s.durationMinutes ? `${s.durationMinutes} mins` : '45 mins',
-        badge: s.badge || (s.mode === 'ONLINE' ? 'Instant Video' : 'Chamber'),
-        description: s.description || 'Dedicated legal consultation with certified advocate.',
-      }))
-    : [
-        {
-          id: 'srv-1',
-          code: 'ONLINE',
-          title: 'Online Video Consultation',
-          price: Number(lawyer?.hourlyRate) || 1500,
-          duration: '45 mins',
-          badge: 'Most Popular',
-          description: 'High-definition WebRTC video conference with secure end-to-end encryption.',
-        },
-        {
-          id: 'srv-2',
-          code: 'OFFLINE',
-          title: 'In-Person Chamber Visit',
-          price: Number(lawyer?.hourlyRate) ? Math.round(Number(lawyer.hourlyRate) * 1.2) : 2000,
-          duration: '60 mins',
-          badge: 'High Court Chamber',
-          description: 'Direct face-to-face consultation at advocate chamber complex.',
-        },
-        {
-          id: 'srv-3',
-          code: 'CHAT',
-          title: 'Encrypted Legal Chat Advisory',
-          price: Number(lawyer?.hourlyRate) ? Math.round(Number(lawyer.hourlyRate) * 0.7) : 1000,
-          duration: '24-hour window',
-          badge: 'Written Advisory',
-          description: 'Secure privileged messaging thread with document sharing.',
-        },
-      ];
+  const calculateEndTime = (timeStr) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const endH = (h + 1) % 24;
+    return `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+  };
+
+  const coreConsultationServices = [
+    {
+      id: 'srv-video',
+      code: 'ONLINE',
+      title: 'Online Video Consultation',
+      price: 1500,
+      duration: '60 mins',
+      badge: 'Most Popular',
+      description: 'High-definition WebRTC video conference with secure end-to-end encryption.',
+    },
+    {
+      id: 'srv-chamber',
+      code: 'OFFLINE',
+      title: 'In-Person Chamber Visit',
+      price: 2000,
+      duration: '60 mins',
+      badge: 'High Court Chamber',
+      description: 'Direct face-to-face consultation at advocate chamber complex.',
+    },
+    {
+      id: 'srv-chat',
+      code: 'CHAT',
+      title: 'Encrypted Legal Chat Advisory',
+      price: 499,
+      duration: '24-hour window',
+      badge: 'Written Advisory',
+      description: 'Secure privileged messaging thread with document sharing and legal opinion.',
+    },
+  ];
+
+  const customServices = (services || [])
+    .filter(
+      (s) =>
+        Number(s.consultationFee || s.price) > 0 &&
+        !['Online Video Consultation', 'In-Person Chamber Visit', 'Encrypted Legal Chat Advisory'].includes(
+          s.serviceName || s.title
+        )
+    )
+    .map((s, idx) => ({
+      id: s.id || `custom-${idx}`,
+      code: s.consultationType || s.mode || 'ONLINE',
+      title: s.serviceName || s.title || 'Specialized Legal Retainer',
+      price: Number(s.consultationFee || s.price) || 2500,
+      duration: s.durationMinutes ? `${s.durationMinutes} mins` : '60 mins',
+      badge: 'Specialized Retainer',
+      description: s.description || 'Dedicated legal retainer engagement with senior counsel.',
+    }));
+
+  const effectiveServices = [...coreConsultationServices, ...customServices];
+
+  const getSelectedDayOfWeek = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    return ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][dateObj.getDay()];
+  };
+
+  const selectedDayName = getSelectedDayOfWeek(bookingDate);
+  const allowedDays = (lawyer?.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY').toUpperCase();
+  const isSelectedDateWorkingDay = selectedDayName ? allowedDays.includes(selectedDayName) : true;
 
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -101,7 +135,13 @@ export const LawyerProfilePage = () => {
         ]);
 
         if (lawyerRes.status === 'fulfilled' && lawyerRes.value.success && lawyerRes.value.data) {
-          setLawyer(lawyerRes.value.data);
+          const lData = lawyerRes.value.data;
+          setLawyer(lData);
+          // Canonical URL: Ensure browser URL displays lawyer's username or slug instead of raw UUID
+          const canonicalUsername = lData.username || lData.slug;
+          if (canonicalUsername && lawyerPublicId !== canonicalUsername) {
+            navigate(`/lawyers/${canonicalUsername}`, { replace: true });
+          }
         } else {
           // Fallback search across lawyers list by UUID, slug or username
           try {
@@ -116,6 +156,10 @@ export const LawyerProfilePage = () => {
             );
             if (found) {
               setLawyer(found);
+              const canonicalUsername = found.username || found.slug;
+              if (canonicalUsername && lawyerPublicId !== canonicalUsername) {
+                navigate(`/lawyers/${canonicalUsername}`, { replace: true });
+              }
             } else {
               setError('Advocate profile not found.');
             }
@@ -214,32 +258,55 @@ export const LawyerProfilePage = () => {
       return;
     }
 
-    if (!selectedSlot && consultationType !== 'CHAT') return;
-
     setBookingLoading(true);
     setError('');
 
     try {
       const mappedType = (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') ? 'IN_PERSON' : consultationType === 'CHAT' ? 'CHAT' : 'ONLINE';
-      const fee = selectedService?.price || (consultationType === 'CHAT' ? 800 : (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') ? 2000 : 1500);
+      const fee = selectedService?.price || (consultationType === 'CHAT' ? 499 : (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') ? 2000 : 1500);
+
+      let startTime = null;
+      let endTime = null;
+
+      if (consultationType !== 'CHAT') {
+        if (!bookingDate || !bookingTime) {
+          setError('Please select a date and preferred start time.');
+          setBookingLoading(false);
+          return;
+        }
+        if (!isSelectedDateWorkingDay) {
+          setError(`Advocate is not available on ${selectedDayName}. Please pick a working day (Mon – Sat).`);
+          setBookingLoading(false);
+          return;
+        }
+        const s = new Date(`${bookingDate}T${bookingTime}:00`);
+        const e = new Date(s.getTime() + 60 * 60 * 1000); // 1-hour fixed duration
+        if (s <= new Date()) {
+          setError('Proposed appointment time must be in the future.');
+          setBookingLoading(false);
+          return;
+        }
+        startTime = s.toISOString();
+        endTime = e.toISOString();
+      }
 
       const payload = {
-        slotPublicId: selectedSlot?.publicId,
-        serviceId: selectedService?.id || null,
+        lawyerUserPublicId: lawyer.userPublicId || lawyer.publicId,
+        serviceId: selectedService?.id && typeof selectedService.id === 'number' ? selectedService.id : null,
         fee,
         consultationType: mappedType,
         consultationReason: `[${mappedType}] ${clientNotes.trim() || 'Legal consultation requested.'}`,
+        startTime,
+        endTime,
+        appointmentDate: bookingDate,
+        appointmentTime: bookingTime,
       };
 
       await appointmentApi.reserveAppointment(payload);
 
       setBookingSuccess(true);
       setTimeout(() => {
-        if (consultationType === 'CHAT') {
-          navigate('/messages');
-        } else {
-          navigate('/dashboard/client');
-        }
+        navigate('/client/appointments');
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to reserve appointment');
@@ -332,7 +399,7 @@ export const LawyerProfilePage = () => {
             </div>
 
             <p className="text-xs text-stone-500 font-mono">
-              Bar Enrollment: <span className="text-[#831826] font-semibold">{lawyer.barCouncilNumber}</span>
+              Bar Enrollment: <span className="text-[#831826] font-semibold">{lawyer.barCouncilNumber || lawyer.qualification || 'Bar Council Enrolled Advocate'}</span>
               {lawyer.stateBar && ` (${lawyer.stateBar})`}
             </p>
 
@@ -423,16 +490,25 @@ export const LawyerProfilePage = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {effectiveServices.map((srv) => {
-                const isSelected = consultationType === srv.code;
+                const isSelected =
+                  selectedService?.publicId === srv.id ||
+                  (!selectedService && (
+                    (consultationType === 'CHAT' && srv.code === 'CHAT') ||
+                    (consultationType === 'ONLINE' && srv.code === 'ONLINE') ||
+                    ((consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') &&
+                      (srv.code === 'OFFLINE' || srv.code === 'IN_PERSON'))
+                  ));
                 return (
                   <div
                     key={srv.id}
                     onClick={() => {
                       setConsultationType(srv.code);
                       setSelectedService({
+                        id: srv.id,
                         publicId: srv.id,
                         title: srv.title,
                         price: srv.price,
+                        description: srv.description,
                       });
                     }}
                     className={`p-3.5 rounded-2xl border transition cursor-pointer flex flex-col justify-between space-y-2 ${
@@ -567,7 +643,10 @@ export const LawyerProfilePage = () => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => setConsultationType('CHAT')}
+                  onClick={() => {
+                    setConsultationType('CHAT');
+                    setSelectedService(null);
+                  }}
                   className={`p-2.5 rounded-2xl border text-center transition flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                     consultationType === 'CHAT'
                       ? 'border-[#831826] bg-[#831826] text-white shadow-xs'
@@ -581,7 +660,10 @@ export const LawyerProfilePage = () => {
 
                 <button
                   type="button"
-                  onClick={() => setConsultationType('ONLINE')}
+                  onClick={() => {
+                    setConsultationType('ONLINE');
+                    setSelectedService(null);
+                  }}
                   className={`p-2.5 rounded-2xl border text-center transition flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                     consultationType === 'ONLINE'
                       ? 'border-[#831826] bg-[#831826] text-white shadow-xs'
@@ -595,7 +677,10 @@ export const LawyerProfilePage = () => {
 
                 <button
                   type="button"
-                  onClick={() => setConsultationType('OFFLINE')}
+                  onClick={() => {
+                    setConsultationType('OFFLINE');
+                    setSelectedService(null);
+                  }}
                   className={`p-2.5 rounded-2xl border text-center transition flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                     consultationType === 'OFFLINE'
                       ? 'border-[#831826] bg-[#831826] text-white shadow-xs'
@@ -611,205 +696,88 @@ export const LawyerProfilePage = () => {
 
             {/* Mode Description Note */}
             <div className="p-3 bg-stone-100 rounded-2xl text-[11px] text-stone-600 space-y-1">
-              {(() => {
-                const matchedService = effectiveServices.find((s) => s.code === consultationType);
-                if (matchedService) {
-                  return (
-                    <p>
-                      ✨ <strong>{matchedService.title} (₹{matchedService.price.toLocaleString('en-IN')}):</strong> {matchedService.description} ({matchedService.duration})
-                    </p>
-                  );
-                }
-                if (consultationType === 'CHAT') {
-                  return (
-                    <p>
-                      💬 <strong>Legal Chat Advice:</strong> Ask your questions and share legal notice over direct chat. Unlocks immediate messaging with the advocate.
-                    </p>
-                  );
-                }
-                if (consultationType === 'ONLINE') {
-                  return (
-                    <p>
-                      📹 <strong>Online Video Call:</strong> 30 minutes private video call from your browser to discuss your case in detail.
-                    </p>
-                  );
-                }
-                return (
-                  <p>
-                    🏢 <strong>Office / Chamber Visit:</strong> 45 minutes face-to-face consultation at the advocate's court chamber.
-                  </p>
-                );
-              })()}
+              {selectedService ? (
+                <p>
+                  ✨ <strong>{selectedService.title} (₹{selectedService.price.toLocaleString('en-IN')}):</strong> {selectedService.description || 'Specialized legal consultation service with counsel.'}
+                </p>
+              ) : consultationType === 'CHAT' ? (
+                <p>
+                  💬 <strong>Encrypted Legal Chat Advisory (₹499):</strong> Ask your legal queries and share case notices over a 24-hour privileged chat advisory window.
+                </p>
+              ) : consultationType === 'ONLINE' ? (
+                <p>
+                  📹 <strong>Online Video Consultation (₹1,500):</strong> 60 minutes private WebRTC video conference with secure end-to-end encryption.
+                </p>
+              ) : (
+                <p>
+                  🏢 <strong>In-Person Chamber Visit (₹2,000):</strong> 60 minutes direct face-to-face consultation at advocate chamber complex.
+                </p>
+              )}
             </div>
 
-            {/* Step 2: Choose Slot (Only if Video or Chamber) */}
-            {(consultationType === 'ONLINE' || consultationType === 'OFFLINE') && (
+            {/* Step 2: Choose Date & Preferred Start Time (Only if Video or Chamber) */}
+            {(consultationType === 'ONLINE' || consultationType === 'OFFLINE' || consultationType === 'IN_PERSON') && (
               <div className="space-y-2.5">
-                <label className="block text-xs font-sans font-semibold uppercase tracking-wider text-stone-600">
-                  2. Pick Date &amp; Time Slot
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-sans font-semibold uppercase tracking-wider text-stone-600">
+                    2. Select Consultation Date &amp; Time
+                  </label>
+                  <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                    1-Hour Duration
+                  </span>
+                </div>
 
-                {Object.keys(groupedProfileSlots).length === 0 ? (
-                  <div className="py-6 text-center text-stone-400 text-xs bg-amber-50/60 rounded-xl border border-amber-200 p-4">
-                    <p className="font-semibold text-stone-800">No open consultation slots available.</p>
-                    <p className="text-[11px] text-stone-500 mt-0.5">Please check back later or consult via Chat Advisory.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Horizontal Date Navigation */}
+                <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/70 space-y-2.5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider block mb-1">
-                        Available Dates ({Object.keys(groupedProfileSlots).length} Days)
-                      </span>
-                      <div className="flex items-center space-x-1.5 overflow-x-auto pb-1.5">
-                        {Object.keys(groupedProfileSlots).map((dateKey) => {
-                          const grp = groupedProfileSlots[dateKey];
-                          const totalSlots = grp.morning.length + grp.afternoon.length + grp.evening.length;
-                          const isActive = profileSlotDateTab === dateKey;
-                          return (
-                            <button
-                              key={dateKey}
-                              type="button"
-                              onClick={() => setProfileSlotDateTab(dateKey)}
-                              className={`px-2.5 py-1.5 rounded-xl border text-xs whitespace-nowrap transition cursor-pointer flex items-center space-x-1.5 ${
-                                isActive
-                                  ? 'border-[#831826] bg-[#831826] text-white font-bold shadow-2xs'
-                                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
-                              }`}
-                            >
-                              <span>{grp.label}</span>
-                              <span
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                  isActive ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'
-                                }`}
-                              >
-                                {totalSlots}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <label className="block text-[10px] font-semibold text-stone-600 mb-1">Select Working Day</label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#831826]"
+                      />
                     </div>
-
-                    {/* Time slots for selected date */}
-                    {groupedProfileSlots[profileSlotDateTab] && (
-                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                        {/* Morning */}
-                        {groupedProfileSlots[profileSlotDateTab].morning.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block mb-1">
-                              🌅 Morning
-                            </span>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {groupedProfileSlots[profileSlotDateTab].morning.map((slot) => {
-                                const startTime = new Date(slot.startTime);
-                                const isSelected = selectedSlot?.publicId === slot.publicId;
-                                return (
-                                  <button
-                                    key={slot.publicId}
-                                    type="button"
-                                    onClick={() => setSelectedSlot(slot)}
-                                    className={`p-2 rounded-lg border text-center transition cursor-pointer text-xs ${
-                                      isSelected
-                                        ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold ring-1 ring-emerald-600'
-                                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                                    }`}
-                                  >
-                                    <div className="font-mono text-[11px]">
-                                      {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
-                                      {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                    {isSelected && <span className="text-[9px] text-emerald-700 font-semibold block mt-0.5">✓ Selected</span>}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Afternoon */}
-                        {groupedProfileSlots[profileSlotDateTab].afternoon.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider block mb-1">
-                              ☀️ Afternoon
-                            </span>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {groupedProfileSlots[profileSlotDateTab].afternoon.map((slot) => {
-                                const startTime = new Date(slot.startTime);
-                                const isSelected = selectedSlot?.publicId === slot.publicId;
-                                return (
-                                  <button
-                                    key={slot.publicId}
-                                    type="button"
-                                    onClick={() => setSelectedSlot(slot)}
-                                    className={`p-2 rounded-lg border text-center transition cursor-pointer text-xs ${
-                                      isSelected
-                                        ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold ring-1 ring-emerald-600'
-                                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                                    }`}
-                                  >
-                                    <div className="font-mono text-[11px]">
-                                      {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
-                                      {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                    {isSelected && <span className="text-[9px] text-emerald-700 font-semibold block mt-0.5">✓ Selected</span>}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Evening */}
-                        {groupedProfileSlots[profileSlotDateTab].evening.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-semibold text-indigo-900 uppercase tracking-wider block mb-1">
-                              🌙 Evening
-                            </span>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {groupedProfileSlots[profileSlotDateTab].evening.map((slot) => {
-                                const startTime = new Date(slot.startTime);
-                                const isSelected = selectedSlot?.publicId === slot.publicId;
-                                return (
-                                  <button
-                                    key={slot.publicId}
-                                    type="button"
-                                    onClick={() => setSelectedSlot(slot)}
-                                    className={`p-2 rounded-lg border text-center transition cursor-pointer text-xs ${
-                                      isSelected
-                                        ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold ring-1 ring-emerald-600'
-                                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                                    }`}
-                                  >
-                                    <div className="font-mono text-[11px]">
-                                      {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
-                                      {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                    {isSelected && <span className="text-[9px] text-emerald-700 font-semibold block mt-0.5">✓ Selected</span>}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div>
+                      <label className="block text-[10px] font-semibold text-stone-600 mb-1">Start Time (1 Hour)</label>
+                      <input
+                        type="time"
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full p-2 rounded-lg border border-stone-200 bg-white text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#831826]"
+                      />
+                    </div>
                   </div>
-                )}
+
+                  {bookingDate && bookingTime && (
+                    <div className="text-[11px] font-mono text-emerald-900 bg-emerald-50/80 p-2 rounded-lg border border-emerald-200 flex items-center justify-between">
+                      <span>Calculated Window: <strong>{bookingTime} – {calculateEndTime(bookingTime)}</strong> (60 Mins)</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    </div>
+                  )}
+
+                  {!isSelectedDateWorkingDay && (
+                    <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-center space-x-1.5 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Counsel is off on {selectedDayName}. Available: Mon – Sat (9:00 AM – 6:00 PM).</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Step 3: Book Action Button */}
             {(() => {
-              const matchedService = effectiveServices.find((s) => s.code === consultationType);
-              const price = matchedService ? matchedService.price : consultationType === 'CHAT' ? 499 : consultationType === 'ONLINE' ? 1500 : 2000;
-              const title = matchedService ? matchedService.title : consultationType === 'CHAT' ? 'Quick Chat' : consultationType === 'ONLINE' ? 'Video Call' : 'Chamber Visit';
-              const requiresSlot = consultationType === 'ONLINE' || consultationType === 'OFFLINE';
+              const price = selectedService?.price || (consultationType === 'CHAT' ? 499 : consultationType === 'ONLINE' ? 1500 : 2000);
+              const title = selectedService?.title || (consultationType === 'CHAT' ? 'Encrypted Legal Chat' : consultationType === 'ONLINE' ? 'Online Video Consultation' : 'In-Person Chamber Visit');
+              const requiresSlot = consultationType === 'ONLINE' || consultationType === 'OFFLINE' || consultationType === 'IN_PERSON';
+              const isInvalidWorkingDay = requiresSlot && !isSelectedDateWorkingDay;
 
               return (
                 <button
                   type="button"
-                  disabled={requiresSlot && !selectedSlot}
+                  disabled={(requiresSlot && (!bookingDate || !bookingTime)) || isInvalidWorkingDay}
                   onClick={() => setIsBookingModalOpen(true)}
                   className="w-full py-3.5 rounded-xl bg-[#831826] hover:bg-[#6c131f] disabled:opacity-40 text-white font-serif font-bold text-xs uppercase tracking-wider shadow-sm transition flex items-center justify-center space-x-2 cursor-pointer"
                 >
@@ -834,12 +802,11 @@ export const LawyerProfilePage = () => {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-stone-200">
             <h3 className="text-xl font-serif font-bold text-[#1F1C1B]">
               Confirm{' '}
-              {effectiveServices.find((s) => s.code === consultationType)?.title ||
-                (consultationType === 'CHAT'
-                  ? 'Quick Legal Chat'
-                  : consultationType === 'ONLINE'
-                  ? 'Video Call'
-                  : 'Chamber Visit')}
+              {consultationType === 'CHAT'
+                ? 'Encrypted Legal Chat'
+                : consultationType === 'ONLINE'
+                ? 'Online Video Consultation'
+                : 'In-Person Chamber Visit'}
             </h3>
 
             {error && (
@@ -853,12 +820,10 @@ export const LawyerProfilePage = () => {
               <div className="p-6 text-center space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
                 <h4 className="text-base font-serif font-bold text-[#1F1C1B]">
-                  {consultationType === 'CHAT' ? 'Chat Unlocked!' : 'Appointment Booked!'}
+                  {consultationType === 'CHAT' ? 'Chat Consultation Requested!' : 'Appointment Booked!'}
                 </h4>
                 <p className="text-xs text-stone-500">
-                  {consultationType === 'CHAT'
-                    ? 'Redirecting to your dedicated messages page...'
-                    : 'Redirecting to your appointments dashboard...'}
+                  Redirecting to your appointments dashboard to track counsel confirmation...
                 </p>
               </div>
             ) : (
@@ -882,14 +847,14 @@ export const LawyerProfilePage = () => {
                     <div className="flex justify-between">
                       <span className="text-stone-500">Scheduled Time:</span>
                       <span className="font-semibold text-stone-800">
-                        {new Date(selectedSlot?.startTime).toLocaleString()}
+                        {bookingDate} ({bookingTime} – {calculateEndTime(bookingTime)}, 60 mins)
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-stone-500">Total Fee:</span>
                     <span className="font-serif font-bold text-[#831826]">
-                      {consultationType === 'CHAT' ? '₹499' : consultationType === 'ONLINE' ? '₹1,500' : '₹2,000'}
+                      ₹{(selectedService?.price || (consultationType === 'CHAT' ? 499 : consultationType === 'ONLINE' ? 1500 : 2000)).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>

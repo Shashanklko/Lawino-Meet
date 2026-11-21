@@ -328,7 +328,7 @@ export const FirmProfilePage = () => {
               ) : (
                 <div className="space-y-3">
                   {associatedLawyers.map((adv) => {
-                    const pubId = adv.userPublicId || adv.publicId;
+                    const pubId = adv.username || adv.slug || adv.userPublicId || adv.publicId;
                     return (
                       <div
                         key={pubId}

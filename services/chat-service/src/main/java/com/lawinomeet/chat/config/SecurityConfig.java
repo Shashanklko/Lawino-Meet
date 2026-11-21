@@ -30,6 +30,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/actuator/**",
                     "/api/chat/ping",
+                    "/api/chat/conversations/close-by-appointment/**",
+                    "/api/chat/conversations/reopen-by-appointment/**",
                     "/ws-chat/**"
                 ).permitAll()
                 .anyRequest().authenticated()

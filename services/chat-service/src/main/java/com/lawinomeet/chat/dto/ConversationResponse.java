@@ -21,6 +21,7 @@ public class ConversationResponse {
     private String lastMessageContent;
     private Instant lastMessageAt;
     private long unreadMessagesCount;
+    private boolean isClosed;
 
     public static ConversationResponse fromEntity(Conversation conv, String currentUserId, long unreadCount) {
         if (conv == null) {
@@ -34,6 +35,7 @@ public class ConversationResponse {
                 .lastMessageContent(conv.getLastMessageContent())
                 .lastMessageAt(conv.getLastMessageAt())
                 .unreadMessagesCount(unreadCount)
+                .isClosed(conv.isClosed())
                 .build();
     }
 }

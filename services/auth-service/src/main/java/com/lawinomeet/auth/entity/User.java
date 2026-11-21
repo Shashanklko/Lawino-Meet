@@ -13,6 +13,7 @@ import java.util.UUID;
         @Index(name = "idx_users_email", columnList = "email", unique = true),
         @Index(name = "idx_users_username", columnList = "username", unique = true),
         @Index(name = "idx_users_public_id", columnList = "public_id", unique = true),
+        @Index(name = "idx_users_short_uid", columnList = "short_uid", unique = true),
         @Index(name = "idx_users_role", columnList = "role")
 })
 @Getter
@@ -29,6 +30,9 @@ public class User {
     @Column(name = "public_id", nullable = false, unique = true, length = 36, updatable = false)
     @Builder.Default
     private String publicId = UUID.randomUUID().toString();
+
+    @Column(name = "short_uid", nullable = false, unique = true, length = 7)
+    private String shortUid;
 
     @Column(nullable = false, unique = true, length = 50)
     private String username;
@@ -64,6 +68,9 @@ public class User {
     public void ensurePublicId() {
         if (this.publicId == null || this.publicId.isBlank()) {
             this.publicId = UUID.randomUUID().toString();
+        }
+        if (this.shortUid == null || this.shortUid.isBlank()) {
+            this.shortUid = com.lawinomeet.auth.util.ShortUidGenerator.generate();
         }
         if (this.username != null) {
             this.username = this.username.trim().toLowerCase();

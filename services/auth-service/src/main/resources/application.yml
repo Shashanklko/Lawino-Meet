@@ -37,7 +37,7 @@ management:
 app:
   jwt:
     secret: ${JWT_SECRET:super-secret-jwt-key-change-this-in-production-min-256-bits-length}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    expiration-ms: ${JWT_EXPIRATION_MS:43200000}
     issuer: ${JWT_ISSUER:lawino-meet}
 
 eureka:

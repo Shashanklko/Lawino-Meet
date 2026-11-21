@@ -63,4 +63,11 @@ public class WalletController {
         WalletTransactionResponse response = walletService.settleToLawyer(request);
         return ResponseEntity.ok(ApiResponse.ok("Consultation fee settled to lawyer wallet", response));
     }
+
+    @PostMapping("/refund-appointment")
+    public ResponseEntity<ApiResponse<WalletTransactionResponse>> refundAppointment(
+            @Valid @RequestBody RefundFundsRequest request) {
+        WalletTransactionResponse response = walletService.refundForAppointment(request);
+        return ResponseEntity.ok(ApiResponse.ok("Appointment payment refunded to client wallet", response));
+    }
 }

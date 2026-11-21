@@ -18,6 +18,7 @@ import java.time.Instant;
 public class AppointmentResponse {
 
     private String publicId;
+    private String shortUid;
     private String clientUserPublicId;
     private String clientUsername;
     private String lawyerUserPublicId;
@@ -26,6 +27,8 @@ public class AppointmentResponse {
     private Long serviceId;
     private BigDecimal fee;
     private AvailabilitySlotResponse slot;
+    private Instant startTime;
+    private Instant endTime;
     private String alternativeSlotPublicId;
     private String preferredSlotsJson;
     private ConsultationType consultationType;
@@ -95,8 +98,16 @@ public class AppointmentResponse {
             }
         }
 
+        Instant effectiveStart = appointment.getStartTime() != null
+                ? appointment.getStartTime()
+                : (appointment.getSlot() != null ? appointment.getSlot().getStartTime() : null);
+        Instant effectiveEnd = appointment.getEndTime() != null
+                ? appointment.getEndTime()
+                : (appointment.getSlot() != null ? appointment.getSlot().getEndTime() : null);
+
         return AppointmentResponse.builder()
                 .publicId(appointment.getPublicId())
+                .shortUid(appointment.getShortUid())
                 .clientUserPublicId(appointment.getClientUserPublicId())
                 .clientUsername(appointment.getClientUsername())
                 .lawyerUserPublicId(appointment.getLawyerUserPublicId())
@@ -104,7 +115,9 @@ public class AppointmentResponse {
                 .firmPublicId(appointment.getFirmPublicId())
                 .serviceId(appointment.getServiceId())
                 .fee(appointment.getFee() != null ? appointment.getFee() : new BigDecimal("1500.00"))
-                .slot(AvailabilitySlotResponse.fromEntity(appointment.getSlot()))
+                .slot(appointment.getSlot() != null ? AvailabilitySlotResponse.fromEntity(appointment.getSlot()) : null)
+                .startTime(effectiveStart)
+                .endTime(effectiveEnd)
                 .alternativeSlotPublicId(appointment.getAlternativeSlotPublicId())
                 .preferredSlotsJson(appointment.getPreferredSlotsJson())
                 .consultationType(appointment.getConsultationType())

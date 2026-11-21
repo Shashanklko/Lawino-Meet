@@ -145,6 +145,8 @@ export const normalizeConversation = (c) => {
   return {
     ...c,
     publicId: c.publicId,
+    appointmentPublicId: c.appointmentPublicId,
+    isClosed: Boolean(c.isClosed || c.closed),
     lastMessage: c.lastMessageContent || c.lastMessage || '',
     lastMessageAt: c.lastMessageAt || null,
     unreadCount,
@@ -159,6 +161,49 @@ export const normalizeConversation = (c) => {
       designation: resolved.designation || c.targetUser?.designation,
     },
   };
+};
+
+// Deduplicate messages across REST, WebSocket, and optimistic dispatches
+const addOrUpdateMessage = (prev, newMsg) => {
+  if (!newMsg || !newMsg.publicId) return prev;
+  if (newMsg.deletedForMe) {
+    return prev.filter((m) => m.publicId !== newMsg.publicId);
+  }
+
+  // 1. If message with exact publicId already exists, update in place (e.g. deleted for everyone)
+  const existingIdx = prev.findIndex((m) => m.publicId === newMsg.publicId);
+  if (existingIdx !== -1) {
+    const next = [...prev];
+    next[existingIdx] = { ...next[existingIdx], ...newMsg };
+    return next;
+  }
+
+  // 2. If there is an optimistic local message with matching sender and content sent recently
+  const optimisticIdx = prev.findIndex(
+    (m) =>
+      m.publicId?.startsWith('msg-local-') &&
+      m.senderUserPublicId === newMsg.senderUserPublicId &&
+      m.content === newMsg.content
+  );
+  if (optimisticIdx !== -1) {
+    const next = [...prev];
+    next[optimisticIdx] = newMsg;
+    return next;
+  }
+
+  // 3. Double-check for duplicate content/sender within 4 seconds window
+  const newTime = new Date(newMsg.createdAt || Date.now()).getTime();
+  const isDuplicate = prev.some(
+    (m) =>
+      m.senderUserPublicId === newMsg.senderUserPublicId &&
+      m.content === newMsg.content &&
+      Math.abs(new Date(m.createdAt || Date.now()).getTime() - newTime) < 4000
+  );
+  if (isDuplicate) {
+    return prev;
+  }
+
+  return [...prev, newMsg];
 };
 
 export const ChatProvider = ({ children }) => {
@@ -247,10 +292,7 @@ export const ChatProvider = ({ children }) => {
     const handleIncomingChatMessage = (message) => {
       try {
         const chatMsg = JSON.parse(message.body);
-        setMessages((prev) => {
-          if (prev.some((m) => m.publicId === chatMsg.publicId)) return prev;
-          return [...prev, chatMsg];
-        });
+        setMessages((prev) => addOrUpdateMessage(prev, chatMsg));
         fetchConversations();
       } catch (err) {
         console.error('Error handling incoming STOMP message:', err);
@@ -308,10 +350,7 @@ export const ChatProvider = ({ children }) => {
         (msg) => {
           try {
             const chatMsg = JSON.parse(msg.body);
-            setMessages((prev) => {
-              if (prev.some((m) => m.publicId === chatMsg.publicId)) return prev;
-              return [...prev, chatMsg];
-            });
+            setMessages((prev) => addOrUpdateMessage(prev, chatMsg));
           } catch (e) {}
         }
       );
@@ -348,8 +387,12 @@ export const ChatProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [isAuthenticated, activeConversation?.publicId, fetchConversations]);
 
-  const sendMessage = async (content) => {
+  const sendMessage = async (content, reply = null) => {
     if (!activeConversation || !content.trim()) return;
+    if (activeConversation.isClosed) {
+      console.warn('Consultation concluded. Message sending disabled.');
+      return;
+    }
 
     const trimmed = content.trim();
     const localPublicId = `msg-local-${Date.now()}`;
@@ -361,6 +404,9 @@ export const ChatProvider = ({ children }) => {
       recipientUserPublicId: activeConversation.targetUser?.publicId,
       recipientUsername: activeConversation.targetUser?.username,
       content: trimmed,
+      replyToMessagePublicId: reply?.publicId || reply?.replyToMessagePublicId || null,
+      replyToSenderName: reply?.senderName || reply?.replyToSenderName || null,
+      replyToContent: reply?.content || reply?.replyToContent || null,
       createdAt: new Date().toISOString(),
       isRead: false,
     };
@@ -369,21 +415,43 @@ export const ChatProvider = ({ children }) => {
 
     try {
       // Call backend REST endpoint (persists to DB and triggers STOMP broadcast automatically)
-      const res = await chatApi.sendMessage(activeConversation.publicId, trimmed);
+      const res = await chatApi.sendMessage(activeConversation.publicId, trimmed, reply);
       if (res?.data) {
-        // Replace local optimistic message with persisted entity
-        setMessages((prev) =>
-          prev.map((m) => (m.publicId === localPublicId ? res.data : m))
-        );
+        // Replace local optimistic message with persisted entity cleanly
+        setMessages((prev) => addOrUpdateMessage(prev.filter(m => m.publicId !== localPublicId), res.data));
       }
       fetchConversations();
     } catch (err) {
-      console.warn('Chat send encountered an issue, preserving optimistic state:', err);
+      console.warn('Chat send rejected by backend:', err);
+      // Remove optimistic message because backend rejected it (e.g. consultation concluded)
+      setMessages((prev) => prev.filter(m => m.publicId !== localPublicId));
+      if (err.response?.data?.message?.includes('concluded') || err.response?.data?.code === 'CONSULTATION_CONCLUDED') {
+        setActiveConversation((prev) => prev ? { ...prev, isClosed: true } : prev);
+      }
+    }
+  };
+
+  const deleteMessage = async (messagePublicId, deleteType = 'SELF') => {
+    try {
+      const res = await chatApi.deleteMessage(messagePublicId, deleteType);
+      if (deleteType === 'SELF') {
+        setMessages((prev) => prev.filter((m) => m.publicId !== messagePublicId));
+      } else if (res?.data) {
+        setMessages((prev) => addOrUpdateMessage(prev, res.data));
+      }
+      return res;
+    } catch (err) {
+      console.warn('Delete message error:', err);
+      throw err;
     }
   };
 
   const sendAttachment = async (file, caption = '') => {
     if (!activeConversation || !file) return;
+    if (activeConversation.isClosed) {
+      console.warn('Consultation concluded. File attachment disabled.');
+      return;
+    }
     try {
       const res = await chatApi.uploadAttachment(activeConversation.publicId, file, caption);
       if (res.success && res.data) {
@@ -514,7 +582,12 @@ export const ChatProvider = ({ children }) => {
     setMessages((prev) => [...prev, unlockNotice]);
   };
 
-  const closeConversation = (conversationPublicId) => {
+  const closeConversation = async (conversationPublicId) => {
+    try {
+      await chatApi.closeConversation(conversationPublicId);
+    } catch (err) {
+      console.warn('Backend close conversation call error or offline:', err);
+    }
     setConversations((prev) =>
       prev.map((c) => (c.publicId === conversationPublicId ? { ...c, isClosed: true } : c))
     );
@@ -555,6 +628,7 @@ export const ChatProvider = ({ children }) => {
         selectConversation,
         openChatWithUser,
         sendMessage,
+        deleteMessage,
         sendAttachment,
         fetchConversations,
         unlockConversation,

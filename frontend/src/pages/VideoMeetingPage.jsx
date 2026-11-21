@@ -18,7 +18,8 @@ import {
   User,
   Send,
   X,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -58,6 +59,7 @@ export const VideoMeetingPage = () => {
   const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const stompClientRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
   const iceServersRef = useRef([
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
   ]);
@@ -157,6 +159,31 @@ export const VideoMeetingPage = () => {
   useEffect(() => {
     if (loading || error || !localStreamRef.current) return;
 
+    // Helper to send WebRTC signaling message via STOMP with REST relay fallback
+    const sendSignal = (type, data) => {
+      const payload = {
+        type,
+        senderUserPublicId: user?.publicId,
+        data: typeof data === 'object' ? JSON.stringify(data) : data
+      };
+      if (stompClientRef.current?.connected) {
+        try {
+          stompClientRef.current.publish({
+            destination: `/app/meeting.signal/${roomPublicId}`,
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          return;
+        } catch (e) {
+          console.warn('STOMP publish failed, falling back to REST:', e);
+        }
+      }
+      // REST relay fallback
+      meetingApi.relaySignal(roomPublicId, payload).catch((err) => {
+        console.warn('Signaling relay error:', err);
+      });
+    };
+
     // Create RTCPeerConnection
     const pc = new RTCPeerConnection({
       iceServers: iceServersRef.current,
@@ -189,17 +216,41 @@ export const VideoMeetingPage = () => {
       }
     };
 
-    // ICE Candidate generation -> Send over STOMP
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      if (state === 'connected' || state === 'completed') {
+        setPeerConnected(true);
+      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+        setPeerConnected(false);
+      }
+    };
+
+    // ICE Candidate generation -> Send over STOMP / REST
     pc.onicecandidate = (event) => {
-      if (event.candidate && stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: `/app/meeting.signal/${roomPublicId}`,
-          body: JSON.stringify({
-            type: 'CANDIDATE',
-            senderUserPublicId: user?.publicId,
-            data: JSON.stringify(event.candidate)
-          })
-        });
+      if (event.candidate) {
+        sendSignal('CANDIDATE', event.candidate);
+      }
+    };
+
+    const flushPendingIceCandidates = async () => {
+      while (pendingCandidatesRef.current.length > 0) {
+        const cand = pendingCandidatesRef.current.shift();
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(cand));
+        } catch (err) {
+          console.warn('Error applying queued ICE candidate:', err);
+        }
+      }
+    };
+
+    const initiateOffer = async () => {
+      if (!pc || (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer')) return;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendSignal('OFFER', offer);
+      } catch (err) {
+        console.warn('Error initiating WebRTC offer:', err);
       }
     };
 
@@ -208,7 +259,9 @@ export const VideoMeetingPage = () => {
     const client = new Client({
       webSocketFactory: () => new SockJS('/ws-meeting'),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-      reconnectDelay: 3000,
+      reconnectDelay: 4000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
       debug: () => {},
     });
 
@@ -218,65 +271,43 @@ export const VideoMeetingPage = () => {
       // Subscribe to room signaling channel
       client.subscribe(`/topic/rooms/${roomPublicId}`, async (message) => {
         try {
-          const payload = JSON.parse(message.body);
+          const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
           if (payload.senderUserPublicId === user?.publicId) return; // Ignore self
-
-          const initiateOffer = async () => {
-            if (!pc || pc.signalingState !== 'stable') return;
-            try {
-              const offer = await pc.createOffer();
-              await pc.setLocalDescription(offer);
-              client.publish({
-                destination: `/app/meeting.signal/${roomPublicId}`,
-                body: JSON.stringify({
-                  type: 'OFFER',
-                  senderUserPublicId: user?.publicId,
-                  data: JSON.stringify(offer)
-                })
-              });
-            } catch (err) {
-              console.warn('Error initiating WebRTC offer:', err);
-            }
-          };
 
           if (payload.type === 'USER_JOINED') {
             if (isLawyer) {
               await initiateOffer();
             } else {
-              // Client replies with PEER_READY so arriving lawyer receives presence confirmation
-              client.publish({
-                destination: `/app/meeting.signal/${roomPublicId}`,
-                body: JSON.stringify({
-                  type: 'PEER_READY',
-                  senderUserPublicId: user?.publicId,
-                  data: 'READY'
-                })
-              });
+              // Client announces ready state to lawyer
+              sendSignal('PEER_READY', 'READY');
             }
           } else if (payload.type === 'PEER_READY') {
             if (isLawyer) {
               await initiateOffer();
             }
           } else if (payload.type === 'OFFER') {
-            const offerObj = JSON.parse(payload.data);
+            const offerObj = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
             await pc.setRemoteDescription(new RTCSessionDescription(offerObj));
+            await flushPendingIceCandidates();
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            client.publish({
-              destination: `/app/meeting.signal/${roomPublicId}`,
-              body: JSON.stringify({
-                type: 'ANSWER',
-                senderUserPublicId: user?.publicId,
-                data: JSON.stringify(answer)
-              })
-            });
+            sendSignal('ANSWER', answer);
           } else if (payload.type === 'ANSWER') {
-            const answerObj = JSON.parse(payload.data);
+            const answerObj = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
             await pc.setRemoteDescription(new RTCSessionDescription(answerObj));
+            await flushPendingIceCandidates();
           } else if (payload.type === 'CANDIDATE') {
-            const candidateObj = JSON.parse(payload.data);
+            const candidateObj = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
             if (candidateObj) {
-              await pc.addIceCandidate(new RTCIceCandidate(candidateObj));
+              if (pc.remoteDescription && pc.remoteDescription.type) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(candidateObj));
+                } catch (err) {
+                  console.warn('Direct addIceCandidate error:', err);
+                }
+              } else {
+                pendingCandidatesRef.current.push(candidateObj);
+              }
             }
           } else if (payload.type === 'ROOM_ENDED') {
             setShowCompletionModal(true);
@@ -296,14 +327,7 @@ export const VideoMeetingPage = () => {
       });
 
       // Announce arrival to room
-      client.publish({
-        destination: `/app/meeting.signal/${roomPublicId}`,
-        body: JSON.stringify({
-          type: 'USER_JOINED',
-          senderUserPublicId: user?.publicId,
-          data: 'JOIN'
-        })
-      });
+      sendSignal('USER_JOINED', 'JOIN');
     };
 
     client.activate();
@@ -575,9 +599,6 @@ export const VideoMeetingPage = () => {
                 <p className="text-xs text-stone-400 max-w-xs mt-1">
                   Private chamber is active and ready. Audio/video stream will appear the moment counsel and client connect.
                 </p>
-                <div className="mt-4 flex items-center gap-2 text-xs text-amber-400/90 bg-amber-950/40 px-3 py-1 rounded-full border border-amber-900/50">
-                  <Sparkles className="w-3.5 h-3.5" /> High Court Bar Compliant Stream
-                </div>
               </div>
             )}
 
