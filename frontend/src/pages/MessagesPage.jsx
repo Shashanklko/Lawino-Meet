@@ -193,8 +193,7 @@ export const MessagesPage = () => {
     ? false
     : Boolean(
         activeConversation?.isClosed ||
-        !activeApt ||
-        ['COMPLETED', 'COMPLETION_REQUESTED', 'CANCELLED', 'REJECTED', 'EXPIRED'].includes(aptStatus)
+        (relatedAppointment && ['COMPLETED', 'COMPLETION_REQUESTED', 'CANCELLED', 'REJECTED', 'EXPIRED'].includes(aptStatus))
       );
 
   const counselSlug =
@@ -471,15 +470,15 @@ export const MessagesPage = () => {
                   </button>
 
                   <div className="relative shrink-0">
-                    {activeInfo.img || activeConversation.targetUser?.profileImageUrl ? (
+                    {activeInfo?.img || activeConversation.targetUser?.profileImageUrl ? (
                       <img
-                        src={activeInfo.img || activeConversation.targetUser?.profileImageUrl}
-                        alt={activeInfo.name}
+                        src={activeInfo?.img || activeConversation.targetUser?.profileImageUrl}
+                        alt={activeInfo?.name || 'User'}
                         className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-xs border border-stone-200"
                       />
                     ) : (
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--bg-primary)] text-white flex items-center justify-center font-serif font-bold text-xs sm:text-sm shadow-xs">
-                        {activeInfo.name?.[0]?.toUpperCase() || 'U'}
+                        {activeInfo?.name?.[0]?.toUpperCase() || 'U'}
                       </div>
                     )}
                     {!isChatLocked && (
@@ -490,7 +489,7 @@ export const MessagesPage = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-1.5">
                       <h3 className="text-xs sm:text-sm font-serif font-bold text-[#1F1C1B] truncate max-w-[140px] sm:max-w-none">
-                        {activeInfo.name}
+                        {activeInfo?.name || 'Contact'}
                       </h3>
                       {!isChatLocked && (
                         <span className="hidden md:inline text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full font-medium shrink-0">
@@ -500,7 +499,7 @@ export const MessagesPage = () => {
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-stone-500 font-sans flex items-center space-x-1 truncate">
                       <span className="font-semibold text-stone-700">
-                        {activeInfo.roleLabel}
+                        {activeInfo?.roleLabel || 'Client'}
                       </span>
                       {activeConversation.targetUser?.firmName && (
                         <>

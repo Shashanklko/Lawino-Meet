@@ -125,12 +125,13 @@ services:
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
       MEETING_SERVICE_URL: http://meeting-service:8084
+      CHAT_SERVICE_URL: http://chat-service:8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawinomeet-assests}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
@@ -167,6 +168,7 @@ services:
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
       MEETING_SERVICE_URL: http://meeting-service:8084
+      CHAT_SERVICE_URL: http://chat-service:8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -203,6 +205,7 @@ services:
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
       MEETING_SERVICE_URL: http://meeting-service:8084
+      CHAT_SERVICE_URL: http://chat-service:8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -239,6 +242,7 @@ services:
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
       MEETING_SERVICE_URL: http://meeting-service:8084
+      CHAT_SERVICE_URL: http://chat-service:8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -275,12 +279,13 @@ services:
       USER_SERVICE_URL: http://user-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:8085
       MEETING_SERVICE_URL: http://meeting-service:8084
+      CHAT_SERVICE_URL: http://chat-service:8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-lawino_mq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lawino_mq_secret}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawino-meet-assets}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-lawinomeet-assests}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}

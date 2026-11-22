@@ -100,7 +100,7 @@ public class LawyerProfile {
 
     @Column(name = "working_days", length = 255)
     @Builder.Default
-    private String workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY";
+    private String workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
 
     @Column(name = "working_hours_start", length = 10)
     @Builder.Default
@@ -144,7 +144,7 @@ public class LawyerProfile {
             shortUid = com.lawinomeet.user.util.ShortUidGenerator.generate();
         }
         if (workingDays == null || workingDays.isBlank()) {
-            workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY";
+            workingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
         }
         if (workingHoursStart == null || workingHoursStart.isBlank()) {
             workingHoursStart = "09:00";

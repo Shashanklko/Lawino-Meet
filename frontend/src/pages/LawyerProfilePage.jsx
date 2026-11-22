@@ -262,8 +262,12 @@ export const LawyerProfilePage = () => {
     setError('');
 
     try {
-      const mappedType = (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') ? 'IN_PERSON' : consultationType === 'CHAT' ? 'CHAT' : 'ONLINE';
-      const fee = selectedService?.price || (consultationType === 'CHAT' ? 499 : (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE') ? 2000 : 1500);
+      const mappedType = (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE' || consultationType === 'CHAMBER')
+        ? 'IN_PERSON'
+        : consultationType === 'CHAT'
+        ? 'CHAT'
+        : 'ONLINE';
+      const fee = selectedService?.price || (consultationType === 'CHAT' ? 499 : (consultationType === 'IN_PERSON' || consultationType === 'OFFLINE' || consultationType === 'CHAMBER') ? 2000 : 1500);
 
       let startTime = null;
       let endTime = null;
@@ -502,7 +506,10 @@ export const LawyerProfilePage = () => {
                   <div
                     key={srv.id}
                     onClick={() => {
-                      setConsultationType(srv.code);
+                      const modeCode = (srv.code === 'CHAMBER' || srv.code === 'IN_PERSON' || srv.code === 'OFFLINE')
+                        ? 'OFFLINE'
+                        : (srv.code === 'CHAT' ? 'CHAT' : 'ONLINE');
+                      setConsultationType(modeCode);
                       setSelectedService({
                         id: srv.id,
                         publicId: srv.id,

@@ -950,7 +950,7 @@ public class AppointmentService {
         ZonedDateTime zdtEnd = end.atZone(zone);
 
         // 1. Working days validation
-        String workingDays = (String) lawyerData.getOrDefault("workingDays", "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY");
+        String workingDays = (String) lawyerData.getOrDefault("workingDays", "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY");
         if (workingDays != null && !workingDays.isBlank()) {
             String currentDay = zdtStart.getDayOfWeek().name();
             if (!workingDays.toUpperCase().contains(currentDay)) {

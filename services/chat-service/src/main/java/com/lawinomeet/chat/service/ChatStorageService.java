@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
@@ -22,7 +24,7 @@ import java.util.UUID;
 @Service
 public class ChatStorageService {
 
-    @Value("${app.s3.bucket-name:lawino-meet-assets}")
+    @Value("${app.s3.bucket-name:lawinomeet-assests}")
     private String bucketName;
 
     @Value("${app.s3.region:us-east-1}")
@@ -49,8 +51,8 @@ public class ChatStorageService {
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
         long size = file.getSize();
 
-        String url;
-        if (hasAwsCredentials()) {
+        String url = null;
+        if (isS3Configured()) {
             try {
                 url = uploadToS3(file, s3Key, contentType);
             } catch (Exception e) {
@@ -64,16 +66,22 @@ public class ChatStorageService {
         return new StoredAttachment(url, cleanFilename, contentType, size);
     }
 
-    private boolean hasAwsCredentials() {
-        return accessKey != null && !accessKey.trim().isEmpty() &&
-               secretKey != null && !secretKey.trim().isEmpty();
+    private boolean isS3Configured() {
+        return bucketName != null && !bucketName.trim().isEmpty();
+    }
+
+    private AwsCredentialsProvider resolveCredentialsProvider() {
+        if (accessKey != null && !accessKey.trim().isEmpty() &&
+            secretKey != null && !secretKey.trim().isEmpty()) {
+            return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+        }
+        return DefaultCredentialsProvider.create();
     }
 
     private String uploadToS3(MultipartFile file, String key, String contentType) throws IOException {
-        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
         try (S3Client s3Client = S3Client.builder()
-                .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .region(Region.of(region != null && !region.isBlank() ? region : "us-east-1"))
+                .credentialsProvider(resolveCredentialsProvider())
                 .build()) {
 
             PutObjectRequest putRequest = PutObjectRequest.builder()

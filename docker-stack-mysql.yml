@@ -1,0 +1,476 @@
+version: '3.8'
+
+# =========================================================================
+# LawinoMeet - AWS Docker Swarm Cluster Stack
+# MODE A: Self-Hosted Docker MySQL Container Mode
+#
+# In this mode, an authoritative single-instance MySQL 8 container is deployed
+# directly on the Swarm manager node with persistent storage.
+# Port 3306 is internal to the overlay network only (not publicly exposed).
+#
+# Deploy Command:
+#   docker stack deploy --with-registry-auth -c docker-stack-mysql.yml lawino
+# =========================================================================
+
+networks:
+  lawino-overlay:
+    driver: overlay
+    attachable: true
+
+volumes:
+  lawino_mysql_data:
+    driver: local
+  lawino_uploads_data:
+    driver: local
+  lawino_rabbitmq_data:
+    driver: local
+
+services:
+  # =========================================================================
+  # 0. Single Authoritative MySQL 8 Multi-Database Engine (Internal Only)
+  # =========================================================================
+  mysql:
+    image: mysql:8.3
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+    volumes:
+      - lawino_mysql_data:/var/lib/mysql
+    networks:
+      - lawino-overlay
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -u root -p$${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 1024M
+
+  # =========================================================================
+  # 1. Edge Gateway Proxy (Nginx)
+  # =========================================================================
+  gateway:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/gateway:${IMAGE_TAG:-latest}
+    ports:
+      - target: 80
+        published: 80
+        mode: ingress
+      - target: 3001
+        published: 3001
+        mode: ingress
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # 2. Frontend Consumer & Advocate Web Portal
+  # =========================================================================
+  frontend:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/frontend:${IMAGE_TAG:-latest}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # 3. Admin & Firm Management Web Portal
+  # =========================================================================
+  admin-frontend:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/admin-frontend:${IMAGE_TAG:-latest}
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # 4. Auth Service (Port 8081)
+  # =========================================================================
+  auth-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/auth-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - AUTH_SERVICE_PORT=8081
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - AUTH_DB_NAME=${AUTH_DB_NAME:-auth_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-43200000}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 5. User & Profile Service (Port 8082)
+  # =========================================================================
+  user-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/user-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - USER_SERVICE_PORT=8082
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - USER_DB_NAME=${USER_DB_NAME:-user_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - USER_SERVICE_URL=http://user-service:8082
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - MEETING_SERVICE_URL=http://meeting-service:8084
+      - CHAT_SERVICE_URL=http://chat-service:8086
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-lawinomeet-assests}
+      - AWS_S3_BUCKET_NAME=${S3_BUCKET_NAME:-lawinomeet-assests}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8082/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    volumes:
+      - lawino_uploads_data:/app/uploads
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 6. Appointment & Slot Booking Service (Port 8083)
+  # =========================================================================
+  appointment-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/appointment-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - APPOINTMENT_SERVICE_PORT=8083
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - APPOINTMENT_DB_NAME=${APPOINTMENT_DB_NAME:-appointment_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - USER_SERVICE_URL=http://user-service:8082
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - MEETING_SERVICE_URL=http://meeting-service:8084
+      - CHAT_SERVICE_URL=http://chat-service:8086
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8083/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 7. Video Meeting & WebRTC Signaling Service (Port 8084)
+  # =========================================================================
+  meeting-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/meeting-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - MEETING_SERVICE_PORT=8084
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MEETING_DB_NAME=${MEETING_DB_NAME:-meeting_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - USER_SERVICE_URL=http://user-service:8082
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - MEETING_SERVICE_URL=http://meeting-service:8084
+      - STUN_SERVER_URL=${STUN_SERVER_URL:-stun:stun.l.google.com:19302}
+      - TURN_SERVER_URL=${TURN_SERVER_URL:-}
+      - TURN_USERNAME=${TURN_USERNAME:-}
+      - TURN_CREDENTIAL=${TURN_CREDENTIAL:-}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8084/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 8. Notification & Audit Log Service (Port 8085)
+  # =========================================================================
+  notification-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/notification-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NOTIFICATION_SERVICE_PORT=8085
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - NOTIFICATION_DB_NAME=${NOTIFICATION_DB_NAME:-notification_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8085/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 9. Real-Time Chat & Document Sharing Service (Port 8086)
+  # =========================================================================
+  chat-service:
+    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/chat-service:${IMAGE_TAG:-latest}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - CHAT_SERVICE_PORT=8086
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - CHAT_DB_NAME=${CHAT_DB_NAME:-chat_db}
+      - MYSQL_USER=${MYSQL_USER:-lawino_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lawino_password}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-lawino-meet}
+      - USER_SERVICE_URL=http://user-service:8082
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - MEETING_SERVICE_URL=http://meeting-service:8084
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-lawino_mq}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-lawinomeet-assests}
+      - AWS_S3_BUCKET_NAME=${S3_BUCKET_NAME:-lawinomeet-assests}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx400m -XX:+UseG1GC}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8086/actuator/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    volumes:
+      - lawino_uploads_data:/app/uploads
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+
+  # =========================================================================
+  # 10. Distributed RabbitMQ Message Broker (Internal Only)
+  # =========================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-lawino_mq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-lawino_mq_secret}
+    volumes:
+      - lawino_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # =========================================================================
+  # 11. Eureka Service Discovery Registry (Internal Only)
+  # =========================================================================
+  eureka-server:
+    image: steeltoeoss/eureka-server:latest
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+    networks:
+      - lawino-overlay
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M

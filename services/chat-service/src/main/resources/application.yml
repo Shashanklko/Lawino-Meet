@@ -39,7 +39,7 @@ app:
     secret: ${JWT_SECRET:super-secret-jwt-key-change-this-in-production-min-256-bits-length}
     issuer: ${JWT_ISSUER:lawino-meet}
   s3:
-    bucket-name: ${S3_BUCKET_NAME:lawino-meet-assets}
+    bucket-name: ${S3_BUCKET_NAME:lawinomeet-assests}
     region: ${AWS_REGION:us-east-1}
     access-key: ${AWS_ACCESS_KEY_ID:}
     secret-key: ${AWS_SECRET_ACCESS_KEY:}

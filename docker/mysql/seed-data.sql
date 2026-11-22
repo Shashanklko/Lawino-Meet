@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
     `messaging_enabled` BOOLEAN DEFAULT 1,
     `verification_status` VARCHAR(30) DEFAULT 'VERIFIED',
     `public_profile_status` VARCHAR(30) DEFAULT 'PUBLISHED',
-    `working_days` VARCHAR(255) DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY',
+    `working_days` VARCHAR(255) DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY',
     `working_hours_start` VARCHAR(10) DEFAULT '09:00',
     `working_hours_end` VARCHAR(10) DEFAULT '18:00',
     `break_start_time` VARCHAR(10) DEFAULT '13:00',
