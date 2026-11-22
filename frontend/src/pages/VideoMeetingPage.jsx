@@ -61,7 +61,16 @@ export const VideoMeetingPage = () => {
   const stompClientRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
   const iceServersRef = useRef([
-    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
+    {
+      urls: [
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+        'stun:stun3.l.google.com:19302',
+        'stun:stun4.l.google.com:19302',
+        'stun:global.stun.twilio.com:3478'
+      ]
+    }
   ]);
   const timerRef = useRef(null);
 
@@ -206,12 +215,25 @@ export const VideoMeetingPage = () => {
       }
     };
 
+    let disconnectTimer = null;
+
     // Connection state changes
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       if (state === 'connected') {
+        if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
         setPeerConnected(true);
-      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+      } else if (state === 'disconnected') {
+        // Transient state in WebRTC across NATs - grace period before declaring disconnected
+        if (!disconnectTimer) {
+          disconnectTimer = setTimeout(() => {
+            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+              setPeerConnected(false);
+            }
+          }, 4000);
+        }
+      } else if (state === 'failed' || state === 'closed') {
+        if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
         setPeerConnected(false);
       }
     };
@@ -219,8 +241,18 @@ export const VideoMeetingPage = () => {
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       if (state === 'connected' || state === 'completed') {
+        if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
         setPeerConnected(true);
-      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+      } else if (state === 'disconnected') {
+        if (!disconnectTimer) {
+          disconnectTimer = setTimeout(() => {
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+              setPeerConnected(false);
+            }
+          }, 4000);
+        }
+      } else if (state === 'failed' || state === 'closed') {
+        if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
         setPeerConnected(false);
       }
     };
