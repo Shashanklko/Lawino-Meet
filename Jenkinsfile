@@ -167,6 +167,7 @@ pipeline {
                                 ssh -o StrictHostKeyChecking=no ubuntu@${SWARM_MANAGER_IP} "
                                     set -a
                                     [ -f ~/.env.aws ] && source ~/.env.aws
+                                    [ -f ~/Lawino-Meet/.env.aws ] && source ~/Lawino-Meet/.env.aws
                                     set +a
                                     export DOCKER_HUB_USERNAME=${DOCKER_USER}
                                     export IMAGE_TAG=${env.IMAGE_TAG}
@@ -197,7 +198,7 @@ pipeline {
                             echo 'Smoke test failed: Frontend portal did not respond with 200 OK.'
                             exit 1
                         }
-                        curl -s -f -o /dev/null http://${SWARM_MANAGER_IP}/api/users/lawyers || {
+                        curl -s -f -o /dev/null http://${SWARM_MANAGER_IP}/api/lawyers || {
                             echo 'Smoke test warning: Backend API probe failed.'
                             exit 1
                         }
