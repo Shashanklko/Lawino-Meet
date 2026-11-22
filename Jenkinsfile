@@ -96,6 +96,9 @@ pipeline {
                     sh '''
                         set -e
 
+                        # Clean up dangling images and old builder cache to prevent disk exhaustion
+                        docker system prune -af --filter "until=1h" || true
+
                         # Six backend microservices
                         docker build -t "$DOCKER_USER/auth-service:$IMAGE_TAG" \
                           -f services/auth-service/Dockerfile services/auth-service
@@ -153,6 +156,7 @@ pipeline {
                           gateway
                         do
                             docker push "$DOCKER_USER/$service:$IMAGE_TAG"
+                            docker rmi "$DOCKER_USER/$service:$IMAGE_TAG" || true
                         done
 
                         docker logout
