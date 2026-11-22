@@ -58,11 +58,22 @@ pipeline {
 
                     sh """
                         set -e
+                        # Purge corrupted/partial Maven downloads and .lastUpdated lock files in Jenkins agent
+                        echo "Cleaning corrupt Maven artifacts in ~/.m2/repository..."
+                        find ~/.m2/repository -name "*.lastUpdated" -delete 2>/dev/null || true
+                        find ~/.m2/repository -name "_remote.repositories" -delete 2>/dev/null || true
+                        
+                        # If spring-boot core jar is missing or corrupted, remove springframework dir for clean redownload
+                        if [ ! -s ~/.m2/repository/org/springframework/boot/spring-boot/3.3.5/spring-boot-3.3.5.jar ]; then
+                            echo "Spring Boot jar missing or empty in ~/.m2, purging cached org/springframework..."
+                            rm -rf ~/.m2/repository/org/springframework ~/.m2/repository/org/projectlombok || true
+                        fi
+
                         for dir in services/auth-service services/user-service services/appointment-service services/meeting-service services/notification-service services/chat-service; do
                             echo "========================================="
                             echo "Compiling and packaging \${dir} ..."
                             echo "========================================="
-                            (cd "\${dir}" && mvn -B clean package ${skip})
+                            (cd "\${dir}" && mvn -B -U clean package ${skip})
                         done
                     """
                 }
