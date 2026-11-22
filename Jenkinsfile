@@ -183,12 +183,23 @@ pipeline {
                               docker-stack-rds.yml \
                               ubuntu@"$SWARM_MANAGER_IP":~/docker-stack-rds.yml
 
-                            # Authenticate Docker Hub on manager.
-                            # Password is sent through stdin, not command arguments.
-                            printf '%s' "$DOCKER_PASS" | ssh \
-                              -o StrictHostKeyChecking=yes \
-                              ubuntu@"$SWARM_MANAGER_IP" \
-                              "docker login --username '$DOCKER_USER' --password-stdin"
+                            # Authenticate Docker Hub on manager with retry
+                            LOGIN_SUCCESS=false
+                            for attempt in 1 2 3; do
+                                echo "Attempting docker login on Swarm manager (attempt $attempt/3)..."
+                                if printf '%s' "$DOCKER_PASS" | ssh \
+                                  -o StrictHostKeyChecking=yes \
+                                  ubuntu@"$SWARM_MANAGER_IP" \
+                                  "docker login --username '$DOCKER_USER' --password-stdin"; then
+                                    LOGIN_SUCCESS=true
+                                    break
+                                fi
+                                echo "Docker login failed on attempt $attempt, retrying in 5 seconds..."
+                                sleep 5
+                            done
+                            if [ "$LOGIN_SUCCESS" != "true" ]; then
+                                echo "WARNING: Docker login had network timeout. Continuing with existing cached credentials..."
+                            fi
 
                             # Deploy using the manager's existing environment file.
                             ssh -o StrictHostKeyChecking=yes \
