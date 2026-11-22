@@ -234,7 +234,7 @@ pipeline {
                               lawino
 
                             echo "RDS stack deployment command completed."
-                            REMOTE
+REMOTE
                         '''
                     }
                 }
