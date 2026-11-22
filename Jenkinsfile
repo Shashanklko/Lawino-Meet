@@ -14,7 +14,7 @@ pipeline {
         DOCKER_HUB_CREDS_ID = 'dockerhub-credentials'
         SWARM_SSH_KEY_ID = 'swarm-manager-ssh'
         SWARM_MANAGER_IP_ID = 'swarm-manager-ip'
-        MAVEN_OPTS = '-Xmx512m -XX:MaxMetaspaceSize=256m'
+        MAVEN_OPTS = '-Xmx1024m -XX:MaxMetaspaceSize=512m'
     }
 
     options {
@@ -58,7 +58,7 @@ pipeline {
 
                     sh """
                         set -e
-                        mvn -B -T 1 clean package ${skip}
+                        mvn -B -U clean package ${skip}
                     """
                 }
             }
