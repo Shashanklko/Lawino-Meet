@@ -209,9 +209,19 @@ pipeline {
                                 exit 1
                             fi
 
-                            set -a
-                            . "$ENV_FILE"
-                            set +a
+                            # Safely load variables from ENV_FILE without executing broken lines
+                            while IFS= read -r line || [ -n "$line" ]; do
+                                line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+                                case "$line" in
+                                    \#*|"") continue ;;
+                                esac
+                                if echo "$line" | grep -q '^[A-Za-z_][A-Za-z0-9_]*='; then
+                                    key=$(echo "$line" | cut -d= -f1)
+                                    val=$(echo "$line" | cut -d= -f2-)
+                                    val=$(echo "$val" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+                                    export "$key"="$val"
+                                fi
+                            done < "$ENV_FILE"
 
                             : "${MYSQL_HOST:?MYSQL_HOST is missing}"
                             : "${MYSQL_USER:?MYSQL_USER is missing}"
