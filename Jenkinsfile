@@ -213,7 +213,7 @@ pipeline {
                             while IFS= read -r line || [ -n "$line" ]; do
                                 line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
                                 case "$line" in
-                                    \#*|"") continue ;;
+                                    ""|"#"*) continue ;;
                                 esac
                                 if echo "$line" | grep -q '^[A-Za-z_][A-Za-z0-9_]*='; then
                                     key=$(echo "$line" | cut -d= -f1)
