@@ -253,6 +253,15 @@ pipeline {
                               -c "$STACK_FILE" \
                               lawino
 
+                            echo "Force updating Swarm services to guarantee immediate pull of tag $IMAGE_TAG..."
+                            for svc in admin-frontend frontend appointment-service chat-service gateway; do
+                                docker service update \
+                                  --image "${DOCKER_HUB_USERNAME}/$svc:${IMAGE_TAG}" \
+                                  --force \
+                                  --with-registry-auth \
+                                  "lawino_$svc" || true
+                            done
+
                             echo "RDS stack deployment command completed."
 REMOTE
                         '''
