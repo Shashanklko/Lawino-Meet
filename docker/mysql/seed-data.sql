@@ -194,9 +194,9 @@ CREATE TABLE IF NOT EXISTS `firm_members` (
     UNIQUE KEY `uk_firm_member` (`firm_id`, `lawyer_user_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `lawyer_username`, `role_in_firm`, `membership_status`)
-VALUES (1, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'MANAGING_PARTNER', 'ACCEPTED')
-ON DUPLICATE KEY UPDATE `membership_status` = VALUES(`membership_status`);
+INSERT INTO `firm_members` (`id`, `firm_id`, `lawyer_user_public_id`, `lawyer_username`, `role_in_firm`, `membership_status`, `invited_at`, `accepted_at`, `created_at`)
+VALUES (1, 1, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'MANAGING_PARTNER', 'ACCEPTED', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE `membership_status` = VALUES(`membership_status`), `invited_at` = NOW(), `accepted_at` = NOW(), `created_at` = NOW();
 
 -- Legal Consultation Services
 CREATE TABLE IF NOT EXISTS `legal_services` (

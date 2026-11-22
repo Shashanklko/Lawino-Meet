@@ -171,13 +171,16 @@ public class LawyerService {
 
     private LawyerProfileDto enrichWithFirmInfo(LawyerProfile profile) {
         LawyerProfileDto dto = LawyerProfileDto.fromEntity(profile);
-        Optional<FirmMember> activeMembership = firmMemberRepository
-                .findByLawyerUserPublicIdAndMembershipStatus(profile.getUserPublicId(), MembershipStatus.ACCEPTED);
+        List<FirmMember> memberships = firmMemberRepository
+                .findAllByLawyerUserPublicId(profile.getUserPublicId());
 
-        activeMembership.ifPresent(m -> {
-            dto.setAssociatedFirmName(m.getFirm().getFirmName());
-            dto.setAssociatedFirmSlug(m.getFirm().getSlug());
-        });
+        memberships.stream()
+                .filter(m -> m.getMembershipStatus() == MembershipStatus.ACCEPTED)
+                .findFirst()
+                .ifPresent(m -> {
+                    dto.setAssociatedFirmName(m.getFirm().getFirmName());
+                    dto.setAssociatedFirmSlug(m.getFirm().getSlug());
+                });
 
         return dto;
     }
