@@ -1,15 +1,14 @@
 version: '3.8'
 
 # =========================================================================
-# LawinoMeet - AWS Production Docker Swarm Stack (Default: AWS RDS Mode)
+# LawinoMeet - AWS Docker Swarm Cluster Stack
+# MODE B: AWS RDS MySQL Database Mode (Production Recommended)
 #
-# To deploy with AWS RDS MySQL (Recommended for Production):
+# In this mode, no MySQL container is deployed in Swarm.
+# All 6 Spring Boot microservices connect directly to AWS RDS MySQL.
+#
+# Deploy Command:
 #   docker stack deploy --with-registry-auth -c docker-stack-rds.yml lawino
-#
-# To deploy with Self-Hosted Container MySQL:
-#   docker stack deploy --with-registry-auth -c docker-stack-mysql.yml lawino
-#
-# This file serves as the default production stack (Mode B: AWS RDS MySQL).
 # =========================================================================
 
 networks:
@@ -47,7 +46,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -69,7 +67,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -91,7 +88,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -137,7 +133,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -192,7 +187,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -240,7 +234,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -288,7 +281,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -329,7 +321,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -383,7 +374,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -410,7 +400,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -432,7 +421,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M

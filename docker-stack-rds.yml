@@ -46,7 +46,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -68,7 +67,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -90,7 +88,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       resources:
         limits:
           memory: 128M
@@ -136,7 +133,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -191,7 +187,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -239,7 +234,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -287,7 +281,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -328,7 +321,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -382,7 +374,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -409,7 +400,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
@@ -431,7 +421,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 10s
-        max_attempts: 5
       resources:
         limits:
           memory: 512M
