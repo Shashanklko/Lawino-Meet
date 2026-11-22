@@ -27,7 +27,7 @@ services:
   # 1. Edge Gateway Proxy (Nginx)
   # =========================================================================
   gateway:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/gateway:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/gateway:${IMAGE_TAG:-latest}
     ports:
       - target: 80
         published: 80
@@ -57,7 +57,7 @@ services:
   # 2. Frontend Consumer & Advocate Web Portal
   # =========================================================================
   frontend:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/frontend:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/frontend:${IMAGE_TAG:-latest}
     networks:
       - lawino-overlay
     deploy:
@@ -79,7 +79,7 @@ services:
   # 3. Admin & Firm Management Web Portal
   # =========================================================================
   admin-frontend:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/admin-frontend:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/admin-frontend:${IMAGE_TAG:-latest}
     networks:
       - lawino-overlay
     deploy:
@@ -101,7 +101,7 @@ services:
   # 4. Auth Service (Port 8081)
   # =========================================================================
   auth-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/auth-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/auth-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - AUTH_SERVICE_PORT=8081
@@ -147,7 +147,7 @@ services:
   # 5. User & Profile Service (Port 8082)
   # =========================================================================
   user-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/user-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/user-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - USER_SERVICE_PORT=8082
@@ -202,7 +202,7 @@ services:
   # 6. Appointment & Slot Booking Service (Port 8083)
   # =========================================================================
   appointment-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/appointment-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/appointment-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - APPOINTMENT_SERVICE_PORT=8083
@@ -250,7 +250,7 @@ services:
   # 7. Video Meeting & WebRTC Signaling Service (Port 8084)
   # =========================================================================
   meeting-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/meeting-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/meeting-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - MEETING_SERVICE_PORT=8084
@@ -298,7 +298,7 @@ services:
   # 8. Notification & Audit Log Service (Port 8085)
   # =========================================================================
   notification-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/notification-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/notification-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - NOTIFICATION_SERVICE_PORT=8085
@@ -339,7 +339,7 @@ services:
   # 9. Real-Time Chat & Document Sharing Service (Port 8086)
   # =========================================================================
   chat-service:
-    image: ${DOCKER_HUB_USERNAME:-lawinomeet}/chat-service:${IMAGE_TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-shashanklko}/chat-service:${IMAGE_TAG:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - CHAT_SERVICE_PORT=8086
