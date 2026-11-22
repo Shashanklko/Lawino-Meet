@@ -50,22 +50,21 @@ USE `user_db`;
 -- Legal Specializations Reference Table
 CREATE TABLE IF NOT EXISTS `legal_specializations` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(50) NOT NULL UNIQUE,
-    `name` VARCHAR(100) NOT NULL,
-    `description` VARCHAR(255)
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    `description` VARCHAR(500)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `legal_specializations` (`id`, `code`, `name`, `description`)
+INSERT INTO `legal_specializations` (`id`, `name`, `description`)
 VALUES
-(1, 'CRIMINAL', 'Criminal Defense & Anticipatory Bail', 'FIR quashing, regular & anticipatory bail, trial defense'),
-(2, 'CORPORATE', 'Corporate & Commercial Law', 'M&A, contract compliance, shareholder disputes, company law'),
-(3, 'FAMILY', 'Family & Matrimonial Law', 'Divorce, custody, maintenance, domestic matters'),
-(4, 'IPR', 'Intellectual Property (IPR)', 'Trademarks, patents, copyright enforcement'),
-(5, 'CIVIL', 'Civil Litigation & Property Disputes', 'Title suits, partition, injunctions, consumer forums'),
-(6, 'CYBER', 'Cyber Crime & IT Law', 'Data theft, online financial fraud, privacy breaches'),
-(7, 'TAXATION', 'Taxation & GST Advisory', 'Direct and indirect tax appeals, GST tribunal matters'),
-(8, 'CONSTITUTIONAL', 'Constitutional & Writ Petitions', 'Article 226/32 writs before High Courts and Supreme Court')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+(1, 'Criminal Defense & Anticipatory Bail', 'FIR quashing, regular & anticipatory bail, trial defense'),
+(2, 'Corporate & Commercial Law', 'M&A, contract compliance, shareholder disputes, company law'),
+(3, 'Family & Matrimonial Law', 'Divorce, custody, maintenance, domestic matters'),
+(4, 'Intellectual Property (IPR)', 'Trademarks, patents, copyright enforcement'),
+(5, 'Civil Litigation & Property Disputes', 'Title suits, partition, injunctions, consumer forums'),
+(6, 'Cyber Crime & IT Law', 'Data theft, online financial fraud, privacy breaches'),
+(7, 'Taxation & GST Advisory', 'Direct and indirect tax appeals, GST tribunal matters'),
+(8, 'Constitutional & Writ Petitions', 'Article 226/32 writs before High Courts and Supreme Court')
+ON DUPLICATE KEY UPDATE `description` = VALUES(`description`);
 
 -- Client Profiles
 CREATE TABLE IF NOT EXISTS `client_profiles` (
