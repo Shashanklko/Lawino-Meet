@@ -54,11 +54,16 @@ pipeline {
         stage('Build Backend') {
             steps {
                 script {
-                    def skip = params.SKIP_TESTS ? '-DskipTests' : ''
+                    def skip = params.SKIP_TESTS ? '-DskipTests=true' : ''
 
                     sh """
                         set -e
-                        mvn -B -U clean package ${skip}
+                        for dir in services/auth-service services/user-service services/appointment-service services/meeting-service services/notification-service services/chat-service; do
+                            echo "========================================="
+                            echo "Compiling and packaging \${dir} ..."
+                            echo "========================================="
+                            (cd "\${dir}" && mvn -B clean package ${skip})
+                        done
                     """
                 }
             }
