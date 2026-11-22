@@ -32,15 +32,17 @@ CREATE TABLE IF NOT EXISTS `users` (
     INDEX `idx_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `users` (`id`, `public_id`, `short_uid`, `username`, `email`, `password_hash`, `role`, `account_status`, `email_verified`)
+INSERT INTO `users` (`id`, `public_id`, `short_uid`, `username`, `email`, `password_hash`, `role`, `account_status`, `email_verified`, `created_at`, `updated_at`)
 VALUES
-(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'rohit.verma@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'CLIENT', 'ACTIVE', 1),
-(2, '55555555-5555-5555-5555-555555555555', 'ADM1001', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1),
-(3, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'raghavan.nambiar@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1),
-(4, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'meera.deshmukh@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1)
+(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'rohit.verma@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'CLIENT', 'ACTIVE', 1, NOW(), NOW()),
+(2, '55555555-5555-5555-5555-555555555555', 'ADM1001', 'platform_admin', 'admin@lawinomeet.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'PLATFORM_ADMIN', 'ACTIVE', 1, NOW(), NOW()),
+(3, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'raghavan.nambiar@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1, NOW(), NOW()),
+(4, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'meera.deshmukh@example.com', '$2a$10$a3kqTBEd1eBStYSQtTdKFO6SjuwYsQpfheRv.VVtsdXqphLMGQ.UK', 'LAWYER', 'ACTIVE', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE 
     `password_hash` = VALUES(`password_hash`),
-    `short_uid` = VALUES(`short_uid`);
+    `short_uid` = VALUES(`short_uid`),
+    `created_at` = NOW(),
+    `updated_at` = NOW();
 
 -- =========================================================================
 -- 2. USER & PROFILE SERVICE SCHEMA & SEED (user_db)
