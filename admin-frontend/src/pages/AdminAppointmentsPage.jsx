@@ -27,7 +27,8 @@ export const AdminAppointmentsPage = () => {
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [cancelModal, setCancelModal] = useState(null);
-  const [cancelReason, setCancelReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('Cancelled by Platform Administrator');
+  const [isCancelling, setIsCancelling] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   const loadAppointments = async () => {
@@ -58,19 +59,37 @@ export const AdminAppointmentsPage = () => {
   });
 
   const handleExecuteCancellation = async (e) => {
-    e.preventDefault();
-    if (!cancelModal || !cancelReason.trim()) return;
+    if (e) e.preventDefault();
+    if (!cancelModal) return;
 
-    await adminApi.cancelAppointment(
-      cancelModal.publicId,
-      cancelReason.trim()
-    );
+    const reason = cancelReason.trim() || 'Cancelled by Platform Administrator';
+    const targetId = cancelModal.publicId;
+    const targetAptId = cancelModal.appointmentId;
 
-    setToastMessage(`Appointment ${cancelModal.appointmentId} has been successfully cancelled.`);
-    setCancelModal(null);
-    setCancelReason('');
-    loadAppointments();
-    setTimeout(() => setToastMessage(''), 3500);
+    setIsCancelling(true);
+    try {
+      // Immediate optimistic update on the screen
+      setAppointments((prev) =>
+        prev.map((item) =>
+          item.publicId === targetId
+            ? { ...item, appointmentStatus: 'CANCELLED', status: 'CANCELLED', paymentStatus: 'REFUND_ELIGIBLE' }
+            : item
+        )
+      );
+      setToastMessage(`Appointment ${targetAptId} cancelled successfully.`);
+      setCancelModal(null);
+      setCancelReason('Cancelled by Platform Administrator');
+
+      await adminApi.cancelAppointment(targetId, reason);
+      await loadAppointments();
+    } catch (err) {
+      console.error('Cancellation error:', err);
+      setToastMessage('Failed to cancel appointment: ' + (err.message || 'Server error'));
+      await loadAppointments();
+    } finally {
+      setIsCancelling(false);
+      setTimeout(() => setToastMessage(''), 4000);
+    }
   };
 
   return (
@@ -237,16 +256,25 @@ export const AdminAppointmentsPage = () => {
                         Details
                       </button>
 
-                      {apt.appointmentStatus !== 'CANCELLED' ? (
+                      {apt.appointmentStatus === 'COMPLETED' ? (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800 text-emerald-400 font-semibold inline-block">
+                          Completed
+                        </span>
+                      ) : apt.appointmentStatus === 'CANCELLED' ? (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-stone-500 font-medium inline-block">
+                          Cancelled
+                        </span>
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => setCancelModal(apt)}
+                          onClick={() => {
+                            setCancelModal(apt);
+                            setCancelReason('Cancelled by Platform Administrator');
+                          }}
                           className="px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-[11px] font-mono border border-rose-800 transition cursor-pointer"
                         >
                           Cancel Meeting
                         </button>
-                      ) : (
-                        <span className="text-[10px] font-mono text-stone-500">Cancelled</span>
                       )}
                     </td>
                   </tr>
@@ -312,13 +340,14 @@ export const AdminAppointmentsPage = () => {
             </div>
 
             <div className="pt-2 border-t border-stone-800 flex justify-end space-x-2">
-              {selectedAppointment.appointmentStatus !== 'CANCELLED' && (
+              {!['COMPLETED', 'CANCELLED'].includes(selectedAppointment.appointmentStatus) && (
                 <button
                   type="button"
                   onClick={() => {
                     const apt = selectedAppointment;
                     setSelectedAppointment(null);
                     setCancelModal(apt);
+                    setCancelReason('Cancelled by Platform Administrator');
                   }}
                   className="px-3.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 font-medium"
                 >
@@ -373,10 +402,10 @@ export const AdminAppointmentsPage = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={!cancelReason.trim()}
-                  className="px-4 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs"
+                  disabled={isCancelling}
+                  className="px-4 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs disabled:opacity-50"
                 >
-                  Confirm Cancellation
+                  {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
                 </button>
               </div>
             </form>

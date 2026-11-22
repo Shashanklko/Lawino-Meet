@@ -49,8 +49,8 @@ export const adminApi = {
           pendingAdvocateVerification: pendingVerifications,
           pendingFirmVerification: 0,
           pendingWithdrawals: 0,
-          totalPlatformCommission: Math.round(totalAppts * 150),
-          grossConsultationVolume: Math.round(totalAppts * 1500),
+          totalPlatformCommission: 0,
+          grossConsultationVolume: 0,
           systemHealth: 'OPERATIONAL_ENCRYPTED',
         },
       };
@@ -90,9 +90,9 @@ export const adminApi = {
         username: c.username || '',
         email: c.email || '',
         phone: c.phone || '',
-        city: c.city || 'Delhi',
-        verificationLevel: 'TIER 1 (KYC VERIFIED)',
-        status: 'ACTIVE',
+        city: c.city || '',
+        verificationLevel: c.kycVerified ? 'KYC VERIFIED' : 'STANDARD',
+        status: c.status || 'ACTIVE',
         registeredDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '',
         totalAppointments: c.totalAppointments || 0,
         totalBookings: c.totalBookings || 0,
@@ -143,24 +143,24 @@ export const adminApi = {
       const mapped = list.map((a) => ({
         publicId: a.userPublicId || a.publicId,
         userPublicId: a.userPublicId,
-        fullName: a.fullName || 'Advocate',
-        avatar: a.profileImageUrl || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=200',
-        email: a.emailPublic || `${a.username || 'advocate'}@lawino.in`,
-        barCouncilNumber: a.qualification || 'D/1842/2012',
-        barCouncilState: a.state || 'Delhi',
-        enrollmentYear: a.experienceYears ? 2026 - a.experienceYears : 2014,
-        city: a.city || 'India',
-        experienceYears: a.experienceYears || 10,
+        fullName: a.fullName || a.username || 'Advocate',
+        avatar: a.profileImageUrl || '',
+        email: a.emailPublic || a.email || (a.username ? `${a.username}@lawino.in` : ''),
+        barCouncilNumber: a.qualification || a.barCouncilNumber || 'Not specified',
+        barCouncilState: a.state || '',
+        enrollmentYear: a.experienceYears ? 2026 - a.experienceYears : '',
+        city: a.city || '',
+        experienceYears: a.experienceYears || 0,
         specialization: (a.specializations && a.specializations.length > 0)
           ? a.specializations.map((s) => s.specializationName || s).join(', ')
-          : (a.biography ? `${a.biography.slice(0, 45)}...` : 'Criminal & Commercial Litigation'),
+          : (a.biography ? `${a.biography.slice(0, 45)}...` : 'General Practice'),
         practiceArrangement: a.associatedFirmName ? 'FIRM' : 'INDEPENDENT',
         firmAffiliation: a.associatedFirmName || null,
-        firmRole: a.associatedFirmName ? 'Senior Partner' : 'Independent Practitioner',
-        verificationStatus: a.verificationStatus || 'VERIFIED',
+        firmRole: a.associatedFirmName ? 'Partner' : 'Independent Practitioner',
+        verificationStatus: a.verificationStatus || 'PENDING',
         accountStatus: a.publicProfileStatus === 'PUBLISHED' ? 'ACTIVE' : 'SUSPENDED',
-        hourlyRate: Number(a.services?.[0]?.consultationFee) || 1500,
-        consultationsCount: 120,
+        hourlyRate: Number(a.services?.[0]?.consultationFee || a.hourlyRate || 0),
+        consultationsCount: a.consultationsCount || 0,
       }));
       return { success: true, data: mapped };
     } catch (err) {
@@ -208,16 +208,16 @@ export const adminApi = {
         publicId: f.publicId,
         firmName: f.firmName,
         name: f.firmName,
-        registrationNumber: `LLP-${f.publicId?.slice(0, 8).toUpperCase() || 'DEL-2018'}`,
-        firmAdminName: 'Managing Partner',
+        registrationNumber: f.registrationNumber || (f.publicId ? `LLP-${f.publicId.slice(0, 8).toUpperCase()}` : ''),
+        firmAdminName: f.managingPartner || 'Managing Partner',
         slug: f.slug,
-        city: f.city || 'Mumbai',
-        state: f.state || 'Maharashtra',
-        contactEmail: f.contactEmail || 'admin@lexveritas.com',
-        contactPhone: f.contactPhone || '+91 98111 22334',
+        city: f.city || '',
+        state: f.state || '',
+        contactEmail: f.contactEmail || '',
+        contactPhone: f.contactPhone || '',
         verificationStatus: f.verificationStatus || 'VERIFIED',
-        totalPartners: (f.members && f.members.length) || 5,
-        totalAppointments: 12,
+        totalPartners: (f.members && f.members.length) || 0,
+        totalAppointments: f.totalAppointments || 0,
       }));
       return { success: true, data: mapped };
     } catch (err) {
@@ -262,8 +262,9 @@ export const adminApi = {
       const res = await apiClient.get('/api/admin/appointments');
       const list = Array.isArray(res.data?.data) ? res.data.data : (res.data?.data?.content || []);
       const mapped = list.map((a) => {
-        const clientName = a.client?.fullName || (a.clientUsername ? a.clientUsername.replace(/_client$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Rohit Sharma');
-        const advocateName = a.lawyer?.fullName || (a.lawyerUsername ? 'Adv. ' + a.lawyerUsername.replace(/^adv_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Adv. Raghavan Nambiar');
+        const clientName = a.client?.fullName || (a.clientUsername ? a.clientUsername.replace(/_client$/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Client');
+        const advocateName = a.lawyer?.fullName || (a.lawyerUsername ? 'Adv. ' + a.lawyerUsername.replace(/^adv_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Advocate');
+        const feeAmount = Number(a.service?.price || a.fee || 0);
 
         return {
           publicId: a.publicId,
@@ -276,31 +277,31 @@ export const adminApi = {
           lawyerUsername: a.lawyerUsername,
           clientUserPublicId: a.clientUserPublicId,
           lawyerUserPublicId: a.lawyerUserPublicId,
-          consultationReason: a.consultationReason || 'Statutory legal advisory briefing',
+          consultationReason: a.consultationReason || 'Legal Consultation',
           consultationType: a.consultationType || 'ONLINE',
           requestedAt: a.requestedAt || a.createdAt || new Date().toISOString(),
           scheduledDate: a.slot?.startTime || a.requestedAt || a.createdAt || new Date().toISOString(),
-          fee: a.service?.price || 1500,
-          platformCommission: Math.round((a.service?.price || 1500) * 0.1),
+          fee: feeAmount,
+          platformCommission: Math.round(feeAmount * 0.1),
           escalationStatus: a.escalationStatus || 'NORMAL',
           client: {
             publicId: a.clientUserPublicId,
             fullName: clientName,
-            phone: a.client?.phone || '+91 98100 00000',
-            email: a.client?.email || `${a.clientUsername || 'client'}@lawino.in`,
+            phone: a.client?.phone || a.clientPhone || '',
+            email: a.client?.email || (a.clientUsername ? `${a.clientUsername}@lawino.in` : ''),
           },
           advocate: {
             publicId: a.lawyerUserPublicId,
             fullName: advocateName,
-            barCouncilNumber: a.lawyer?.barCouncilNumber || 'D/1234/2018',
-            city: a.lawyer?.city || 'Delhi',
+            barCouncilNumber: a.lawyer?.barCouncilNumber || a.qualification || '',
+            city: a.lawyer?.city || a.city || '',
           },
-          firm: a.firmPublicId ? { name: a.firmName || 'Lex Veritas Legal LLP' } : null,
+          firm: a.firmPublicId ? { name: a.firmName || 'Law Firm' } : null,
           service: {
             title: a.service?.title || 'Legal Consultation',
             mode: a.consultationType || 'ONLINE',
-            durationMinutes: 45,
-            price: a.service?.price || 1500,
+            durationMinutes: a.service?.durationMinutes || 45,
+            price: feeAmount,
           },
         };
       });
@@ -411,24 +412,29 @@ export const adminApi = {
         status: 'PENDING_APPROVAL',
       }));
 
-      const escrows = (aptRes.data || []).map((a, idx) => ({
-        id: `ESC-2026-${String(idx + 101).padStart(4, '0')}`,
-        appointmentPublicId: a.publicId,
-        appointmentId: a.appointmentId,
-        client: a.client?.fullName || a.clientUsername || 'Client User',
-        clientUserPublicId: a.clientUserPublicId,
-        beneficiary: a.advocate?.fullName || a.lawyerUsername || 'Counsel',
-        lawyerUserPublicId: a.lawyerUserPublicId,
-        date: new Date(a.requestedAt).toLocaleDateString('en-IN'),
-        grossAmount: Number(a.fee) || 1500,
-        platformCommission: Math.round((Number(a.fee) || 1500) * 0.1),
-        netBeneficiary: Math.round((Number(a.fee) || 1500) * 0.9),
-        status: a.appointmentStatus === 'COMPLETED'
-          ? 'RELEASED_TO_LAWYER'
-          : a.appointmentStatus === 'CANCELLED'
-          ? 'ROLLED_BACK_TO_CLIENT'
-          : 'HELD_IN_ESCROW',
-      }));
+      const escrows = appts.map((a, idx) => {
+        const fee = Number(a.fee) || 0;
+        const comm = Math.round(fee * 0.1);
+        const net = fee - comm;
+        return {
+          id: `ESC-2026-${String(idx + 101).padStart(4, '0')}`,
+          appointmentPublicId: a.publicId,
+          appointmentId: a.appointmentId,
+          client: a.client?.fullName || a.clientUsername || 'Client User',
+          clientUserPublicId: a.clientUserPublicId,
+          beneficiary: a.advocate?.fullName || a.lawyerUsername || 'Counsel',
+          lawyerUserPublicId: a.lawyerUserPublicId,
+          date: new Date(a.requestedAt).toLocaleDateString('en-IN'),
+          grossAmount: fee,
+          platformCommission: comm,
+          netBeneficiary: net,
+          status: a.appointmentStatus === 'COMPLETED'
+            ? 'RELEASED_TO_LAWYER'
+            : a.appointmentStatus === 'CANCELLED'
+            ? 'ROLLED_BACK_TO_CLIENT'
+            : 'HELD_IN_ESCROW',
+        };
+      });
 
       return {
         success: true,

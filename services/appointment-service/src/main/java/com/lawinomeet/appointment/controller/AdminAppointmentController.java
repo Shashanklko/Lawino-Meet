@@ -72,18 +72,27 @@ public class AdminAppointmentController {
     @PostMapping("/{publicId}/cancel")
     public ResponseEntity<ApiResponse<Map<String, Object>>> cancelAppointment(
             @PathVariable String publicId,
-            @RequestBody Map<String, String> request) {
-        String reason = request.getOrDefault("reason", "Cancelled by Platform Administrator.");
+            @RequestBody(required = false) Map<String, String> request) {
+        String reason = (request != null && request.get("reason") != null && !request.get("reason").isBlank())
+                ? request.get("reason")
+                : "Cancelled by Platform Administrator.";
         log.info("Admin cancelled appointment {}: reason={}", publicId, reason);
 
-        appointmentRepository.findByPublicId(publicId).ifPresent(apt -> {
+        boolean updated = false;
+        var opt = appointmentRepository.findByPublicId(publicId);
+        if (opt.isPresent()) {
+            Appointment apt = opt.get();
             apt.setAppointmentStatus(AppointmentStatus.CANCELLED);
             appointmentRepository.save(apt);
-        });
+            updated = true;
+        } else {
+            log.warn("Appointment not found by publicId {} during admin cancel", publicId);
+        }
 
         Map<String, Object> res = new HashMap<>();
         res.put("appointmentPublicId", publicId);
-        res.put("cancelled", true);
+        res.put("cancelled", updated);
+        res.put("status", "CANCELLED");
         res.put("reason", reason);
         res.put("auditTimestamp", System.currentTimeMillis());
 
