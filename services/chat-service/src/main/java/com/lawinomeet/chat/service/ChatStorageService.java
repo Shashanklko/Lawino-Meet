@@ -107,9 +107,21 @@ public class ChatStorageService {
             Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
             log.info("Saved chat document to local storage: {}", targetFile.toAbsolutePath());
             return "/api/chat/files/" + subfolder + "/" + fileName;
-        } catch (IOException e) {
-            log.error("Failed to store file locally", e);
-            throw new RuntimeException("Failed to store chat document: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.warn("Failed to store file in {}, falling back to /tmp/uploads: {}", localStorageDir, e.getMessage());
+            try {
+                Path fallbackDir = Paths.get("/tmp/uploads", subfolder);
+                if (!Files.exists(fallbackDir)) {
+                    Files.createDirectories(fallbackDir);
+                }
+                Path fallbackFile = fallbackDir.resolve(fileName);
+                Files.copy(file.getInputStream(), fallbackFile, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Saved chat document to fallback storage: {}", fallbackFile.toAbsolutePath());
+                return "/api/chat/files/" + subfolder + "/" + fileName;
+            } catch (IOException ex) {
+                log.error("Failed to store file in fallback storage", ex);
+                throw new RuntimeException("Failed to store chat document: " + ex.getMessage(), ex);
+            }
         }
     }
 

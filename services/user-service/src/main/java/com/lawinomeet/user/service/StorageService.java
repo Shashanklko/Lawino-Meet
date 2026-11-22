@@ -110,9 +110,21 @@ public class StorageService {
             Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
             log.info("Saved profile image to local storage: {}", targetFile.toAbsolutePath());
             return "/api/users/files/" + subfolder + "/" + fileName;
-        } catch (IOException e) {
-            log.error("Failed to store file locally", e);
-            throw new RuntimeException("Failed to store file: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.warn("Failed to store file in {}, falling back to /tmp/uploads: {}", localStorageDir, e.getMessage());
+            try {
+                Path fallbackDir = Paths.get("/tmp/uploads", subfolder);
+                if (!Files.exists(fallbackDir)) {
+                    Files.createDirectories(fallbackDir);
+                }
+                Path fallbackFile = fallbackDir.resolve(fileName);
+                Files.copy(file.getInputStream(), fallbackFile, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Saved profile image to fallback storage: {}", fallbackFile.toAbsolutePath());
+                return "/api/users/files/" + subfolder + "/" + fileName;
+            } catch (IOException ex) {
+                log.error("Failed to store file in fallback storage", ex);
+                throw new RuntimeException("Failed to store file: " + ex.getMessage(), ex);
+            }
         }
     }
 }

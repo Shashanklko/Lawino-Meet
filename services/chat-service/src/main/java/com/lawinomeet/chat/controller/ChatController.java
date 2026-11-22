@@ -126,6 +126,9 @@ public class ChatController {
             String fullPath = request.getRequestURI();
             String relativePath = fullPath.substring(fullPath.indexOf("/files/") + 7);
             Path filePath = Paths.get("./uploads", relativePath).normalize();
+            if (!Files.exists(filePath)) {
+                filePath = Paths.get("/tmp/uploads", relativePath).normalize();
+            }
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() && resource.isReadable()) {
                 String contentType = request.getServletContext().getMimeType(filePath.toString());

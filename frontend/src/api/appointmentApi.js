@@ -203,15 +203,7 @@ export const appointmentApi = {
       }
       return res.data;
     } catch {
-      try {
-        const res2 = await apiClient.get('/api/appointments/lawyer/me', { params });
-        if (res2.data?.data && Array.isArray(res2.data.data)) {
-          res2.data.data = res2.data.data.map(normalizeAppointment);
-        }
-        return res2.data;
-      } catch {
-        return { success: false, data: [] };
-      }
+      return { success: false, data: [] };
     }
   },
   getLawyerAppointments: async (params = {}) => {
