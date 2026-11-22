@@ -181,37 +181,39 @@ CREATE TABLE IF NOT EXISTS `firm_members` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `firm_id` BIGINT NOT NULL,
     `lawyer_user_public_id` VARCHAR(36) NOT NULL,
-    `firm_role` VARCHAR(30) NOT NULL DEFAULT 'PARTNER',
-    `status` VARCHAR(30) NOT NULL DEFAULT 'ACCEPTED',
+    `lawyer_username` VARCHAR(50),
+    `role_in_firm` VARCHAR(30) NOT NULL DEFAULT 'ASSOCIATE',
+    `membership_status` VARCHAR(30) NOT NULL DEFAULT 'ACCEPTED',
     `invited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `responded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `accepted_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_firm_member` (`firm_id`, `lawyer_user_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `firm_role`, `status`)
-VALUES (1, '33333333-3333-3333-3333-333333333333', 'MANAGING_PARTNER', 'ACCEPTED')
-ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
+INSERT INTO `firm_members` (`firm_id`, `lawyer_user_public_id`, `lawyer_username`, `role_in_firm`, `membership_status`)
+VALUES (1, '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'MANAGING_PARTNER', 'ACCEPTED')
+ON DUPLICATE KEY UPDATE `membership_status` = VALUES(`membership_status`);
 
 -- Legal Consultation Services
 CREATE TABLE IF NOT EXISTS `legal_services` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `lawyer_profile_id` BIGINT,
     `firm_id` BIGINT,
-    `title` VARCHAR(150) NOT NULL,
+    `service_name` VARCHAR(150) NOT NULL,
     `description` TEXT,
-    `mode` VARCHAR(30) NOT NULL,
+    `consultation_type` VARCHAR(30) NOT NULL,
     `duration_minutes` INT NOT NULL DEFAULT 60,
-    `price` DECIMAL(10, 2) NOT NULL,
+    `consultation_fee` DECIMAL(10, 2) NOT NULL,
+    `currency` VARCHAR(10) NOT NULL DEFAULT 'INR',
     `is_active` BOOLEAN DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `firm_id`, `title`, `description`, `mode`, `duration_minutes`, `price`, `is_active`)
+INSERT INTO `legal_services` (`id`, `lawyer_profile_id`, `firm_id`, `service_name`, `description`, `consultation_type`, `duration_minutes`, `consultation_fee`, `currency`, `is_active`)
 VALUES
-(1, 1, 1, 'Corporate Legal Advisory', 'Comprehensive commercial advisory, contracts, and cross-border arbitration briefing.', 'ONLINE', 60, 2500.00, 1),
-(2, 2, NULL, 'Anticipatory Bail & Criminal Defense', 'Immediate defense strategy, bail petition analysis, and litigation review.', 'ONLINE', 60, 1800.00, 1)
-ON DUPLICATE KEY UPDATE `price` = VALUES(`price`);
+(1, 1, 1, 'Corporate Legal Advisory', 'Comprehensive commercial advisory, contracts, and cross-border arbitration briefing.', 'ONLINE', 60, 2500.00, 'INR', 1),
+(2, 2, NULL, 'Anticipatory Bail & Criminal Defense', 'Immediate defense strategy, bail petition analysis, and litigation review.', 'ONLINE', 60, 1800.00, 'INR', 1)
+ON DUPLICATE KEY UPDATE `consultation_fee` = VALUES(`consultation_fee`);
 
 -- Wallets Table (Strict ₹0 initial balance)
 CREATE TABLE IF NOT EXISTS `wallets` (
