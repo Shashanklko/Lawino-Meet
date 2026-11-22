@@ -85,10 +85,10 @@ CREATE TABLE IF NOT EXISTS `client_profiles` (
     INDEX `idx_client_short_uid` (`short_uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `client_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `full_name`, `phone`, `city`, `state`, `country`)
+INSERT INTO `client_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `full_name`, `phone`, `city`, `state`, `country`, `created_at`, `updated_at`)
 VALUES
-(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'Rohit Verma', '+91 98102 33491', 'Delhi', 'Delhi', 'India')
-ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`), `short_uid` = VALUES(`short_uid`);
+(1, '11111111-1111-1111-1111-111111111111', 'CLT1001', 'rohit_client', 'Rohit Verma', '+91 98102 33491', 'Delhi', 'Delhi', 'India', NOW(), NOW())
+ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`), `short_uid` = VALUES(`short_uid`), `created_at` = NOW(), `updated_at` = NOW();
 
 -- Law Firms
 CREATE TABLE IF NOT EXISTS `law_firms` (
@@ -113,10 +113,10 @@ CREATE TABLE IF NOT EXISTS `law_firms` (
     INDEX `idx_firm_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `law_firms` (`id`, `public_id`, `short_uid`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`)
+INSERT INTO `law_firms` (`id`, `public_id`, `short_uid`, `admin_user_public_id`, `firm_name`, `slug`, `description`, `contact_email`, `contact_phone`, `address`, `city`, `state`, `verification_status`, `created_at`, `updated_at`)
 VALUES
-(1, '44444444-4444-4444-4444-444444444444', 'FRM1001', '33333333-3333-3333-3333-333333333333', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED')
-ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`), `short_uid` = VALUES(`short_uid`);
+(1, '44444444-4444-4444-4444-444444444444', 'FRM1001', '33333333-3333-3333-3333-333333333333', 'Lex Veritas Legal LLP', 'lex-veritas-legal-llp', 'Premier full-service legal counsel with High Court chambers in Mumbai and New Delhi.', 'admin@lexveritas.com', '+91 22 6677 8899', 'Chamber 412, High Court Commercial Wing', 'Mumbai', 'Maharashtra', 'VERIFIED', NOW(), NOW())
+ON DUPLICATE KEY UPDATE `firm_name` = VALUES(`firm_name`), `short_uid` = VALUES(`short_uid`), `created_at` = NOW(), `updated_at` = NOW();
 
 -- Lawyer Profiles (Dynamic availability configuration; no predefined static slots)
 CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
@@ -151,17 +151,19 @@ CREATE TABLE IF NOT EXISTS `lawyer_profiles` (
     INDEX `idx_lawyer_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `lawyer_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `state`, `messaging_enabled`, `verification_status`, `public_profile_status`, `working_days`, `working_hours_start`, `working_hours_end`, `break_start_time`, `break_end_time`, `time_zone`, `availability_status`)
+INSERT INTO `lawyer_profiles` (`id`, `user_public_id`, `short_uid`, `username`, `slug`, `full_name`, `biography`, `qualification`, `experience_years`, `phone`, `email_public`, `city`, `state`, `messaging_enabled`, `verification_status`, `public_profile_status`, `working_days`, `working_hours_start`, `working_hours_end`, `break_start_time`, `break_end_time`, `time_zone`, `availability_status`, `created_at`, `updated_at`)
 VALUES
-(1, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '09:00', '18:00', '13:00', '14:00', 'Asia/Kolkata', 'AVAILABLE'),
-(2, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'adv-meera-deshmukh', 'Adv. Meera Deshmukh', 'Independent counsel specializing in criminal defense, anticipatory bail, and Section 420 IPC matters.', 'B.A. LL.B (Hons), Bar Council of Delhi (D/1842/2012)', 12, '+91 98200 11223', 'meera.deshmukh@example.com', 'New Delhi', 'Delhi', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '10:00', '19:00', '13:30', '14:30', 'Asia/Kolkata', 'AVAILABLE')
+(1, '33333333-3333-3333-3333-333333333333', 'LAW1001', 'adv_raghavan', 'adv-raghavan-nambiar', 'Adv. Raghavan Nambiar', 'Senior Partner at Lex Veritas Legal LLP handling corporate advisory, cross-border arbitration, and writ petitions.', 'LL.M (Commercial & Constitutional), Bar Council of Maharashtra & Goa', 18, '+91 98111 22334', 'raghavan.nambiar@example.com', 'Mumbai', 'Maharashtra', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '09:00', '18:00', '13:00', '14:00', 'Asia/Kolkata', 'AVAILABLE', NOW(), NOW()),
+(2, '22222222-2222-2222-2222-222222222222', 'LAW1002', 'adv_meera', 'adv-meera-deshmukh', 'Adv. Meera Deshmukh', 'Independent counsel specializing in criminal defense, anticipatory bail, and Section 420 IPC matters.', 'B.A. LL.B (Hons), Bar Council of Delhi (D/1842/2012)', 12, '+91 98200 11223', 'meera.deshmukh@example.com', 'New Delhi', 'Delhi', 1, 'VERIFIED', 'PUBLISHED', 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY', '10:00', '19:00', '13:30', '14:30', 'Asia/Kolkata', 'AVAILABLE', NOW(), NOW())
 ON DUPLICATE KEY UPDATE 
     `full_name` = VALUES(`full_name`),
     `short_uid` = VALUES(`short_uid`),
     `slug` = VALUES(`slug`),
     `working_days` = VALUES(`working_days`),
     `working_hours_start` = VALUES(`working_hours_start`),
-    `working_hours_end` = VALUES(`working_hours_end`);
+    `working_hours_end` = VALUES(`working_hours_end`),
+    `created_at` = NOW(),
+    `updated_at` = NOW();
 
 -- Lawyer Specializations Join Table
 CREATE TABLE IF NOT EXISTS `lawyer_specializations` (
@@ -234,12 +236,12 @@ CREATE TABLE IF NOT EXISTS `wallets` (
     INDEX `idx_wallet_user` (`user_public_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `wallets` (`id`, `public_id`, `user_public_id`, `username`, `user_role`, `balance`, `escrow_balance`)
+INSERT INTO `wallets` (`id`, `public_id`, `user_public_id`, `username`, `user_role`, `balance`, `escrow_balance`, `created_at`, `updated_at`)
 VALUES
-(1, 'wlt-clt-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'CLIENT', 0.00, 0.00),
-(2, 'wlt-law-001', '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'LAWYER', 0.00, 0.00),
-(3, 'wlt-law-002', '22222222-2222-2222-2222-222222222222', 'adv_meera', 'LAWYER', 0.00, 0.00)
-ON DUPLICATE KEY UPDATE `username` = VALUES(`username`);
+(1, 'wlt-clt-001', '11111111-1111-1111-1111-111111111111', 'rohit_client', 'CLIENT', 0.00, 0.00, NOW(), NOW()),
+(2, 'wlt-law-001', '33333333-3333-3333-3333-333333333333', 'adv_raghavan', 'LAWYER', 0.00, 0.00, NOW(), NOW()),
+(3, 'wlt-law-002', '22222222-2222-2222-2222-222222222222', 'adv_meera', 'LAWYER', 0.00, 0.00, NOW(), NOW())
+ON DUPLICATE KEY UPDATE `username` = VALUES(`username`), `created_at` = NOW(), `updated_at` = NOW();
 
 -- Wallet Transactions Table (Zero dummy transactions seeded)
 CREATE TABLE IF NOT EXISTS `wallet_transactions` (
