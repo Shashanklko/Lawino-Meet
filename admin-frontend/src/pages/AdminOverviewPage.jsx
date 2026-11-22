@@ -368,10 +368,10 @@ export const AdminOverviewPage = () => {
             {canAccessFinance ? (
               <div className="flex items-baseline space-x-3">
                 <span className="text-2xl font-serif font-bold text-cream-50">
-                  ₹{stats.totalPlatformCommission.toLocaleString('en-IN')}
+                  ₹{(Number(stats?.totalPlatformCommission) || 0).toLocaleString('en-IN')}
                 </span>
                 <span className="text-xs text-stone-400 font-mono">
-                  Gross Volume: ₹{stats.grossConsultationVolume.toLocaleString('en-IN')}
+                  Gross Volume: ₹{(Number(stats?.grossConsultationVolume) || 0).toLocaleString('en-IN')}
                 </span>
               </div>
             ) : (

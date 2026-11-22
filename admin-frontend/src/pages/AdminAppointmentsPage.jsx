@@ -26,8 +26,8 @@ export const AdminAppointmentsPage = () => {
   const [escalatedOnly, setEscalatedOnly] = useState(false);
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [escalateModal, setEscalateModal] = useState(null);
-  const [escalateReason, setEscalateReason] = useState('');
+  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
   const loadAppointments = async () => {
@@ -52,24 +52,23 @@ export const AdminAppointmentsPage = () => {
 
     const matchesStatus = statusFilter === 'ALL' || apt.appointmentStatus === statusFilter;
     const matchesChannel = channelFilter === 'ALL' || apt.bookingChannel === channelFilter;
-    const matchesEscalation = !escalatedOnly || apt.escalationStatus === 'PRIORITY_ESCALATED';
+    const matchesEscalation = !escalatedOnly || apt.appointmentStatus === 'CANCELLED';
 
     return matchesSearch && matchesStatus && matchesChannel && matchesEscalation;
   });
 
-  const handleExecuteEscalation = async (e) => {
+  const handleExecuteCancellation = async (e) => {
     e.preventDefault();
-    if (!escalateModal || !escalateReason.trim()) return;
+    if (!cancelModal || !cancelReason.trim()) return;
 
-    await adminApi.escalateAppointment(
-      escalateModal.publicId,
-      escalateReason.trim(),
-      'Admin Operations Priority'
+    await adminApi.cancelAppointment(
+      cancelModal.publicId,
+      cancelReason.trim()
     );
 
-    setToastMessage(`Appointment ${escalateModal.appointmentId} escalated to senior support desk.`);
-    setEscalateModal(null);
-    setEscalateReason('');
+    setToastMessage(`Appointment ${cancelModal.appointmentId} has been successfully cancelled.`);
+    setCancelModal(null);
+    setCancelReason('');
     loadAppointments();
     setTimeout(() => setToastMessage(''), 3500);
   };
@@ -238,14 +237,16 @@ export const AdminAppointmentsPage = () => {
                         Details
                       </button>
 
-                      {!isEscalated && (
+                      {apt.appointmentStatus !== 'CANCELLED' ? (
                         <button
                           type="button"
-                          onClick={() => setEscalateModal(apt)}
+                          onClick={() => setCancelModal(apt)}
                           className="px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-[11px] font-mono border border-rose-800 transition cursor-pointer"
                         >
-                          Escalate
+                          Cancel Meeting
                         </button>
+                      ) : (
+                        <span className="text-[10px] font-mono text-stone-500">Cancelled</span>
                       )}
                     </td>
                   </tr>
@@ -266,7 +267,7 @@ export const AdminAppointmentsPage = () => {
                   Appointment {selectedAppointment.appointmentId}
                 </h3>
                 <p className="text-[11px] font-mono text-stone-400">
-                  Scheduled for {new Date(selectedAppointment.scheduledDate).toLocaleString()}
+                  Scheduled for {selectedAppointment.scheduledDate ? new Date(selectedAppointment.scheduledDate).toLocaleString() : 'N/A'}
                 </p>
               </div>
               <button
@@ -283,15 +284,15 @@ export const AdminAppointmentsPage = () => {
               <p className="font-serif font-bold text-cream-100 text-xs">Financial Ledger Breakdown</p>
               <div className="flex justify-between">
                 <span className="text-stone-500">Gross Client Charged:</span>
-                <span className="font-bold text-cream-100">₹{selectedAppointment.grossFeeCharged.toLocaleString('en-IN')}</span>
+                <span className="font-bold text-cream-100">₹{(Number(selectedAppointment.grossFeeCharged || selectedAppointment.fee) || 1500).toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-500">Statutory Platform Commission (10%):</span>
-                <span className="text-amber-400">₹{selectedAppointment.platformCommissionFee.toLocaleString('en-IN')}</span>
+                <span className="text-amber-400">₹{(Number(selectedAppointment.platformCommissionFee || selectedAppointment.platformCommission) || 150).toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between border-t border-stone-800 pt-1">
                 <span className="text-stone-500">Advocate Escrow Entitlement:</span>
-                <span className="font-bold text-emerald-400">₹{selectedAppointment.advocateNetEntitled.toLocaleString('en-IN')}</span>
+                <span className="font-bold text-emerald-400">₹{(Number(selectedAppointment.advocateNetEntitled || ((Number(selectedAppointment.fee) || 1500) * 0.9))).toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -302,7 +303,7 @@ export const AdminAppointmentsPage = () => {
                 {selectedAppointment.assignmentHistory?.map((entry, idx) => (
                   <div key={idx} className="p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-[11px]">
                     <span className="text-[9px] font-mono text-stone-500 block">
-                      {new Date(entry.timestamp).toLocaleString()}
+                      {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}
                     </span>
                     <span className="text-stone-300 font-sans">{entry.note}</span>
                   </div>
@@ -310,7 +311,20 @@ export const AdminAppointmentsPage = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-stone-800 flex justify-end">
+            <div className="pt-2 border-t border-stone-800 flex justify-end space-x-2">
+              {selectedAppointment.appointmentStatus !== 'CANCELLED' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const apt = selectedAppointment;
+                    setSelectedAppointment(null);
+                    setCancelModal(apt);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 font-medium"
+                >
+                  Cancel Meeting
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedAppointment(null)}
@@ -323,28 +337,28 @@ export const AdminAppointmentsPage = () => {
         </div>
       )}
 
-      {/* Escalation Modal */}
-      {escalateModal && (
+      {/* Cancellation Modal */}
+      {cancelModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#1E1917] border border-rose-800 rounded-2xl max-w-md w-full p-5 text-xs text-stone-300 shadow-2xl space-y-3">
             <h3 className="font-serif font-bold text-sm text-rose-300">
-              Escalate Appointment {escalateModal.appointmentId}
+              Cancel Appointment {cancelModal.appointmentId}
             </h3>
             <p className="text-[11px] text-stone-400">
-              Flag for priority intervention by Senior Operations &amp; Support desk.
+              Authorize platform administrative cancellation. Escrow retainer will be marked eligible for client refund.
             </p>
 
-            <form onSubmit={handleExecuteEscalation} className="space-y-3">
+            <form onSubmit={handleExecuteCancellation} className="space-y-3">
               <div>
                 <label className="block text-[10px] font-mono text-stone-400 uppercase mb-1">
-                  Escalation Reason
+                  Cancellation Reason
                 </label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="e.g. Advocate delayed in confirmation, client requested emergency reschedule, technical room connection check..."
-                  value={escalateReason}
-                  onChange={(e) => setEscalateReason(e.target.value)}
+                  placeholder="e.g. Mutual cancellation request, unresolvable schedule conflict, client emergency..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
                   className="w-full bg-stone-900 border border-stone-700 rounded-xl p-2.5 text-xs text-stone-200 placeholder-stone-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
@@ -352,17 +366,17 @@ export const AdminAppointmentsPage = () => {
               <div className="flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setEscalateModal(null)}
+                  onClick={() => setCancelModal(null)}
                   className="px-3.5 py-1.5 rounded-xl border border-stone-700 text-stone-400 hover:bg-stone-800"
                 >
-                  Cancel
+                  Close
                 </button>
                 <button
                   type="submit"
-                  disabled={!escalateReason.trim()}
+                  disabled={!cancelReason.trim()}
                   className="px-4 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs"
                 >
-                  Confirm Priority Escalation
+                  Confirm Cancellation
                 </button>
               </div>
             </form>

@@ -273,7 +273,7 @@ export const AdminClientsPage = () => {
               </div>
               <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800">
                 <span className="text-stone-500 block text-[9px] uppercase">Wallet Balance</span>
-                <span className="font-bold text-amber-400">₹{selectedClient.walletBalance.toLocaleString('en-IN')}</span>
+                <span className="font-bold text-amber-400">₹{(Number(selectedClient.walletBalance) || 0).toLocaleString('en-IN')}</span>
               </div>
               <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800">
                 <span className="text-stone-500 block text-[9px] uppercase">Consultations</span>

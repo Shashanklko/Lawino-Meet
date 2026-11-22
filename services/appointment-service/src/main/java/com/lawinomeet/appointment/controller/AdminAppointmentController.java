@@ -67,6 +67,30 @@ public class AdminAppointmentController {
     }
 
     /**
+     * Platform Admin Cancel Action
+     */
+    @PostMapping("/{publicId}/cancel")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> cancelAppointment(
+            @PathVariable String publicId,
+            @RequestBody Map<String, String> request) {
+        String reason = request.getOrDefault("reason", "Cancelled by Platform Administrator.");
+        log.info("Admin cancelled appointment {}: reason={}", publicId, reason);
+
+        appointmentRepository.findByPublicId(publicId).ifPresent(apt -> {
+            apt.setAppointmentStatus(AppointmentStatus.CANCELLED);
+            appointmentRepository.save(apt);
+        });
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("appointmentPublicId", publicId);
+        res.put("cancelled", true);
+        res.put("reason", reason);
+        res.put("auditTimestamp", System.currentTimeMillis());
+
+        return ResponseEntity.ok(ApiResponse.ok("Appointment cancelled successfully", res));
+    }
+
+    /**
      * Platform Admin Escalation Action
      */
     @PostMapping("/{publicId}/escalate")

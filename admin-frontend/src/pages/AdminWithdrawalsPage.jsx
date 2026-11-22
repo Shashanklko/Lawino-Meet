@@ -148,7 +148,7 @@ export const AdminWithdrawalsPage = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-emerald-400 text-sm">
-                      ₹{w.requestedAmount.toLocaleString('en-IN')}
+                      ₹{(Number(w.requestedAmount) || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px] text-stone-300">
                       <p className="font-semibold text-cream-100">{w.bankDetails.bankName}</p>
@@ -205,7 +205,7 @@ export const AdminWithdrawalsPage = () => {
               {actionModal.action === 'APPROVE' ? 'Authorize Bank Disbursement' : 'Reject Settlement Request'}
             </h3>
             <p className="text-[11px] text-stone-400">
-              Payout of ₹{actionModal.withdrawal.requestedAmount.toLocaleString('en-IN')} to {actionModal.withdrawal.beneficiaryName}.
+              Payout of ₹{(Number(actionModal.withdrawal.requestedAmount) || 0).toLocaleString('en-IN')} to {actionModal.withdrawal.beneficiaryName}.
             </p>
 
             <form onSubmit={handleExecuteAction} className="space-y-3">
