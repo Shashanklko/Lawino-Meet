@@ -58,23 +58,19 @@ pipeline {
 
                     sh """
                         set -e
-                        # Purge corrupted/partial Maven downloads and .lastUpdated lock files in Jenkins agent
-                        echo "Cleaning corrupt Maven artifacts in ~/.m2/repository..."
-                        find ~/.m2/repository -name "*.lastUpdated" -delete 2>/dev/null || true
-                        find ~/.m2/repository -name "_remote.repositories" -delete 2>/dev/null || true
-                        
-                        # If spring-boot core jar is missing or corrupted, remove springframework dir for clean redownload
-                        if [ ! -s ~/.m2/repository/org/springframework/boot/spring-boot/3.3.5/spring-boot-3.3.5.jar ]; then
-                            echo "Spring Boot jar missing or empty in ~/.m2, purging cached org/springframework..."
-                            rm -rf ~/.m2/repository/org/springframework ~/.m2/repository/org/projectlombok || true
-                        fi
+                        echo "=== Jenkins Agent Environment ==="
+                        echo "User: \$(whoami) | Home: \$HOME | Workspace: \$WORKSPACE"
 
-                        for dir in services/auth-service services/user-service services/appointment-service services/meeting-service services/notification-service services/chat-service; do
-                            echo "========================================="
-                            echo "Compiling and packaging \${dir} ..."
-                            echo "========================================="
-                            (cd "\${dir}" && mvn -B -U clean package ${skip})
-                        done
+                        # Use isolated workspace local repository to completely eliminate any corrupt ~/.m2 cache on the host agent
+                        M2_REPO="\${WORKSPACE}/.m2/repository"
+                        mkdir -p "\$M2_REPO"
+                        echo "Target Local M2 Repo: \$M2_REPO"
+
+                        # Build all 6 microservices via the root reactor
+                        echo "=========================================================="
+                        echo "Building all microservices using Root Reactor & Clean Cache"
+                        echo "=========================================================="
+                        mvn -B -U clean package ${skip} -Dmaven.repo.local="\$M2_REPO"
                     """
                 }
             }
