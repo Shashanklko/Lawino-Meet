@@ -119,11 +119,11 @@ pipeline {
                           -f services/chat-service/Dockerfile services/chat-service
 
                         # Frontends and gateway
-                        docker build -t "$DOCKER_USER/frontend:$IMAGE_TAG" frontend/
+                        docker build -t "$DOCKER_USER/frontend:$IMAGE_TAG" -t "$DOCKER_USER/frontend:latest" frontend/
 
-                        docker build -t "$DOCKER_USER/admin-frontend:$IMAGE_TAG" admin-frontend/
+                        docker build -t "$DOCKER_USER/admin-frontend:$IMAGE_TAG" -t "$DOCKER_USER/admin-frontend:latest" admin-frontend/
 
-                        docker build -t "$DOCKER_USER/gateway:$IMAGE_TAG" docker/nginx/
+                        docker build -t "$DOCKER_USER/gateway:$IMAGE_TAG" -t "$DOCKER_USER/gateway:latest" docker/nginx/
                     '''
                 }
             }
@@ -155,8 +155,10 @@ pipeline {
                           admin-frontend \
                           gateway
                         do
+                            docker tag "$DOCKER_USER/$service:$IMAGE_TAG" "$DOCKER_USER/$service:latest" || true
                             docker push "$DOCKER_USER/$service:$IMAGE_TAG"
-                            docker rmi "$DOCKER_USER/$service:$IMAGE_TAG" || true
+                            docker push "$DOCKER_USER/$service:latest"
+                            docker rmi "$DOCKER_USER/$service:$IMAGE_TAG" "$DOCKER_USER/$service:latest" || true
                         done
 
                         docker logout
@@ -208,7 +210,7 @@ pipeline {
                             # Deploy using the manager's existing environment file.
                             ssh -o StrictHostKeyChecking=yes \
                               ubuntu@"$SWARM_MANAGER_IP" \
-                              "export DOCKER_HUB_USERNAME='$DOCKER_USER' IMAGE_TAG='$IMAGE_TAG'; bash -s" <<'REMOTE'
+                              "export DOCKER_HUB_USERNAME='$DOCKER_USER' TARGET_IMAGE_TAG='$IMAGE_TAG'; bash -s" <<'REMOTE'
                             set -eu
 
                             ENV_FILE="$HOME/Lawino-Meet/.env.aws"
@@ -237,6 +239,9 @@ pipeline {
                                     export "$key"="$val"
                                 fi
                             done < "$ENV_FILE"
+
+                            # Ensure the newly built tag is used, not overridden by .env.aws
+                            export IMAGE_TAG="$TARGET_IMAGE_TAG"
 
                             : "${MYSQL_HOST:?MYSQL_HOST is missing}"
                             : "${MYSQL_USER:?MYSQL_USER is missing}"
