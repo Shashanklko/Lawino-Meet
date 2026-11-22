@@ -1,209 +1,246 @@
-// =========================================================================
-// LawinoMeet - Enterprise Jenkins Declarative CI/CD Pipeline
-// Automated Build, Test, Containerization, Docker Hub Push & Swarm Deploy
-// Supports both Mode A (Docker MySQL) and Mode B (AWS RDS MySQL)
-// =========================================================================
 
 pipeline {
     agent any
 
     parameters {
-        choice(name: 'DB_MODE', choices: ['rds', 'mysql'], description: 'Swarm Database Mode: rds (AWS RDS MySQL) or mysql (Swarm Container MySQL)')
-        booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip Maven unit and integration tests')
+        booleanParam(
+            name: 'SKIP_TESTS',
+            defaultValue: false,
+            description: 'Skip Maven tests'
+        )
     }
 
     environment {
-        DOCKER_HUB_CREDS_ID   = 'docker-hub-credentials'
-        SWARM_SSH_KEY_ID      = 'swarm-ssh-key'
-        SWARM_MANAGER_IP_ID   = 'swarm-manager-ip'
-    }
-
-    tools {
-        maven 'Maven-3.9'
-        jdk   'JDK-21'
-        nodejs 'NodeJS-20'
+        DOCKER_HUB_CREDS_ID = 'dockerhub-credentials'
+        SWARM_SSH_KEY_ID = 'swarm-manager-ssh'
+        SWARM_MANAGER_IP_ID = 'swarm-manager-ip'
+        MAVEN_OPTS = '-Xmx512m -XX:MaxMetaspaceSize=256m'
     }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '15'))
-        timeout(time: 60, unit: 'MINUTES')
-        ansiColor('xterm')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 90, unit: 'MINUTES')
+        disableConcurrentBuilds()
     }
 
     stages {
-        // =====================================================================
-        // STAGE 1: Code Checkout & Metadata Generation
-        // =====================================================================
-        stage('Checkout & Lint') {
+
+        stage('Checkout') {
             steps {
                 checkout scm
+
                 script {
-                    def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
-                    echo "Checked out commit ${shortCommit}. Build Image Tag: ${env.IMAGE_TAG}"
+                    def commit = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${commit}"
                 }
-                sh 'java -version'
-                sh 'mvn -version'
-                sh 'node -v'
-                sh 'npm -v'
+
+                echo "Building image tag: ${env.IMAGE_TAG}"
+
+                sh '''
+                    set -e
+                    java -version
+                    mvn -version
+                    node -v
+                    npm -v
+                    docker version --format '{{.Client.Version}}'
+                '''
             }
         }
 
-        // =====================================================================
-        // STAGE 2: Java Spring Boot Backend Build & Test
-        // =====================================================================
-        stage('Backend Compilation & Test') {
+        stage('Build Backend') {
             steps {
                 script {
-                    def testFlag = params.SKIP_TESTS ? '-DskipTests=true' : '-DskipTests=false'
-                    echo "Compiling and packaging all 6 microservices with ${testFlag}..."
-                    sh "mvn clean package ${testFlag} --batch-mode"
+                    def skip = params.SKIP_TESTS ? '-DskipTests' : ''
+
+                    sh """
+                        set -e
+                        mvn -B -T 1 clean package ${skip}
+                    """
                 }
             }
             post {
                 always {
-                    junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
+                    junit(
+                        testResults: 'services/*/target/surefire-reports/TEST-*.xml',
+                        allowEmptyResults: true
+                    )
                 }
             }
         }
 
-        // =====================================================================
-        // STAGE 3: React Single-Page Application Builds
-        // =====================================================================
-        stage('Frontend Portals Build') {
-            parallel {
-                stage('Build Consumer & Advocate Portal') {
-                    steps {
-                        dir('frontend') {
-                            sh 'npm install'
-                            sh 'npm run build'
-                        }
-                    }
-                }
-                stage('Build Admin & Firm Portal') {
-                    steps {
-                        dir('admin-frontend') {
-                            sh 'npm install'
-                            sh 'npm run build'
-                        }
-                    }
-                }
-            }
-        }
-
-        // =====================================================================
-        // STAGE 4: Docker Container Build
-        // =====================================================================
-        stage('Docker Images Build') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: env.DOCKER_HUB_CREDS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        echo "Building Docker container images for registry '${DOCKER_USER}' with tag: ${env.IMAGE_TAG}..."
-                        sh """
-                            docker build -t ${DOCKER_USER}/auth-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/auth-service:latest -f services/auth-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/user-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/user-service:latest -f services/user-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/appointment-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/appointment-service:latest -f services/appointment-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/meeting-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/meeting-service:latest -f services/meeting-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/notification-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/notification-service:latest -f services/notification-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/chat-service:${env.IMAGE_TAG} -t ${DOCKER_USER}/chat-service:latest -f services/chat-service/Dockerfile .
-                            docker build -t ${DOCKER_USER}/frontend:${env.IMAGE_TAG} -t ${DOCKER_USER}/frontend:latest frontend/
-                            docker build -t ${DOCKER_USER}/admin-frontend:${env.IMAGE_TAG} -t ${DOCKER_USER}/admin-frontend:latest admin-frontend/
-                            docker build -t ${DOCKER_USER}/gateway:${env.IMAGE_TAG} -t ${DOCKER_USER}/gateway:latest docker/nginx/
-                        """
-                    }
-                }
-            }
-        }
-
-        // =====================================================================
-        // STAGE 5: Push Images to Docker Hub Registry
-        // =====================================================================
-        stage('Push Docker Images') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: env.DOCKER_HUB_CREDS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "\${DOCKER_PASS}" | docker login -u "\${DOCKER_USER}" --password-stdin
-                        docker push ${DOCKER_USER}/auth-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/auth-service:latest
-                        docker push ${DOCKER_USER}/user-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/user-service:latest
-                        docker push ${DOCKER_USER}/appointment-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/appointment-service:latest
-                        docker push ${DOCKER_USER}/meeting-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/meeting-service:latest
-                        docker push ${DOCKER_USER}/notification-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/notification-service:latest
-                        docker push ${DOCKER_USER}/chat-service:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/chat-service:latest
-                        docker push ${DOCKER_USER}/frontend:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/frontend:latest
-                        docker push ${DOCKER_USER}/admin-frontend:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/admin-frontend:latest
-                        docker push ${DOCKER_USER}/gateway:${env.IMAGE_TAG}
-                        docker push ${DOCKER_USER}/gateway:latest
-                    """
-                }
-            }
-        }
-
-        // =====================================================================
-        // STAGE 6: Zero-Downtime Swarm Cluster Deployment
-        // =====================================================================
-        stage('Deploy to Docker Swarm') {
-            when {
-                branch 'main'
-            }
+        stage('Build Docker Images') {
             steps {
                 withCredentials([
-                    usernamePassword(credentialsId: env.DOCKER_HUB_CREDS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
-                    string(credentialsId: env.SWARM_MANAGER_IP_ID, variable: 'SWARM_MANAGER_IP')
+                    usernamePassword(
+                        credentialsId: env.DOCKER_HUB_CREDS_ID,
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
                 ]) {
-                    sshagent([env.SWARM_SSH_KEY_ID]) {
-                        script {
-                            def stackFile = params.DB_MODE == 'mysql' ? 'docker-stack-mysql.yml' : 'docker-stack-rds.yml'
-                            echo "Deploying to Swarm Manager (${SWARM_MANAGER_IP}) using ${stackFile} (Mode: ${params.DB_MODE})..."
-                            sh """
-                                scp -o StrictHostKeyChecking=no ${stackFile} ubuntu@${SWARM_MANAGER_IP}:~/docker-stack.yml
-                                ssh -o StrictHostKeyChecking=no ubuntu@${SWARM_MANAGER_IP} "
-                                    set -a
-                                    [ -f ~/.env.aws ] && source ~/.env.aws
-                                    [ -f ~/Lawino-Meet/.env.aws ] && source ~/Lawino-Meet/.env.aws
-                                    set +a
-                                    export DOCKER_HUB_USERNAME=${DOCKER_USER}
-                                    export IMAGE_TAG=${env.IMAGE_TAG}
-                                    echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin
-                                    docker stack deploy --with-registry-auth -c ~/docker-stack.yml lawino
-                                "
-                            """
-                        }
+                    sh '''
+                        set -e
+
+                        # Six backend microservices
+                        docker build -t "$DOCKER_USER/auth-service:$IMAGE_TAG" \
+                          -f services/auth-service/Dockerfile services/auth-service
+
+                        docker build -t "$DOCKER_USER/user-service:$IMAGE_TAG" \
+                          -f services/user-service/Dockerfile services/user-service
+
+                        docker build -t "$DOCKER_USER/appointment-service:$IMAGE_TAG" \
+                          -f services/appointment-service/Dockerfile services/appointment-service
+
+                        docker build -t "$DOCKER_USER/meeting-service:$IMAGE_TAG" \
+                          -f services/meeting-service/Dockerfile services/meeting-service
+
+                        docker build -t "$DOCKER_USER/notification-service:$IMAGE_TAG" \
+                          -f services/notification-service/Dockerfile services/notification-service
+
+                        docker build -t "$DOCKER_USER/chat-service:$IMAGE_TAG" \
+                          -f services/chat-service/Dockerfile services/chat-service
+
+                        # Frontends and gateway
+                        docker build -t "$DOCKER_USER/frontend:$IMAGE_TAG" frontend/
+
+                        docker build -t "$DOCKER_USER/admin-frontend:$IMAGE_TAG" admin-frontend/
+
+                        docker build -t "$DOCKER_USER/gateway:$IMAGE_TAG" docker/nginx/
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: env.DOCKER_HUB_CREDS_ID,
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        set -e
+
+                        echo "$DOCKER_PASS" | docker login \
+                          --username "$DOCKER_USER" --password-stdin
+
+                        for service in \
+                          auth-service \
+                          user-service \
+                          appointment-service \
+                          meeting-service \
+                          notification-service \
+                          chat-service \
+                          frontend \
+                          admin-frontend \
+                          gateway
+                        do
+                            docker push "$DOCKER_USER/$service:$IMAGE_TAG"
+                        done
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Swarm - RDS') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: env.DOCKER_HUB_CREDS_ID,
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    ),
+                    string(
+                        credentialsId: env.SWARM_MANAGER_IP_ID,
+                        variable: 'SWARM_MANAGER_IP'
+                    )
+                ]) {
+                    sshagent(credentials: [env.SWARM_SSH_KEY_ID]) {
+                        sh '''
+                            set -e
+
+                            # Copy RDS stack file to manager
+                            scp -o StrictHostKeyChecking=yes \
+                              docker-stack-rds.yml \
+                              ubuntu@"$SWARM_MANAGER_IP":~/docker-stack-rds.yml
+
+                            # Authenticate Docker Hub on manager.
+                            # Password is sent through stdin, not command arguments.
+                            printf '%s' "$DOCKER_PASS" | ssh \
+                              -o StrictHostKeyChecking=yes \
+                              ubuntu@"$SWARM_MANAGER_IP" \
+                              "docker login --username '$DOCKER_USER' --password-stdin"
+
+                            # Deploy using the manager's existing environment file.
+                            ssh -o StrictHostKeyChecking=yes \
+                              ubuntu@"$SWARM_MANAGER_IP" \
+                              "export DOCKER_HUB_USERNAME='$DOCKER_USER' IMAGE_TAG='$IMAGE_TAG'; bash -s" <<'REMOTE'
+                            set -eu
+
+                            ENV_FILE="$HOME/Lawino-Meet/.env.aws"
+                            STACK_FILE="$HOME/docker-stack-rds.yml"
+
+                            if [ ! -f "$ENV_FILE" ]; then
+                                echo "ERROR: Environment file not found: $ENV_FILE"
+                                exit 1
+                            fi
+
+                            if [ ! -f "$STACK_FILE" ]; then
+                                echo "ERROR: RDS stack file not found"
+                                exit 1
+                            fi
+
+                            set -a
+                            . "$ENV_FILE"
+                            set +a
+
+                            : "${MYSQL_HOST:?MYSQL_HOST is missing}"
+                            : "${MYSQL_USER:?MYSQL_USER is missing}"
+                            : "${MYSQL_PASSWORD:?MYSQL_PASSWORD is missing}"
+                            : "${JWT_SECRET:?JWT_SECRET is missing}"
+
+                            docker stack deploy \
+                              --with-registry-auth \
+                              -c "$STACK_FILE" \
+                              lawino
+
+                            echo "RDS stack deployment command completed."
+                            REMOTE
+                        '''
                     }
                 }
             }
         }
 
-        // =====================================================================
-        // STAGE 7: Verification & Health Probe
-        // =====================================================================
-        stage('Smoke Test & Health Probe') {
-            when {
-                branch 'main'
-            }
+        stage('Smoke Test') {
             steps {
-                withCredentials([string(credentialsId: env.SWARM_MANAGER_IP_ID, variable: 'SWARM_MANAGER_IP')]) {
-                    echo "Verifying application availability on Swarm ingress..."
-                    sh """
-                        echo "Waiting 25 seconds for Swarm service convergence..."
-                        sleep 25
-                        curl -s -f -o /dev/null http://${SWARM_MANAGER_IP}/ || {
-                            echo 'Smoke test failed: Frontend portal did not respond with 200 OK.'
-                            exit 1
-                        }
-                        curl -s -f -o /dev/null http://${SWARM_MANAGER_IP}/api/lawyers || {
-                            echo 'Smoke test warning: Backend API probe failed.'
-                            exit 1
-                        }
-                        echo "Smoke test passed successfully."
-                    """
+                withCredentials([
+                    string(
+                        credentialsId: env.SWARM_MANAGER_IP_ID,
+                        variable: 'SWARM_MANAGER_IP'
+                    )
+                ]) {
+                    sh '''
+                        set -e
+
+                        echo "Checking frontend availability..."
+
+                        curl --fail --silent --show-error \
+                          --retry 12 \
+                          --retry-delay 5 \
+                          --retry-connrefused \
+                          "http://$SWARM_MANAGER_IP/" \
+                          -o /dev/null
+
+                        echo "Frontend smoke test passed."
+                    '''
                 }
             }
         }
@@ -211,10 +248,15 @@ pipeline {
 
     post {
         success {
-            echo "LawinoMeet Build #${BUILD_NUMBER} Deployed Successfully to Docker Swarm!"
+            echo "LawinoMeet deployed successfully. Image tag: ${env.IMAGE_TAG}"
         }
+
         failure {
-            echo "LawinoMeet Build #${BUILD_NUMBER} FAILED. Review console output for details."
+            echo "Pipeline failed. Check the Jenkins console output."
+        }
+
+        always {
+            echo "Pipeline execution finished."
         }
     }
 }
