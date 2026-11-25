@@ -121,6 +121,21 @@ public class ChatController {
                 .body(ApiResponse.created("Attachment sent successfully", response));
     }
 
+    @GetMapping("/attachments/view")
+    public ResponseEntity<byte[]> viewAttachment(
+            @RequestParam(value = "url", required = false) String url,
+            @RequestParam(value = "key", required = false) String key) {
+        String target = (url != null && !url.isBlank()) ? url : key;
+        ChatStorageService.DownloadedFile file = chatStorageService.fetchAttachment(target);
+        if (file == null || file.getData() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                .body(file.getData());
+    }
+
     @GetMapping("/files/**")
     public ResponseEntity<Resource> serveLocalFile(HttpServletRequest request) {
         try {

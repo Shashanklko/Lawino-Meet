@@ -30,6 +30,19 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { appointmentApi } from '../api/appointmentApi';
 
+const resolveAttachmentViewUrl = (url) => {
+  if (!url) return '#';
+  // If already a signed S3 URL, use it directly
+  if (url.includes('X-Amz-Signature') || url.includes('X-Amz-Algorithm')) {
+    return url;
+  }
+  // If direct S3 URL or relative files URL without signature, proxy via backend to prevent S3 AccessDenied
+  if (url.includes('.amazonaws.com/') || url.startsWith('/api/chat/files/')) {
+    return `/api/chat/attachments/view?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export const MessagesPage = () => {
   const { user } = useAuth();
   const { theme, currentTheme } = useTheme();
@@ -795,31 +808,49 @@ export const MessagesPage = () => {
                             ) : (
                               <>
                                 {/* Attachment Link / Card if present */}
-                                {m.attachmentUrl && (
-                                  <a
-                                    href={m.attachmentUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex items-center space-x-2 p-2 rounded-xl mb-1.5 transition ${
-                                      isMe
-                                        ? 'bg-white/15 hover:bg-white/25 text-white'
-                                        : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
-                                    }`}
-                                  >
-                                    <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                                    <div className="overflow-hidden text-left flex-1 min-w-0">
-                                      <p className="font-semibold truncate text-[11px]">
-                                        {m.attachmentName || 'Case Document'}
-                                      </p>
-                                      {m.attachmentSize && (
-                                        <p className="text-[9px] opacity-75 font-mono">
-                                          {(m.attachmentSize / 1024).toFixed(1)} KB
-                                        </p>
+                                {m.attachmentUrl && (() => {
+                                  const safeUrl = resolveAttachmentViewUrl(m.attachmentUrl);
+                                  const isImg = m.messageType === 'IMAGE' || m.attachmentType?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(m.attachmentName || m.attachmentUrl || '');
+
+                                  return (
+                                    <div className="mb-1.5">
+                                      {isImg && (
+                                        <div className="mb-1.5 rounded-xl overflow-hidden max-w-[280px] border border-black/10 bg-black/5">
+                                          <img
+                                            src={safeUrl}
+                                            alt={m.attachmentName || 'Image preview'}
+                                            className="w-full h-auto max-h-56 object-cover cursor-pointer hover:opacity-90 transition"
+                                            onClick={() => window.open(safeUrl, '_blank')}
+                                            loading="lazy"
+                                          />
+                                        </div>
                                       )}
+                                      <a
+                                        href={safeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center space-x-2 p-2 rounded-xl transition ${
+                                          isMe
+                                            ? 'bg-white/15 hover:bg-white/25 text-white'
+                                            : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
+                                        }`}
+                                      >
+                                        <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                                        <div className="overflow-hidden text-left flex-1 min-w-0">
+                                          <p className="font-semibold truncate text-[11px]">
+                                            {m.attachmentName || (isImg ? 'Image Attachment' : 'Case Document')}
+                                          </p>
+                                          {m.attachmentSize && (
+                                            <p className="text-[9px] opacity-75 font-mono">
+                                              {(m.attachmentSize / 1024).toFixed(1)} KB
+                                            </p>
+                                          )}
+                                        </div>
+                                        <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                                      </a>
                                     </div>
-                                    <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
-                                  </a>
-                                )}
+                                  );
+                                })()}
 
                                 {m.content && (
                                   <p className="leading-relaxed whitespace-pre-wrap font-sans">{m.content}</p>

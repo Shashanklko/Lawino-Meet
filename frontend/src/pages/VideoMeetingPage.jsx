@@ -52,6 +52,7 @@ export const VideoMeetingPage = () => {
   const [isSubmittingOutcome, setIsSubmittingOutcome] = useState(false);
   const [outcomeSubmitted, setOutcomeSubmitted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isInsecureContext, setIsInsecureContext] = useState(false);
 
   // WebRTC & Media Refs
   const localVideoRef = useRef(null);
@@ -111,14 +112,54 @@ export const VideoMeetingPage = () => {
           }
         }
 
-        // Initialize User Media (Camera & Mic)
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
+        // Initialize User Media (Camera & Mic with graceful fallback)
+        let stream = null;
+        if (navigator?.mediaDevices?.getUserMedia) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+          } catch (mediaErr) {
+            console.warn('Hardware media stream failed (permissions or busy), attempting audio-only:', mediaErr);
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            } catch (audioErr) {
+              console.warn('Audio-only failed as well:', audioErr);
+            }
+          }
+        } else {
+          console.warn('navigator.mediaDevices is undefined (Insecure HTTP context).');
+          setIsInsecureContext(true);
+        }
+
+        if (!stream) {
+          // Create virtual standby stream when camera/mic is restricted by HTTP origin
+          setIsInsecureContext(true);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.fillStyle = '#1c1917';
+              ctx.fillRect(0, 0, 640, 480);
+              ctx.fillStyle = '#d97706';
+              ctx.font = 'bold 18px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('LawinoMeet Consultation Chamber', 320, 220);
+              ctx.fillStyle = '#a8a29e';
+              ctx.font = '13px sans-serif';
+              ctx.fillText('Camera Offline / HTTP Origin Policy', 320, 250);
+            }
+            stream = canvas.captureStream ? canvas.captureStream(5) : new MediaStream();
+          } catch {
+            stream = new MediaStream();
+          }
+        }
 
         if (!isMounted) {
-          stream.getTracks().forEach((t) => t.stop());
+          if (stream) stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
@@ -607,6 +648,30 @@ export const VideoMeetingPage = () => {
           </div>
         </div>
       </header>
+
+      {/* Insecure Context (HTTP IP) Alert Banner */}
+      {isInsecureContext && (
+        <div className="bg-amber-950/90 border-b border-amber-800 text-amber-200 text-xs px-6 py-2 flex items-center justify-between z-20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Camera &amp; Mic Restricted:</strong> Chrome restricts media devices on plain HTTP (<code className="bg-stone-900 px-1 py-0.5 rounded text-amber-300">http://54.198.55.169</code>). To enable your camera/mic, open <span className="font-mono underline">chrome://flags/#unsafely-treat-insecure-origin-as-secure</span>, enter <code className="bg-stone-900 px-1 py-0.5 rounded text-amber-300">http://54.198.55.169</code>, and Relaunch.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText('http://54.198.55.169');
+                alert('Copied "http://54.198.55.169" to clipboard!\n\nNow open chrome://flags/#unsafely-treat-insecure-origin-as-secure in Chrome, paste this origin, enable, and click Relaunch.');
+              }
+            }}
+            className="px-3 py-1 bg-amber-800 hover:bg-amber-700 text-white font-mono text-[11px] rounded-lg shrink-0 ml-4 transition cursor-pointer"
+          >
+            Copy Origin URL
+          </button>
+        </div>
+      )}
 
       {/* 2. Main 1:1 Video Call Body */}
       <main className="relative flex-1 flex overflow-hidden">

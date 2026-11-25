@@ -32,6 +32,8 @@ public class SecurityConfig {
                     "/api/chat/ping",
                     "/api/chat/conversations/close-by-appointment/**",
                     "/api/chat/conversations/reopen-by-appointment/**",
+                    "/api/chat/attachments/view",
+                    "/api/chat/files/**",
                     "/ws-chat/**"
                 ).permitAll()
                 .anyRequest().authenticated()
