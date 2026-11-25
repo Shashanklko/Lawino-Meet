@@ -34,41 +34,11 @@ export const useWebRTC = (roomPublicId, currentUser) => {
         { urls: 'stun:stun1.l.google.com:19302' },
       ];
 
-      // 2. Get Local Media Stream (with graceful fallback for insecure HTTP origins)
-      let stream = null;
-      if (navigator?.mediaDevices?.getUserMedia) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
-        } catch (mediaErr) {
-          console.warn('Hardware media device acquisition failed, attempting audio-only:', mediaErr);
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-          } catch (audioErr) {
-            console.warn('Audio-only fallback also failed:', audioErr);
-          }
-        }
-      }
-
-      if (!stream) {
-        // Create virtual standby stream when camera/mic is restricted (HTTP origin)
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 640;
-          canvas.height = 480;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#1c1917';
-            ctx.fillRect(0, 0, 640, 480);
-          }
-          stream = canvas.captureStream ? canvas.captureStream(5) : new MediaStream();
-        } catch {
-          stream = new MediaStream();
-        }
-      }
-
+      // 2. Get Local Media Stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       localStreamRef.current = stream;
       setLocalStream(stream);
 
